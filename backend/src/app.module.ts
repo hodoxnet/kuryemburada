@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -26,6 +27,7 @@ import appConfig from './config/app.config';
     PrismaModule,
     AuthModule,
     AdminModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
