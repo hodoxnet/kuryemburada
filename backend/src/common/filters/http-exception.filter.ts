@@ -36,7 +36,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     } else if (exception instanceof Error) {
       message = exception.message;
       error = exception.name;
-      
+
       // Log unexpected errors
       this.logger.error(
         `Unexpected error: ${exception.message}`,
@@ -53,9 +53,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error,
       message,
       ...(details && { details }),
-      ...(process.env.NODE_ENV === 'development' && exception instanceof Error && {
-        stack: exception.stack,
-      }),
+      ...(process.env.NODE_ENV === 'development' &&
+        exception instanceof Error && {
+          stack: exception.stack,
+        }),
     };
 
     // Log errors

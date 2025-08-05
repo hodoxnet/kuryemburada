@@ -13,25 +13,25 @@ export class CustomValidationPipe implements PipeTransform<any> {
     if (!metatype || !this.toValidate(metatype)) {
       return value;
     }
-    
+
     const object = plainToClass(metatype, value);
     const errors = await validate(object);
-    
+
     if (errors.length > 0) {
-      const messages = errors.map(err => {
+      const messages = errors.map((err) => {
         const constraints = err.constraints;
         return {
           field: err.property,
           messages: constraints ? Object.values(constraints) : [],
         };
       });
-      
+
       throw new BadRequestException({
         message: 'Validation failed',
         details: messages,
       });
     }
-    
+
     return value;
   }
 

@@ -10,7 +10,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
-  
+
   const configService = app.get(ConfigService);
   const port = configService.get('port');
   const corsOrigin = configService.get('cors.origin');
@@ -71,11 +71,13 @@ async function bootstrap() {
       },
     });
 
-    logger.log(`Swagger docs available at: http://localhost:${port}/${configService.get('swagger.path')}`);
+    logger.log(
+      `Swagger docs available at: http://localhost:${port}/${configService.get('swagger.path')}`,
+    );
   }
 
   await app.listen(port);
-  
+
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Environment: ${configService.get('nodeEnv')}`);
 }
