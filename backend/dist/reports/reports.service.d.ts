@@ -66,9 +66,9 @@ export declare class ReportsService {
             status: import("@prisma/client").$Enums.OrderStatus;
             createdAt: Date;
             updatedAt: Date;
-            orderNumber: string;
             companyId: number;
             courierId: number | null;
+            orderNumber: string;
             pickupAddressId: number;
             deliveryAddressId: number;
             recipientName: string;
@@ -167,9 +167,9 @@ export declare class ReportsService {
             status: import("@prisma/client").$Enums.OrderStatus;
             createdAt: Date;
             updatedAt: Date;
-            orderNumber: string;
             companyId: number;
             courierId: number | null;
+            orderNumber: string;
             pickupAddressId: number;
             deliveryAddressId: number;
             recipientName: string;
@@ -254,9 +254,9 @@ export declare class ReportsService {
             status: import("@prisma/client").$Enums.OrderStatus;
             createdAt: Date;
             updatedAt: Date;
-            orderNumber: string;
             companyId: number;
             courierId: number | null;
+            orderNumber: string;
             pickupAddressId: number;
             deliveryAddressId: number;
             recipientName: string;

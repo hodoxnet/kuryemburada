@@ -68,7 +68,6 @@ export declare class UsersService {
             bankInfo: import("@prisma/client/runtime/library").JsonValue;
             approvedAt: Date | null;
             balance: import("@prisma/client/runtime/library").Decimal;
-            rating: import("@prisma/client/runtime/library").Decimal;
             tcNumber: string;
             fullName: string;
             birthDate: Date;
@@ -76,6 +75,7 @@ export declare class UsersService {
             vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
             insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
             emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+            rating: import("@prisma/client/runtime/library").Decimal;
             totalDeliveries: number;
             isAvailable: boolean;
             isOnline: boolean;

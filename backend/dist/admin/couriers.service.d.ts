@@ -48,7 +48,6 @@ export declare class CouriersService {
             bankInfo: import("@prisma/client/runtime/library").JsonValue;
             approvedAt: Date | null;
             balance: import("@prisma/client/runtime/library").Decimal;
-            rating: import("@prisma/client/runtime/library").Decimal;
             tcNumber: string;
             fullName: string;
             birthDate: Date;
@@ -56,6 +55,7 @@ export declare class CouriersService {
             vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
             insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
             emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+            rating: import("@prisma/client/runtime/library").Decimal;
             totalDeliveries: number;
             isAvailable: boolean;
             isOnline: boolean;
@@ -104,7 +104,6 @@ export declare class CouriersService {
         bankInfo: import("@prisma/client/runtime/library").JsonValue;
         approvedAt: Date | null;
         balance: import("@prisma/client/runtime/library").Decimal;
-        rating: import("@prisma/client/runtime/library").Decimal;
         tcNumber: string;
         fullName: string;
         birthDate: Date;
@@ -112,6 +111,7 @@ export declare class CouriersService {
         vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
         insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
         emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+        rating: import("@prisma/client/runtime/library").Decimal;
         totalDeliveries: number;
         isAvailable: boolean;
         isOnline: boolean;
@@ -140,9 +140,9 @@ export declare class CouriersService {
             status: import("@prisma/client").$Enums.OrderStatus;
             createdAt: Date;
             updatedAt: Date;
-            orderNumber: string;
             companyId: number;
             courierId: number | null;
+            orderNumber: string;
             pickupAddressId: number;
             deliveryAddressId: number;
             recipientName: string;
@@ -199,7 +199,6 @@ export declare class CouriersService {
         bankInfo: import("@prisma/client/runtime/library").JsonValue;
         approvedAt: Date | null;
         balance: import("@prisma/client/runtime/library").Decimal;
-        rating: import("@prisma/client/runtime/library").Decimal;
         tcNumber: string;
         fullName: string;
         birthDate: Date;
@@ -207,6 +206,7 @@ export declare class CouriersService {
         vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
         insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
         emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+        rating: import("@prisma/client/runtime/library").Decimal;
         totalDeliveries: number;
         isAvailable: boolean;
         isOnline: boolean;
@@ -240,7 +240,6 @@ export declare class CouriersService {
             bankInfo: import("@prisma/client/runtime/library").JsonValue;
             approvedAt: Date | null;
             balance: import("@prisma/client/runtime/library").Decimal;
-            rating: import("@prisma/client/runtime/library").Decimal;
             tcNumber: string;
             fullName: string;
             birthDate: Date;
@@ -248,6 +247,7 @@ export declare class CouriersService {
             vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
             insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
             emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+            rating: import("@prisma/client/runtime/library").Decimal;
             totalDeliveries: number;
             isAvailable: boolean;
             isOnline: boolean;
@@ -282,7 +282,6 @@ export declare class CouriersService {
             bankInfo: import("@prisma/client/runtime/library").JsonValue;
             approvedAt: Date | null;
             balance: import("@prisma/client/runtime/library").Decimal;
-            rating: import("@prisma/client/runtime/library").Decimal;
             tcNumber: string;
             fullName: string;
             birthDate: Date;
@@ -290,6 +289,7 @@ export declare class CouriersService {
             vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
             insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
             emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+            rating: import("@prisma/client/runtime/library").Decimal;
             totalDeliveries: number;
             isAvailable: boolean;
             isOnline: boolean;
@@ -324,7 +324,6 @@ export declare class CouriersService {
             bankInfo: import("@prisma/client/runtime/library").JsonValue;
             approvedAt: Date | null;
             balance: import("@prisma/client/runtime/library").Decimal;
-            rating: import("@prisma/client/runtime/library").Decimal;
             tcNumber: string;
             fullName: string;
             birthDate: Date;
@@ -332,6 +331,7 @@ export declare class CouriersService {
             vehicleInfo: import("@prisma/client/runtime/library").JsonValue;
             insuranceInfo: import("@prisma/client/runtime/library").JsonValue;
             emergencyContact: import("@prisma/client/runtime/library").JsonValue;
+            rating: import("@prisma/client/runtime/library").Decimal;
             totalDeliveries: number;
             isAvailable: boolean;
             isOnline: boolean;
