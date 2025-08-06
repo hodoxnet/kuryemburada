@@ -8,102 +8,293 @@ export declare class ReportsService {
     private getDateRange;
     getAdminOverview(filter: ReportFilterDto): Promise<{
         overview: {
-            totalOrders: any;
-            completedOrders: any;
-            cancelledOrders: any;
+            totalOrders: number;
+            completedOrders: number;
+            cancelledOrders: number;
             completionRate: number;
-            totalRevenue: any;
+            totalRevenue: number;
             totalCommission: number;
             netRevenue: number;
-            avgDeliveryTime: any;
+            avgDeliveryTime: number;
         };
         users: {
-            activeCompanies: any;
-            activeCouriers: any;
-            newCompanies: any;
-            newCouriers: any;
+            activeCompanies: number;
+            activeCouriers: number;
+            newCompanies: number;
+            newCouriers: number;
         };
         topPerformers: {
-            companies: any;
-            couriers: any;
+            companies: {
+                id: number;
+                name: string;
+                orderCount: number;
+            }[];
+            couriers: {
+                id: number;
+                name: string;
+                deliveryCount: number;
+            }[];
         };
     }>;
     getAdminOrderReport(filter: ReportFilterDto): Promise<{
-        orders: any;
+        orders: ({
+            company: {
+                id: number;
+                name: string;
+            };
+            courier: {
+                id: number;
+                fullName: string;
+            } | null;
+            payment: {
+                id: number;
+                status: import("@prisma/client").$Enums.PaymentStatus;
+                createdAt: Date;
+                updatedAt: Date;
+                amount: import("@prisma/client/runtime/library").Decimal;
+                orderId: number;
+                paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+                transactionId: string | null;
+                paidAt: Date | null;
+                processedAt: Date | null;
+                refundedAt: Date | null;
+                refundAmount: import("@prisma/client/runtime/library").Decimal | null;
+            } | null;
+        } & {
+            courierEarning: import("@prisma/client/runtime/library").Decimal | null;
+            id: number;
+            status: import("@prisma/client").$Enums.OrderStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            orderNumber: string;
+            companyId: number;
+            courierId: number | null;
+            pickupAddressId: number;
+            deliveryAddressId: number;
+            recipientName: string;
+            recipientPhone: string;
+            packageType: import("@prisma/client").$Enums.PackageType;
+            packageSize: string | null;
+            packageWeight: import("@prisma/client/runtime/library").Decimal | null;
+            urgency: import("@prisma/client").$Enums.UrgencyLevel;
+            notes: string | null;
+            specialInstructions: string | null;
+            distance: import("@prisma/client/runtime/library").Decimal;
+            estimatedTime: number;
+            deliveryTime: number | null;
+            basePrice: import("@prisma/client/runtime/library").Decimal;
+            urgencyFee: import("@prisma/client/runtime/library").Decimal;
+            distanceFee: import("@prisma/client/runtime/library").Decimal;
+            totalPrice: import("@prisma/client/runtime/library").Decimal;
+            paymentStatus: string | null;
+            assignedAt: Date | null;
+            pickedUpAt: Date | null;
+            deliveredAt: Date | null;
+            cancelledAt: Date | null;
+            cancellationReason: string | null;
+            deliveryProof: string | null;
+            receiverSignature: string | null;
+            trackingCode: string | null;
+        })[];
         statistics: {
-            byStatus: any;
-            byType: any;
+            byStatus: {
+                status: import("@prisma/client").$Enums.OrderStatus;
+                count: number;
+            }[];
+            byType: {
+                type: import("@prisma/client").$Enums.PackageType;
+                count: number;
+            }[];
         };
-        dailyTrend: any;
+        dailyTrend: unknown;
     }>;
     getAdminRevenueReport(filter: ReportFilterDto): Promise<{
         summary: {
-            totalRevenue: any;
-            totalPayments: any;
+            totalRevenue: number;
+            totalPayments: number;
             avgPaymentAmount: number;
             totalCommission: number;
             netRevenue: number;
         };
-        byPaymentMethod: any;
-        topCompanies: any;
-        monthlyTrend: any;
+        byPaymentMethod: {
+            method: import("@prisma/client").$Enums.PaymentMethod;
+            count: number;
+            amount: number | import("@prisma/client/runtime/library").Decimal;
+        }[];
+        topCompanies: unknown;
+        monthlyTrend: unknown;
     }>;
     getAdminPerformanceReport(filter: ReportFilterDto): Promise<{
-        deliveryPerformance: any;
-        courierPerformance: any;
-        companyActivity: any;
+        deliveryPerformance: {
+            status: import("@prisma/client").$Enums.OrderStatus;
+            count: number;
+            avgDeliveryTime: number;
+        }[];
+        courierPerformance: unknown;
+        companyActivity: unknown;
         averageMetrics: {
-            avgOrderValue: any;
-            avgDeliveryTime: any;
-            avgDistance: any;
+            avgOrderValue: number;
+            avgDeliveryTime: number;
+            avgDistance: number;
         };
     }>;
     getAdminRegionalReport(filter: ReportFilterDto): Promise<{
-        regionalDistribution: any;
+        regionalDistribution: unknown;
     }>;
     getCompanyOrderReport(companyId: number, filter: ReportFilterDto): Promise<{
-        orders: any;
-        statistics: any;
-        dailyTrend: any;
+        orders: ({
+            courier: {
+                id: number;
+                fullName: string;
+            } | null;
+            payment: {
+                id: number;
+                status: import("@prisma/client").$Enums.PaymentStatus;
+                createdAt: Date;
+                updatedAt: Date;
+                amount: import("@prisma/client/runtime/library").Decimal;
+                orderId: number;
+                paymentMethod: import("@prisma/client").$Enums.PaymentMethod;
+                transactionId: string | null;
+                paidAt: Date | null;
+                processedAt: Date | null;
+                refundedAt: Date | null;
+                refundAmount: import("@prisma/client/runtime/library").Decimal | null;
+            } | null;
+        } & {
+            courierEarning: import("@prisma/client/runtime/library").Decimal | null;
+            id: number;
+            status: import("@prisma/client").$Enums.OrderStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            orderNumber: string;
+            companyId: number;
+            courierId: number | null;
+            pickupAddressId: number;
+            deliveryAddressId: number;
+            recipientName: string;
+            recipientPhone: string;
+            packageType: import("@prisma/client").$Enums.PackageType;
+            packageSize: string | null;
+            packageWeight: import("@prisma/client/runtime/library").Decimal | null;
+            urgency: import("@prisma/client").$Enums.UrgencyLevel;
+            notes: string | null;
+            specialInstructions: string | null;
+            distance: import("@prisma/client/runtime/library").Decimal;
+            estimatedTime: number;
+            deliveryTime: number | null;
+            basePrice: import("@prisma/client/runtime/library").Decimal;
+            urgencyFee: import("@prisma/client/runtime/library").Decimal;
+            distanceFee: import("@prisma/client/runtime/library").Decimal;
+            totalPrice: import("@prisma/client/runtime/library").Decimal;
+            paymentStatus: string | null;
+            assignedAt: Date | null;
+            pickedUpAt: Date | null;
+            deliveredAt: Date | null;
+            cancelledAt: Date | null;
+            cancellationReason: string | null;
+            deliveryProof: string | null;
+            receiverSignature: string | null;
+            trackingCode: string | null;
+        })[];
+        statistics: {
+            status: import("@prisma/client").$Enums.OrderStatus;
+            count: number;
+            totalAmount: number | import("@prisma/client/runtime/library").Decimal;
+        }[];
+        dailyTrend: unknown;
     }>;
     getCompanyExpenseReport(companyId: number, filter: ReportFilterDto): Promise<{
         summary: {
-            totalExpenses: any;
-            totalPayments: any;
+            totalExpenses: number | import("@prisma/client/runtime/library").Decimal;
+            totalPayments: number;
             avgPaymentAmount: number;
         };
-        byPaymentMethod: any;
-        monthlyTrend: any;
+        byPaymentMethod: {
+            method: import("@prisma/client").$Enums.PaymentMethod;
+            count: number;
+            amount: number | import("@prisma/client/runtime/library").Decimal;
+        }[];
+        monthlyTrend: unknown;
     }>;
     getCompanyPerformanceReport(companyId: number, filter: ReportFilterDto): Promise<{
-        deliveryPerformance: any;
+        deliveryPerformance: {
+            status: import("@prisma/client").$Enums.OrderStatus;
+            count: number;
+            avgDeliveryTime: number;
+        }[];
         averageMetrics: {
-            avgDeliveryTime: any;
-            avgOrderValue: any;
-            avgDistance: any;
+            avgDeliveryTime: number;
+            avgOrderValue: number;
+            avgDistance: number;
         };
-        topCouriers: any;
+        topCouriers: unknown;
     }>;
     getCompanyRoutesReport(companyId: number, filter: ReportFilterDto): Promise<{
-        topRoutes: any;
+        topRoutes: unknown;
     }>;
     getCourierEarningsReport(courierId: number, filter: ReportFilterDto): Promise<{
         summary: {
-            totalEarnings: any;
-            totalDeliveries: any;
+            totalEarnings: number;
+            totalDeliveries: number;
             avgEarningPerDelivery: number;
         };
-        dailyTrend: any;
-        monthlyTrend: any;
+        dailyTrend: unknown;
+        monthlyTrend: unknown;
     }>;
     getCourierDeliveriesReport(courierId: number, filter: ReportFilterDto): Promise<{
-        deliveries: any;
-        statistics: any;
+        deliveries: ({
+            company: {
+                id: number;
+                name: string;
+            };
+        } & {
+            courierEarning: import("@prisma/client/runtime/library").Decimal | null;
+            id: number;
+            status: import("@prisma/client").$Enums.OrderStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            orderNumber: string;
+            companyId: number;
+            courierId: number | null;
+            pickupAddressId: number;
+            deliveryAddressId: number;
+            recipientName: string;
+            recipientPhone: string;
+            packageType: import("@prisma/client").$Enums.PackageType;
+            packageSize: string | null;
+            packageWeight: import("@prisma/client/runtime/library").Decimal | null;
+            urgency: import("@prisma/client").$Enums.UrgencyLevel;
+            notes: string | null;
+            specialInstructions: string | null;
+            distance: import("@prisma/client/runtime/library").Decimal;
+            estimatedTime: number;
+            deliveryTime: number | null;
+            basePrice: import("@prisma/client/runtime/library").Decimal;
+            urgencyFee: import("@prisma/client/runtime/library").Decimal;
+            distanceFee: import("@prisma/client/runtime/library").Decimal;
+            totalPrice: import("@prisma/client/runtime/library").Decimal;
+            paymentStatus: string | null;
+            assignedAt: Date | null;
+            pickedUpAt: Date | null;
+            deliveredAt: Date | null;
+            cancelledAt: Date | null;
+            cancellationReason: string | null;
+            deliveryProof: string | null;
+            receiverSignature: string | null;
+            trackingCode: string | null;
+        })[];
+        statistics: {
+            status: import("@prisma/client").$Enums.OrderStatus;
+            count: number;
+            totalEarnings: number;
+            avgDeliveryTime: number;
+        }[];
     }>;
     getCourierWorkingHoursReport(courierId: number, filter: ReportFilterDto): Promise<{
-        workingDays: any;
+        workingDays: unknown;
     }>;
     getCourierCollectionsReport(courierId: number, filter: ReportFilterDto): Promise<{
-        cashCollections: any;
+        cashCollections: unknown;
     }>;
 }

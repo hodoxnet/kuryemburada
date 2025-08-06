@@ -45,19 +45,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
     }
 
-    const errorResponse = {
+    const errorResponse: any = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
       error,
       message,
-      ...(details && { details }),
-      ...(process.env.NODE_ENV === 'development' &&
-        exception instanceof Error && {
-          stack: exception.stack,
-        }),
     };
+
+    if (details) {
+      errorResponse.details = details;
+    }
+
+    if (process.env.NODE_ENV === 'development' && exception instanceof Error) {
+      errorResponse.stack = exception.stack;
+    }
 
     // Log errors
     if (status >= 500) {

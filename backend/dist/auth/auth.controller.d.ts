@@ -7,16 +7,22 @@ export declare class AuthController {
     register(registerDto: RegisterDto): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: any;
+        user: {
+            email: string;
+            role: import("@prisma/client").$Enums.UserRole;
+            id: number;
+            status: import("@prisma/client").$Enums.UserStatus;
+            createdAt: Date;
+        };
     }>;
     login(loginDto: LoginDto): Promise<{
         accessToken: string;
         refreshToken: string;
         user: {
-            id: any;
-            email: any;
-            role: any;
-            status: any;
+            id: number;
+            email: string;
+            role: import("@prisma/client").$Enums.UserRole;
+            status: "ACTIVE" | "PENDING";
         };
     }>;
     logout(req: any): Promise<{

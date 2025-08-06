@@ -82,7 +82,7 @@ export class SystemSettingsService {
   }
 
   async updateBulk(dto: SystemSettingsDto) {
-    const updates = [];
+    const updates: Promise<any>[] = [];
 
     for (const [key, value] of Object.entries(dto)) {
       if (value !== undefined) {
@@ -208,8 +208,8 @@ export class SystemSettingsService {
       },
     ];
 
-    const created = [];
-    const skipped = [];
+    const created: string[] = [];
+    const skipped: string[] = [];
 
     for (const setting of defaultSettings) {
       const existing = await this.prisma.systemSetting.findUnique({

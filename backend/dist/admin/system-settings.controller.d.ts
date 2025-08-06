@@ -3,17 +3,41 @@ import { SystemSettingDto, UpdateSystemSettingDto, SystemSettingsDto } from './d
 export declare class SystemSettingsController {
     private readonly systemSettingsService;
     constructor(systemSettingsService: SystemSettingsService);
-    findAll(): Promise<any>;
-    findOne(key: string): Promise<any>;
-    create(dto: SystemSettingDto): Promise<any>;
-    update(key: string, dto: UpdateSystemSettingDto): Promise<any>;
+    findAll(): Promise<Record<string, any[]>>;
+    findOne(key: string): Promise<{
+        description: string | null;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        key: string;
+        value: import("@prisma/client/runtime/library").JsonValue;
+        category: string | null;
+    }>;
+    create(dto: SystemSettingDto): Promise<{
+        description: string | null;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        key: string;
+        value: import("@prisma/client/runtime/library").JsonValue;
+        category: string | null;
+    }>;
+    update(key: string, dto: UpdateSystemSettingDto): Promise<{
+        description: string | null;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        key: string;
+        value: import("@prisma/client/runtime/library").JsonValue;
+        category: string | null;
+    }>;
     updateBulk(dto: SystemSettingsDto): Promise<{
         message: string;
         updatedCount: number;
     }>;
     initializeDefaults(): Promise<{
         message: string;
-        created: never[];
-        skipped: never[];
+        created: string[];
+        skipped: string[];
     }>;
 }

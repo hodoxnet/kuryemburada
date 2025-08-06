@@ -14,7 +14,7 @@ export class PricingService {
     const { type, isActive } = params;
 
     const where: any = {};
-    if (type) where.type = type;
+    if (type) where.ruleType = type;
     if (isActive !== undefined) where.isActive = isActive;
 
     return this.prisma.pricingRule.findMany({
@@ -39,7 +39,7 @@ export class PricingService {
     return this.prisma.pricingRule.create({
       data: {
         name: dto.name,
-        type: dto.type,
+        ruleType: dto.type,
         parameters: dto.parameters,
         priority: dto.priority || 100,
         isActive: dto.isActive,
@@ -101,7 +101,7 @@ export class PricingService {
 
     // Base fee
     const baseFeeRule = activeRules.find(
-      (r) => r.type === PricingRuleType.BASE_FEE,
+      (r) => r.ruleType === PricingRuleType.BASE_FEE,
     );
     if (baseFeeRule) {
       const baseFee = baseFeeRule.parameters?.['amount'] || 0;
@@ -114,7 +114,7 @@ export class PricingService {
 
     // Distance pricing
     const distanceRule = activeRules.find(
-      (r) => r.type === PricingRuleType.DISTANCE,
+      (r) => r.ruleType === PricingRuleType.DISTANCE,
     );
     if (distanceRule && dto.distance) {
       const pricePerKm = distanceRule.parameters?.['pricePerKm'] || 0;
@@ -129,7 +129,7 @@ export class PricingService {
 
     // Package type multiplier
     const packageRule = activeRules.find(
-      (r) => r.type === PricingRuleType.PACKAGE_TYPE,
+      (r) => r.ruleType === PricingRuleType.PACKAGE_TYPE,
     );
     if (packageRule && dto.packageType) {
       const multiplier = packageRule.parameters?.[dto.packageType] || 1;
@@ -146,7 +146,7 @@ export class PricingService {
 
     // Urgency fee
     const urgencyRule = activeRules.find(
-      (r) => r.type === PricingRuleType.URGENCY,
+      (r) => r.ruleType === PricingRuleType.URGENCY,
     );
     if (urgencyRule && dto.urgency) {
       const urgencyFee = urgencyRule.parameters?.[dto.urgency] || 0;
@@ -162,7 +162,7 @@ export class PricingService {
 
     // Zone pricing
     if (dto.zone) {
-      const zoneRule = activeRules.find((r) => r.type === PricingRuleType.ZONE);
+      const zoneRule = activeRules.find((r) => r.ruleType === PricingRuleType.ZONE);
       if (zoneRule) {
         const zoneFee = zoneRule.parameters?.[dto.zone] || 0;
         if (zoneFee > 0) {
@@ -178,7 +178,7 @@ export class PricingService {
 
     // Minimum order check
     const minimumOrderRule = activeRules.find(
-      (r) => r.type === PricingRuleType.MINIMUM_ORDER,
+      (r) => r.ruleType === PricingRuleType.MINIMUM_ORDER,
     );
     if (minimumOrderRule) {
       const minimumAmount = minimumOrderRule.parameters?.['amount'] || 0;

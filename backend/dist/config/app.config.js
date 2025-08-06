@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = () => ({
-    port: parseInt(process.env.PORT, 10) || 3000,
+    port: parseInt(process.env.PORT || '3000', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
     database: {
         url: process.env.DATABASE_URL,
     },
     redis: {
         host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
         password: process.env.REDIS_PASSWORD,
     },
     jwt: {
@@ -26,8 +26,8 @@ exports.default = () => ({
         path: process.env.SWAGGER_PATH || 'api-docs',
     },
     throttle: {
-        ttl: parseInt(process.env.THROTTLE_TTL, 10) || 60,
-        limit: parseInt(process.env.THROTTLE_LIMIT, 10) || 100,
+        ttl: parseInt(process.env.THROTTLE_TTL || '60', 10),
+        limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
     },
 });
 //# sourceMappingURL=app.config.js.map

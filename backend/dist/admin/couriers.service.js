@@ -38,7 +38,6 @@ let CouriersService = class CouriersService {
                         },
                     },
                     documents: true,
-                    vehicle: true,
                     _count: {
                         select: {
                             orders: true,
@@ -75,7 +74,6 @@ let CouriersService = class CouriersService {
                     },
                 },
                 documents: true,
-                vehicle: true,
             },
             orderBy: {
                 createdAt: 'asc',
@@ -88,7 +86,6 @@ let CouriersService = class CouriersService {
             include: {
                 user: true,
                 documents: true,
-                vehicle: true,
                 orders: {
                     take: 10,
                     orderBy: {
@@ -146,7 +143,6 @@ let CouriersService = class CouriersService {
             data: {
                 status: client_1.CourierStatus.REJECTED,
                 rejectionReason,
-                rejectedAt: new Date(),
                 user: {
                     update: {
                         status: 'SUSPENDED',
@@ -176,7 +172,7 @@ let CouriersService = class CouriersService {
                 ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
                 ...(dto.status === client_1.CourierStatus.ACTIVE && { approvedAt: new Date() }),
                 ...(dto.status === client_1.CourierStatus.REJECTED && {
-                    rejectedAt: new Date(),
+                    rejectionReason: dto.rejectionReason,
                 }),
             },
             include: {

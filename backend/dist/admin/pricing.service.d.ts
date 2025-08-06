@@ -6,10 +6,58 @@ export declare class PricingService {
     findAllRules(params: {
         type?: string;
         isActive?: boolean;
-    }): Promise<any>;
-    findOneRule(id: number): Promise<any>;
-    createRule(dto: CreatePricingRuleDto): Promise<any>;
-    updateRule(id: number, dto: UpdatePricingRuleDto): Promise<any>;
+    }): Promise<{
+        description: string | null;
+        parameters: import("@prisma/client/runtime/library").JsonValue;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        priority: number;
+        isActive: boolean;
+        ruleType: string;
+        validFrom: Date | null;
+        validUntil: Date | null;
+    }[]>;
+    findOneRule(id: number): Promise<{
+        description: string | null;
+        parameters: import("@prisma/client/runtime/library").JsonValue;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        priority: number;
+        isActive: boolean;
+        ruleType: string;
+        validFrom: Date | null;
+        validUntil: Date | null;
+    }>;
+    createRule(dto: CreatePricingRuleDto): Promise<{
+        description: string | null;
+        parameters: import("@prisma/client/runtime/library").JsonValue;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        priority: number;
+        isActive: boolean;
+        ruleType: string;
+        validFrom: Date | null;
+        validUntil: Date | null;
+    }>;
+    updateRule(id: number, dto: UpdatePricingRuleDto): Promise<{
+        description: string | null;
+        parameters: import("@prisma/client/runtime/library").JsonValue;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        priority: number;
+        isActive: boolean;
+        ruleType: string;
+        validFrom: Date | null;
+        validUntil: Date | null;
+    }>;
     deleteRule(id: number): Promise<{
         message: string;
     }>;

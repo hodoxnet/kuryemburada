@@ -43,12 +43,13 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
             method: request.method,
             error,
             message,
-            ...(details && { details }),
-            ...(process.env.NODE_ENV === 'development' &&
-                exception instanceof Error && {
-                stack: exception.stack,
-            }),
         };
+        if (details) {
+            errorResponse.details = details;
+        }
+        if (process.env.NODE_ENV === 'development' && exception instanceof Error) {
+            errorResponse.stack = exception.stack;
+        }
         if (status >= 500) {
             this.logger.error(`HTTP ${status} Error: ${message}`, exception instanceof Error ? exception.stack : '', `${request.method} ${request.url}`);
         }

@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatePaymentDto = exports.PaymentFilterDto = exports.UpdatePaymentStatusDto = void 0;
 const class_validator_1 = require("class-validator");
@@ -26,7 +25,7 @@ __decorate([
         description: 'Ödeme durumu'
     }),
     (0, class_validator_1.IsEnum)(client_1.PaymentStatus),
-    __metadata("design:type", typeof (_a = typeof client_1.PaymentStatus !== "undefined" && client_1.PaymentStatus) === "function" ? _a : Object)
+    __metadata("design:type", String)
 ], UpdatePaymentStatusDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
@@ -60,7 +59,7 @@ __decorate([
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(client_1.PaymentStatus),
-    __metadata("design:type", typeof (_b = typeof client_1.PaymentStatus !== "undefined" && client_1.PaymentStatus) === "function" ? _b : Object)
+    __metadata("design:type", String)
 ], PaymentFilterDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
@@ -69,7 +68,7 @@ __decorate([
     }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(client_1.PaymentMethod),
-    __metadata("design:type", typeof (_c = typeof client_1.PaymentMethod !== "undefined" && client_1.PaymentMethod) === "function" ? _c : Object)
+    __metadata("design:type", String)
 ], PaymentFilterDto.prototype, "method", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
@@ -130,7 +129,7 @@ __decorate([
         description: 'Ödeme yöntemi'
     }),
     (0, class_validator_1.IsEnum)(client_1.PaymentMethod),
-    __metadata("design:type", typeof (_d = typeof client_1.PaymentMethod !== "undefined" && client_1.PaymentMethod) === "function" ? _d : Object)
+    __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "method", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({

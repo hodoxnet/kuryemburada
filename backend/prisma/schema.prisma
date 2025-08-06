@@ -20,6 +20,24 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+  REJECTED
+}
+
+enum CourierStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+  REJECTED
+  ONLINE
+  OFFLINE
+}
+
 enum OrderStatus {
   PENDING
   ASSIGNED
@@ -34,6 +52,7 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 enum PaymentMethod {
@@ -111,7 +130,9 @@ model Company {
   tradeRegistry   String?
   activityArea    String?
   logo            String?
-  status          UserStatus @default(PENDING)
+  status          CompanyStatus @default(PENDING)
+  approvedAt      DateTime?  // Date when company was approved
+  rejectionReason String?    // Reason for rejection if status is REJECTED
   balance         Decimal    @default(0.00) @db.Decimal(10, 2)
   creditLimit     Decimal    @default(0.00) @db.Decimal(10, 2)
   commission      Decimal    @default(15.00) @db.Decimal(5, 2) // Platform commission percentage
@@ -120,8 +141,8 @@ model Company {
   
   user            User       @relation(fields: [userId], references: [id])
   orders          Order[]
-  documents       Document[]
-  transactions    Transaction[]
+  documents       Document[] @relation("CompanyDocuments")
+  transactions    Transaction[] @relation("CompanyTransactions")
   addresses       CompanyAddress[]
 }
 
@@ -154,7 +175,9 @@ model Courier {
   bankInfo        Json       // {bankName, accountNumber, iban}
   emergencyContact Json      // {fullName, phone, relationship}
   address         Json       // {city, district, neighborhood, street}
-  status          UserStatus @default(PENDING)
+  status          CourierStatus @default(PENDING)
+  approvedAt      DateTime?  // Date when courier was approved
+  rejectionReason String?    // Reason for rejection if status is REJECTED
   rating          Decimal    @default(5.00) @db.Decimal(3, 2)
   totalDeliveries Int        @default(0)
   balance         Decimal    @default(0.00) @db.Decimal(10, 2)
@@ -167,9 +190,9 @@ model Courier {
   
   user            User       @relation(fields: [userId], references: [id])
   orders          Order[]
-  documents       Document[]
+  documents       Document[] @relation("CourierDocuments")
   earnings        CourierEarning[]
-  transactions    Transaction[]
+  transactions    Transaction[] @relation("CourierTransactions")
   ratings         CourierRating[]
 }
 
@@ -191,12 +214,15 @@ model Order {
   
   distance        Decimal        @db.Decimal(6, 2) // in km
   estimatedTime   Int            // in minutes
+  deliveryTime    Int?           // Actual delivery time in minutes
   basePrice       Decimal        @db.Decimal(10, 2)
   urgencyFee      Decimal        @default(0.00) @db.Decimal(10, 2)
   distanceFee     Decimal        @default(0.00) @db.Decimal(10, 2)
   totalPrice      Decimal        @db.Decimal(10, 2)
+  courierEarning  Decimal?       @db.Decimal(10, 2) // Courier's earning from this order
   
   status          OrderStatus    @default(PENDING)
+  paymentStatus   String?        @default("PENDING") // Payment status for this order
   assignedAt      DateTime?
   pickedUpAt      DateTime?
   deliveredAt     DateTime?
@@ -238,6 +264,7 @@ model Payment {
   status          PaymentStatus  @default(PENDING)
   transactionId   String?
   paidAt          DateTime?
+  processedAt     DateTime?      // Date when payment was processed
   refundedAt      DateTime?
   refundAmount    Decimal?       @db.Decimal(10, 2)
   createdAt       DateTime       @default(now())
@@ -286,8 +313,8 @@ model Transaction {
   status          String     @default("completed")
   createdAt       DateTime   @default(now())
   
-  company         Company?   @relation(fields: [entityId], references: [id])
-  courier         Courier?   @relation(fields: [entityId], references: [id])
+  company         Company?   @relation("CompanyTransactions", fields: [entityId], references: [id], map: "transaction_company_fk")
+  courier         Courier?   @relation("CourierTransactions", fields: [entityId], references: [id], map: "transaction_courier_fk")
 }
 
 model Document {
@@ -307,8 +334,8 @@ model Document {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   
-  company         Company?       @relation(fields: [entityId], references: [id])
-  courier         Courier?       @relation(fields: [entityId], references: [id])
+  company         Company?       @relation("CompanyDocuments", fields: [entityId], references: [id], map: "document_company_fk")
+  courier         Courier?       @relation("CourierDocuments", fields: [entityId], references: [id], map: "document_courier_fk")
 }
 
 model PricingRule {
@@ -359,6 +386,7 @@ model SystemSetting {
   key             String     @unique
   value           Json
   description     String?
+  category        String?    @default("general")
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }

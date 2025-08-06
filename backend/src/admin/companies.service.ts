@@ -148,7 +148,6 @@ export class CompaniesService {
       data: {
         status: CompanyStatus.REJECTED,
         rejectionReason,
-        rejectedAt: new Date(),
         user: {
           update: {
             status: 'SUSPENDED',
@@ -184,7 +183,7 @@ export class CompaniesService {
         ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
         ...(dto.status === CompanyStatus.ACTIVE && { approvedAt: new Date() }),
         ...(dto.status === CompanyStatus.REJECTED && {
-          rejectedAt: new Date(),
+          rejectionReason: dto.rejectionReason,
         }),
       },
       include: {

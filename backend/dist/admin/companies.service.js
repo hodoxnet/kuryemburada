@@ -143,7 +143,6 @@ let CompaniesService = class CompaniesService {
             data: {
                 status: client_1.CompanyStatus.REJECTED,
                 rejectionReason,
-                rejectedAt: new Date(),
                 user: {
                     update: {
                         status: 'SUSPENDED',
@@ -173,7 +172,7 @@ let CompaniesService = class CompaniesService {
                 ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
                 ...(dto.status === client_1.CompanyStatus.ACTIVE && { approvedAt: new Date() }),
                 ...(dto.status === client_1.CompanyStatus.REJECTED && {
-                    rejectedAt: new Date(),
+                    rejectionReason: dto.rejectionReason,
                 }),
             },
             include: {

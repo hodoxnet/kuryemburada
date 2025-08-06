@@ -29,7 +29,6 @@ export class CouriersService {
             },
           },
           documents: true,
-          vehicle: true,
           _count: {
             select: {
               orders: true,
@@ -68,7 +67,6 @@ export class CouriersService {
           },
         },
         documents: true,
-        vehicle: true,
       },
       orderBy: {
         createdAt: 'asc',
@@ -82,7 +80,6 @@ export class CouriersService {
       include: {
         user: true,
         documents: true,
-        vehicle: true,
         orders: {
           take: 10,
           orderBy: {
@@ -151,7 +148,6 @@ export class CouriersService {
       data: {
         status: CourierStatus.REJECTED,
         rejectionReason,
-        rejectedAt: new Date(),
         user: {
           update: {
             status: 'SUSPENDED',
@@ -187,7 +183,7 @@ export class CouriersService {
         ...(dto.rejectionReason && { rejectionReason: dto.rejectionReason }),
         ...(dto.status === CourierStatus.ACTIVE && { approvedAt: new Date() }),
         ...(dto.status === CourierStatus.REJECTED && {
-          rejectedAt: new Date(),
+          rejectionReason: dto.rejectionReason,
         }),
       },
       include: {

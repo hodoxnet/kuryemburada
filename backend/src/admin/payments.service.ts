@@ -12,7 +12,7 @@ export class PaymentsService {
 
     const where: any = {};
     if (filter.status) where.status = filter.status;
-    if (filter.method) where.method = filter.method;
+    if (filter.method) where.paymentMethod = filter.method;
     if (filter.companyId) {
       where.order = {
         companyId: filter.companyId,
@@ -140,8 +140,7 @@ export class PaymentsService {
       data: {
         orderId: dto.orderId,
         amount: dto.amount,
-        method: dto.method,
-        description: dto.description,
+        paymentMethod: dto.method,
         status: PaymentStatus.PENDING,
       },
       include: {
@@ -169,7 +168,7 @@ export class PaymentsService {
       data: {
         status: PaymentStatus.COMPLETED,
         processedAt: new Date(),
-        transactionReference,
+        transactionId: transactionReference,
       },
       include: {
         order: {
@@ -211,7 +210,6 @@ export class PaymentsService {
       data: {
         status: PaymentStatus.FAILED,
         processedAt: new Date(),
-        failureReason: reason,
       },
       include: {
         order: true,
@@ -247,8 +245,7 @@ export class PaymentsService {
       where: { id },
       data: {
         status: dto.status,
-        ...(dto.note && { note: dto.note }),
-        ...(dto.transactionReference && { transactionReference: dto.transactionReference }),
+        ...(dto.transactionReference && { transactionId: dto.transactionReference }),
         ...(dto.status === PaymentStatus.COMPLETED || dto.status === PaymentStatus.FAILED) && {
           processedAt: new Date(),
         },
@@ -271,7 +268,7 @@ export class PaymentsService {
     await this.prisma.order.update({
       where: { id: payment.orderId },
       data: {
-        paymentStatus: orderPaymentStatus as any,
+        paymentStatus: orderPaymentStatus,
       },
     });
 
@@ -304,10 +301,8 @@ export class PaymentsService {
       data: {
         orderId: payment.orderId,
         amount: -refundAmount,
-        method: payment.method,
+        paymentMethod: payment.paymentMethod,
         status: PaymentStatus.COMPLETED,
-        description: `İade: ${reason}`,
-        relatedPaymentId: payment.id,
         processedAt: new Date(),
       },
     });
@@ -317,9 +312,8 @@ export class PaymentsService {
       where: { id },
       data: {
         status: refundAmount === payment.amount ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED,
-        refundedAmount: {
-          increment: refundAmount,
-        },
+        refundAmount: refundAmount,
+        refundedAt: new Date(),
       },
     });
 
@@ -386,7 +380,7 @@ export class PaymentsService {
         _sum: { amount: true },
       }),
       this.prisma.payment.groupBy({
-        by: ['method'],
+        by: ['paymentMethod'],
         where,
         _count: true,
         _sum: { amount: true },
@@ -417,7 +411,8 @@ export class PaymentsService {
 
     // Calculate commission
     const commissionRate = 0.15; // %15 default commission
-    const totalCommission = (completedAmount._sum.amount || 0) * commissionRate;
+    const completedAmountValue = completedAmount._sum.amount || 0;
+    const totalCommission = Number(completedAmountValue) * commissionRate;
 
     return {
       summary: {
@@ -432,9 +427,9 @@ export class PaymentsService {
         totalCommission,
       },
       byMethod: paymentsByMethod.map(item => ({
-        method: item.method,
+        method: item.paymentMethod,
         count: item._count,
-        amount: item._sum.amount || 0,
+        amount: item._sum?.amount || 0,
       })),
       byStatus: paymentsByStatus.map(item => ({
         status: item.status,

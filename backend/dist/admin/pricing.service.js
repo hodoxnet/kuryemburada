@@ -22,7 +22,7 @@ let PricingService = class PricingService {
         const { type, isActive } = params;
         const where = {};
         if (type)
-            where.type = type;
+            where.ruleType = type;
         if (isActive !== undefined)
             where.isActive = isActive;
         return this.prisma.pricingRule.findMany({
@@ -43,7 +43,7 @@ let PricingService = class PricingService {
         return this.prisma.pricingRule.create({
             data: {
                 name: dto.name,
-                type: dto.type,
+                ruleType: dto.type,
                 parameters: dto.parameters,
                 priority: dto.priority || 100,
                 isActive: dto.isActive,
@@ -88,7 +88,7 @@ let PricingService = class PricingService {
         });
         let totalPrice = 0;
         const breakdown = [];
-        const baseFeeRule = activeRules.find((r) => r.type === create_pricing_rule_dto_1.PricingRuleType.BASE_FEE);
+        const baseFeeRule = activeRules.find((r) => r.ruleType === create_pricing_rule_dto_1.PricingRuleType.BASE_FEE);
         if (baseFeeRule) {
             const baseFee = baseFeeRule.parameters?.['amount'] || 0;
             totalPrice += baseFee;
@@ -97,7 +97,7 @@ let PricingService = class PricingService {
                 amount: baseFee,
             });
         }
-        const distanceRule = activeRules.find((r) => r.type === create_pricing_rule_dto_1.PricingRuleType.DISTANCE);
+        const distanceRule = activeRules.find((r) => r.ruleType === create_pricing_rule_dto_1.PricingRuleType.DISTANCE);
         if (distanceRule && dto.distance) {
             const pricePerKm = distanceRule.parameters?.['pricePerKm'] || 0;
             const distancePrice = dto.distance * pricePerKm;
@@ -108,7 +108,7 @@ let PricingService = class PricingService {
                 detail: `${dto.distance} km x ${pricePerKm} TL`,
             });
         }
-        const packageRule = activeRules.find((r) => r.type === create_pricing_rule_dto_1.PricingRuleType.PACKAGE_TYPE);
+        const packageRule = activeRules.find((r) => r.ruleType === create_pricing_rule_dto_1.PricingRuleType.PACKAGE_TYPE);
         if (packageRule && dto.packageType) {
             const multiplier = packageRule.parameters?.[dto.packageType] || 1;
             if (multiplier > 1) {
@@ -121,7 +121,7 @@ let PricingService = class PricingService {
                 });
             }
         }
-        const urgencyRule = activeRules.find((r) => r.type === create_pricing_rule_dto_1.PricingRuleType.URGENCY);
+        const urgencyRule = activeRules.find((r) => r.ruleType === create_pricing_rule_dto_1.PricingRuleType.URGENCY);
         if (urgencyRule && dto.urgency) {
             const urgencyFee = urgencyRule.parameters?.[dto.urgency] || 0;
             if (urgencyFee > 0) {
@@ -134,7 +134,7 @@ let PricingService = class PricingService {
             }
         }
         if (dto.zone) {
-            const zoneRule = activeRules.find((r) => r.type === create_pricing_rule_dto_1.PricingRuleType.ZONE);
+            const zoneRule = activeRules.find((r) => r.ruleType === create_pricing_rule_dto_1.PricingRuleType.ZONE);
             if (zoneRule) {
                 const zoneFee = zoneRule.parameters?.[dto.zone] || 0;
                 if (zoneFee > 0) {
@@ -147,7 +147,7 @@ let PricingService = class PricingService {
                 }
             }
         }
-        const minimumOrderRule = activeRules.find((r) => r.type === create_pricing_rule_dto_1.PricingRuleType.MINIMUM_ORDER);
+        const minimumOrderRule = activeRules.find((r) => r.ruleType === create_pricing_rule_dto_1.PricingRuleType.MINIMUM_ORDER);
         if (minimumOrderRule) {
             const minimumAmount = minimumOrderRule.parameters?.['amount'] || 0;
             if (totalPrice < minimumAmount) {

@@ -123,7 +123,7 @@ export class ReportsService {
       }),
     ]);
 
-    const revenue = totalRevenue._sum.amount || 0;
+    const revenue = Number(totalRevenue._sum.amount || 0);
     const commission = revenue * 0.15; // 15% commission
 
     return {
@@ -135,7 +135,7 @@ export class ReportsService {
         totalRevenue: revenue,
         totalCommission: commission,
         netRevenue: revenue - commission,
-        avgDeliveryTime: avgDeliveryTime._avg.deliveryTime || 0,
+        avgDeliveryTime: avgDeliveryTime._avg?.deliveryTime || 0,
       },
       users: {
         activeCompanies,
@@ -196,7 +196,7 @@ export class ReportsService {
         SELECT 
           DATE(created_at) as date,
           COUNT(*) as count,
-          SUM(price) as revenue
+          SUM(total_price) as revenue
         FROM orders
         WHERE created_at >= ${filter.startDate ? new Date(filter.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)}
           AND created_at <= ${filter.endDate ? new Date(filter.endDate) : new Date()}
@@ -241,7 +241,7 @@ export class ReportsService {
       }),
       // Revenue by payment method
       this.prisma.payment.groupBy({
-        by: ['method'],
+        by: ['paymentMethod'],
         where,
         _sum: { amount: true },
         _count: true,
@@ -284,7 +284,7 @@ export class ReportsService {
       }),
     ]);
 
-    const revenue = totalRevenue._sum.amount || 0;
+    const revenue = Number(totalRevenue._sum.amount || 0);
     const commissionRate = 0.15;
     const commission = revenue * commissionRate;
 
@@ -297,9 +297,9 @@ export class ReportsService {
         netRevenue: revenue - commission,
       },
       byPaymentMethod: revenueByMethod.map(item => ({
-        method: item.method,
+        method: item.paymentMethod,
         count: item._count,
-        amount: item._sum.amount || 0,
+        amount: item._sum?.amount || 0,
       })),
       topCompanies: revenueByCompany,
       monthlyTrend: monthlyRevenue,
@@ -348,8 +348,8 @@ export class ReportsService {
           c.id,
           c.name,
           COUNT(o.id) as total_orders,
-          AVG(o.price) as avg_order_value,
-          SUM(o.price) as total_spent
+          AVG(o.total_price) as avg_order_value,
+          SUM(o.total_price) as total_spent
         FROM companies c
         LEFT JOIN orders o ON o.company_id = c.id
         WHERE o.created_at >= ${filter.startDate ? new Date(filter.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)}
@@ -362,7 +362,7 @@ export class ReportsService {
       this.prisma.order.aggregate({
         where,
         _avg: {
-          price: true,
+          totalPrice: true,
           deliveryTime: true,
           distance: true,
         },
@@ -373,14 +373,14 @@ export class ReportsService {
       deliveryPerformance: deliveryStats.map(item => ({
         status: item.status,
         count: item._count,
-        avgDeliveryTime: item._avg.deliveryTime || 0,
+        avgDeliveryTime: item._avg?.deliveryTime || 0,
       })),
       courierPerformance,
       companyActivity,
       averageMetrics: {
-        avgOrderValue: avgMetrics._avg.price || 0,
-        avgDeliveryTime: avgMetrics._avg.deliveryTime || 0,
-        avgDistance: avgMetrics._avg.distance || 0,
+        avgOrderValue: Number(avgMetrics._avg?.totalPrice || 0),
+        avgDeliveryTime: avgMetrics._avg?.deliveryTime || 0,
+        avgDistance: Number(avgMetrics._avg?.distance || 0),
       },
     };
   }
@@ -394,7 +394,7 @@ export class ReportsService {
         delivery_address->>'city' as city,
         delivery_address->>'district' as district,
         COUNT(*) as order_count,
-        SUM(price) as total_revenue,
+        SUM(total_price) as total_revenue,
         AVG(delivery_time) as avg_delivery_time
       FROM orders
       WHERE created_at >= ${filter.startDate ? new Date(filter.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)}
@@ -435,14 +435,14 @@ export class ReportsService {
         by: ['status'],
         where,
         _count: true,
-        _sum: { price: true },
+        _sum: { totalPrice: true },
       }),
       // Daily trend
       this.prisma.$queryRaw`
         SELECT 
           DATE(created_at) as date,
           COUNT(*) as count,
-          SUM(price) as spent
+          SUM(total_price) as spent
         FROM orders
         WHERE company_id = ${companyId}
           AND created_at >= ${filter.startDate ? new Date(filter.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)}
@@ -458,7 +458,7 @@ export class ReportsService {
       statistics: statistics.map(item => ({
         status: item.status,
         count: item._count,
-        totalAmount: item._sum.price || 0,
+        totalAmount: item._sum?.totalPrice || 0,
       })),
       dailyTrend,
     };
@@ -480,7 +480,7 @@ export class ReportsService {
       }),
       // Expenses by payment method
       this.prisma.payment.groupBy({
-        by: ['method'],
+        by: ['paymentMethod'],
         where,
         _sum: { amount: true },
         _count: true,
@@ -508,13 +508,13 @@ export class ReportsService {
         totalExpenses: totalExpenses._sum.amount || 0,
         totalPayments: totalExpenses._count,
         avgPaymentAmount: totalExpenses._count > 0 
-          ? (totalExpenses._sum.amount || 0) / totalExpenses._count 
+          ? Number(totalExpenses._sum.amount || 0) / totalExpenses._count 
           : 0,
       },
       byPaymentMethod: expensesByMethod.map(item => ({
-        method: item.method,
+        method: item.paymentMethod,
         count: item._count,
-        amount: item._sum.amount || 0,
+        amount: item._sum?.amount || 0,
       })),
       monthlyTrend: monthlyExpenses,
     };
@@ -539,7 +539,7 @@ export class ReportsService {
         where,
         _avg: {
           deliveryTime: true,
-          price: true,
+          totalPrice: true,
           distance: true,
         },
       }),
@@ -566,12 +566,12 @@ export class ReportsService {
       deliveryPerformance: deliveryStats.map(item => ({
         status: item.status,
         count: item._count,
-        avgDeliveryTime: item._avg.deliveryTime || 0,
+        avgDeliveryTime: item._avg?.deliveryTime || 0,
       })),
       averageMetrics: {
-        avgDeliveryTime: avgMetrics._avg.deliveryTime || 0,
-        avgOrderValue: avgMetrics._avg.price || 0,
-        avgDistance: avgMetrics._avg.distance || 0,
+        avgDeliveryTime: avgMetrics._avg?.deliveryTime || 0,
+        avgOrderValue: Number(avgMetrics._avg?.totalPrice || 0),
+        avgDistance: Number(avgMetrics._avg?.distance || 0),
       },
       topCouriers: courierStats,
     };
@@ -584,7 +584,7 @@ export class ReportsService {
         delivery_address->>'district' as delivery_district,
         COUNT(*) as usage_count,
         AVG(delivery_time) as avg_delivery_time,
-        AVG(price) as avg_price
+        AVG(total_price) as avg_price
       FROM orders
       WHERE company_id = ${companyId}
         AND created_at >= ${filter.startDate ? new Date(filter.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)}
@@ -648,10 +648,10 @@ export class ReportsService {
 
     return {
       summary: {
-        totalEarnings: totalEarnings._sum.courierEarning || 0,
-        totalDeliveries: totalEarnings._count,
-        avgEarningPerDelivery: totalEarnings._count > 0 
-          ? (totalEarnings._sum.courierEarning || 0) / totalEarnings._count 
+        totalEarnings: Number(totalEarnings._sum?.courierEarning || 0),
+        totalDeliveries: totalEarnings._count || 0,
+        avgEarningPerDelivery: (totalEarnings._count || 0) > 0 
+          ? Number(totalEarnings._sum?.courierEarning || 0) / (totalEarnings._count || 0) 
           : 0,
       },
       dailyTrend: dailyEarnings,
@@ -692,8 +692,8 @@ export class ReportsService {
       statistics: statistics.map(item => ({
         status: item.status,
         count: item._count,
-        totalEarnings: item._sum.courierEarning || 0,
-        avgDeliveryTime: item._avg.deliveryTime || 0,
+        totalEarnings: Number(item._sum?.courierEarning || 0),
+        avgDeliveryTime: item._avg?.deliveryTime || 0,
       })),
     };
   }
@@ -724,17 +724,17 @@ export class ReportsService {
   async getCourierCollectionsReport(courierId: number, filter: ReportFilterDto) {
     const collections = await this.prisma.$queryRaw`
       SELECT 
-        p.method as payment_method,
+        p.payment_method as payment_method,
         COUNT(*) as collection_count,
         SUM(p.amount) as total_collected
       FROM payments p
       JOIN orders o ON p.order_id = o.id
       WHERE o.courier_id = ${courierId}
         AND p.status = 'COMPLETED'
-        AND p.method = 'CASH'
+        AND p.payment_method = 'CASH'
         AND p.created_at >= ${filter.startDate ? new Date(filter.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)}
         AND p.created_at <= ${filter.endDate ? new Date(filter.endDate) : new Date()}
-      GROUP BY p.method
+      GROUP BY p.payment_method
     `;
 
     return {
