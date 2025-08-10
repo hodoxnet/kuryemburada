@@ -32,10 +32,10 @@
 - [x] NestJS projesi oluşturma
 - [x] PostgreSQL veritabanı kurulumu
 - [x] TypeORM/Prisma entegrasyonu ve migration sistemi
-- [ ] Redis kurulumu (basit cache için)
+- [x] Redis kurulumu (basit cache için)
 - [x] JWT authentication modülü
 - [x] Role-based access control (RBAC) sistemi
-- [ ] Error handling ve basit logging yapısı
+- [x] Error handling ve basit logging yapısı
 - [x] Swagger/OpenAPI dokümantasyonu
 
 ### Frontend Altyapı
@@ -396,10 +396,10 @@ kurye-operasyon/
 ## 📊 PROJE TAKVİMİ
 
 ### 1. Ay - Altyapı ve Hazırlık
-- [ ] Proje kurulumu ve konfigürasyonlar
-- [ ] Veritabanı tasarımı ve migration'lar
-- [ ] Authentication ve yetkilendirme sistemi
-- [ ] Temel API endpoint'leri
+- [x] Proje kurulumu ve konfigürasyonlar
+- [x] Veritabanı tasarımı ve migration'lar
+- [x] Authentication ve yetkilendirme sistemi
+- [x] Temel API endpoint'leri
 
 ### 2. Ay - Kayıt ve Yönetim Modülleri
 - [ ] Firma kayıt ve onay süreci
