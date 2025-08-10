@@ -1,0 +1,156 @@
+# Dependencies
+node_modules/
+*/node_modules/
+**/node_modules/
+
+# Production builds
+dist/
+*/dist/
+build/
+*/build/
+.next/
+*/.next/
+out/
+*/out/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+*/.env
+*/.env.*
+!*/.env.example
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+*.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+*/coverage/
+.nyc_output/
+*/.nyc_output/
+
+# Prisma
+*/prisma/migrations/
+backend/prisma/migrations/
+*/generated/
+backend/generated/
+
+# TypeScript
+*.tsbuildinfo
+*/*.tsbuildinfo
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.vercel
+
+# Cache
+.npm
+.eslintcache
+.stylelintcache
+*.cache
+.turbo
+
+# Misc
+*.pem
+*.key
+*.cert
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Uploads
+uploads/
+*/uploads/
+public/uploads/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Documentation builds
+docs/_build/
+docs/.vitepress/dist/
+
+# Package manager locks (optional - bazı takımlar bunları da ignore eder)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Monorepo tools
+.turbo
+.vercel
+.netlify
+
+# MacOS
+**/.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
