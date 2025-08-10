@@ -1,0 +1,311 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY
+  COURIER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  PENDING
+}
+
+enum CompanyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  INACTIVE
+}
+
+enum CourierStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  INACTIVE
+  BUSY
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  DELIVERED
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  BANK_TRANSFER
+}
+
+enum PackageType {
+  DOCUMENT
+  PACKAGE
+  FOOD
+  OTHER
+}
+
+enum PackageSize {
+  SMALL
+  MEDIUM
+  LARGE
+  EXTRA_LARGE
+}
+
+enum Urgency {
+  NORMAL
+  URGENT
+  VERY_URGENT
+}
+
+enum DocumentType {
+  TRADE_LICENSE
+  TAX_CERTIFICATE
+  KEP_ADDRESS
+  IDENTITY_CARD
+  DRIVER_LICENSE
+  VEHICLE_REGISTRATION
+  INSURANCE
+  ADDRESS_PROOF
+  CRIMINAL_RECORD
+  HEALTH_REPORT
+  TAX_PLATE
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_ACCEPTED
+  ORDER_REJECTED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  ACCOUNT_APPROVED
+  ACCOUNT_REJECTED
+  SYSTEM
+}
+
+enum PricingRuleType {
+  DISTANCE
+  ZONE
+  PACKAGE_TYPE
+  TIME_SLOT
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  role      UserRole
+  status    UserStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  company       Company?
+  courier       Courier?
+  notifications Notification[]
+}
+
+model Company {
+  id             String        @id @default(uuid())
+  userId         String        @unique
+  name           String
+  taxNumber      String?       @unique
+  taxOffice      String?
+  kepAddress     String?
+  phone          String
+  address        Json // {city, district, neighborhood, street, detail}
+  bankInfo       Json? // {bankName, iban, accountHolder}
+  contactPerson  Json? // {name, phone, email, title}
+  activityArea   String?
+  tradeLicenseNo String?
+  status         CompanyStatus @default(PENDING)
+  approvalReason String?
+  rejectionReason String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  documents Document[]
+}
+
+model Courier {
+  id                String        @id @default(uuid())
+  userId            String        @unique
+  tcNumber          String        @unique
+  fullName          String
+  birthDate         DateTime?
+  phone             String
+  licenseInfo       Json? // {class, issueDate, expiryDate, number}
+  vehicleInfo       Json? // {plate, brand, model, year, registrationNo}
+  insuranceInfo     Json? // {company, policyNo, expiryDate}
+  bankInfo          Json? // {bankName, iban, accountHolder}
+  emergencyContact  Json? // {name, phone, relationship}
+  status            CourierStatus @default(PENDING)
+  currentLocation   Json? // {lat, lng, lastUpdate}
+  isAvailable       Boolean       @default(true)
+  approvalReason    String?
+  rejectionReason   String?
+  rating            Float?        @default(0)
+  totalDeliveries   Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders    Order[]
+  documents Document[]
+}
+
+model Order {
+  id               String        @id @default(uuid())
+  orderNumber      String        @unique
+  companyId        String
+  courierId        String?
+  recipientName    String
+  recipientPhone   String
+  pickupAddress    Json // {lat, lng, address, detail}
+  deliveryAddress  Json // {lat, lng, address, detail}
+  packageType      PackageType
+  packageSize      PackageSize
+  urgency          Urgency       @default(NORMAL)
+  notes            String?
+  distance         Float? // in km
+  estimatedTime    Int? // in minutes
+  price            Float
+  commission       Float? // platform commission
+  courierEarning   Float? // courier earning after commission
+  status           OrderStatus   @default(PENDING)
+  acceptedAt       DateTime?
+  pickedUpAt       DateTime?
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
+  cancellationReason String?
+  deliveryProof    String? // photo url or signature
+  rating           Int? // 1-5
+  feedback         String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  courier  Courier?  @relation(fields: [courierId], references: [id])
+  payments Payment[]
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String
+  amount        Float
+  paymentMethod PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  paidAt        DateTime?
+  refundedAt    DateTime?
+  refundReason  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Document {
+  id          String         @id @default(uuid())
+  entityType  String // 'company' or 'courier'
+  entityId    String
+  documentType DocumentType
+  fileUrl     String
+  fileName    String
+  fileSize    Int? // in bytes
+  mimeType    String?
+  status      DocumentStatus @default(PENDING)
+  verifiedBy  String? // admin user id
+  verifiedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  company Company? @relation(fields: [entityId], references: [id], map: "Document_company_entityId_fkey")
+  courier Courier? @relation(fields: [entityId], references: [id], map: "Document_courier_entityId_fkey")
+}
+
+model PricingRule {
+  id         String          @id @default(uuid())
+  ruleType   PricingRuleType
+  name       String
+  description String?
+  parameters Json // flexible structure for different rule types
+  priority   Int             @default(0) // higher priority rules apply first
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  content   String
+  data      Json? // additional data
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+}
