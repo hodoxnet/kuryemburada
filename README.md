@@ -122,17 +122,19 @@ npm run test:cov
 
 ### ✅ Tamamlanan
 - [x] Git repository oluşturma
+- [x] Development ortamı hazırlığı
 - [x] NestJS backend altyapısı
-- [x] Prisma ORM entegrasyonu
-- [x] JWT authentication
+- [x] PostgreSQL veritabanı kurulumu (kuryemburadav1)
+- [x] Prisma ORM entegrasyonu ve migration sistemi
+- [x] JWT authentication modülü
+- [x] Role-based access control (RBAC) sistemi
 - [x] Swagger API dokümantasyonu
-- [x] Role-based access control
-- [x] Environment konfigürasyonu
+- [x] ESLint ve Prettier konfigürasyonu
+- [x] Environment değişkenleri yönetimi
 
 ### 🔄 Devam Eden
-- [ ] PostgreSQL veritabanı kurulumu
 - [ ] Redis cache entegrasyonu
-- [ ] Error handling ve logging
+- [ ] Error handling ve logging sistemi
 
 ### 📅 Planlanan
 - [ ] Frontend (Next.js) kurulumu

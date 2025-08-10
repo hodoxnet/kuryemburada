@@ -26,11 +26,11 @@
 
 ### Proje Kurulumu
 - [x] Git repository oluşturma
-- [ ] Development ortamı hazırlığı
+- [x] Development ortamı hazırlığı
 
 ### Backend Altyapı
 - [x] NestJS projesi oluşturma
-- [ ] PostgreSQL veritabanı kurulumu
+- [x] PostgreSQL veritabanı kurulumu
 - [x] TypeORM/Prisma entegrasyonu ve migration sistemi
 - [ ] Redis kurulumu (basit cache için)
 - [x] JWT authentication modülü
@@ -458,4 +458,4 @@ kurye-operasyon/
 *Bu doküman proje ilerledikçe güncellenecektir.*
 
 **Son Güncelleme:** 2025-08-10
-**Versiyon:** 1.0.0
+**Versiyon:** 1.0.1
