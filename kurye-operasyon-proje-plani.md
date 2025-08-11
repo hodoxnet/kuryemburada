@@ -80,40 +80,40 @@
 ### 2. KAYIT VE ONAY SÜREÇLERİ
 
 #### 2.1 Firma Kayıt Süreci
-- [ ] Firma kayıt formu
-  - [ ] Firma ticari unvanı
-  - [ ] Vergi numarası ve vergi dairesi
-  - [ ] KEP adresi
-  - [ ] Yetkili kişi bilgileri
-  - [ ] İletişim bilgileri (telefon, e-posta)
-  - [ ] Firma adresi (il, ilçe, mahalle, detaylı adres)
-  - [ ] Faaliyet alanı
-  - [ ] Ticaret sicil numarası
-  - [ ] İmza yetkilisi bilgileri
-  - [ ] Banka hesap bilgileri
-  - [ ] Sözleşme onayı
-- [ ] Belge yükleme sistemi
-- [ ] Admin onay workflow'u
+- [x] Firma kayıt formu
+  - [x] Firma ticari unvanı
+  - [x] Vergi numarası ve vergi dairesi
+  - [x] KEP adresi
+  - [x] Yetkili kişi bilgileri
+  - [x] İletişim bilgileri (telefon, e-posta)
+  - [x] Firma adresi (il, ilçe, mahalle, detaylı adres)
+  - [x] Faaliyet alanı
+  - [x] Ticaret sicil numarası
+  - [x] İmza yetkilisi bilgileri
+  - [x] Banka hesap bilgileri
+  - [x] Sözleşme onayı
+- [x] Belge yükleme sistemi
+- [x] Admin onay workflow'u
 - [ ] E-posta doğrulama
 
 #### 2.2 Kurye Kayıt Süreci
-- [ ] Kurye kayıt formu
-  - [ ] TC kimlik numarası
-  - [ ] Ad-soyad
-  - [ ] Doğum tarihi
-  - [ ] Ehliyet bilgileri (sınıf, alış tarihi, bitiş tarihi)
-  - [ ] Araç bilgileri (plaka, marka, model, ruhsat)
-  - [ ] Trafik sigortası bilgileri
-  - [ ] İletişim bilgileri
-  - [ ] E-devlet adres belgesi
-  - [ ] Adli sicil kaydı
-  - [ ] İkametgah belgesi
-  - [ ] Vergi levhası (şahıs şirketi ise)
-  - [ ] Banka hesap bilgileri
-  - [ ] Acil durumda aranacak kişi
-  - [ ] Sağlık raporu (opsiyonel)
-- [ ] Belge yükleme ve validasyon
-- [ ] Admin onay workflow'u
+- [x] Kurye kayıt formu
+  - [x] TC kimlik numarası
+  - [x] Ad-soyad
+  - [x] Doğum tarihi
+  - [x] Ehliyet bilgileri (sınıf, alış tarihi, bitiş tarihi)
+  - [x] Araç bilgileri (plaka, marka, model, ruhsat)
+  - [x] Trafik sigortası bilgileri
+  - [x] İletişim bilgileri
+  - [x] E-devlet adres belgesi
+  - [x] Adli sicil kaydı
+  - [x] İkametgah belgesi
+  - [x] Vergi levhası (şahıs şirketi ise)
+  - [x] Banka hesap bilgileri
+  - [x] Acil durumda aranacak kişi
+  - [x] Sağlık raporu (opsiyonel)
+- [x] Belge yükleme ve validasyon
+- [x] Admin onay workflow'u
 - [ ] SMS doğrulama
 
 ### 3. KURYE ÇAĞIRMA VE SİPARİŞ YÖNETİMİ
@@ -402,10 +402,10 @@ kurye-operasyon/
 - [x] Temel API endpoint'leri
 
 ### 2. Ay - Kayıt ve Yönetim Modülleri
-- [ ] Firma kayıt ve onay süreci
-- [ ] Kurye kayıt ve onay süreci
-- [ ] Admin paneli temel özellikleri
-- [ ] Belge yükleme sistemi
+- [x] Firma kayıt ve onay süreci
+- [x] Kurye kayıt ve onay süreci
+- [x] Admin paneli temel özellikleri
+- [x] Belge yükleme sistemi
 
 ### 3. Ay - Sipariş ve Teslimat
 - [ ] Sipariş oluşturma ve yönetim
@@ -457,5 +457,5 @@ kurye-operasyon/
 
 *Bu doküman proje ilerledikçe güncellenecektir.*
 
-**Son Güncelleme:** 2025-08-10
-**Versiyon:** 1.0.2
+**Son Güncelleme:** 2025-08-11
+**Versiyon:** 1.0.3
