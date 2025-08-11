@@ -4,6 +4,21 @@ interface User {
   id: number;
   email: string;
   role: 'SUPER_ADMIN' | 'COMPANY' | 'COURIER';
+  status?: string;
+  company?: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  courier?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    vehicleType: string;
+  };
 }
 
 interface AuthState {

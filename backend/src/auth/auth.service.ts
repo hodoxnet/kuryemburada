@@ -526,6 +526,23 @@ export class AuthService {
     }
   }
   
+  async getUserById(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        company: true,
+        courier: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const { password: _, ...result } = user;
+    return result;
+  }
+
   async logout(userId: string) {
     // Kullanıcının tüm aktif refresh token'larını revoke et
     await this.prisma.refreshToken.updateMany({

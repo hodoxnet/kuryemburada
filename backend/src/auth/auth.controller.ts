@@ -135,13 +135,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify JWT token and get user info' })
   async verify(@Request() req) {
+    const user = await this.authService.getUserById(req.user.id);
     return {
       valid: true,
-      user: {
-        id: req.user.id,
-        email: req.user.email,
-        role: req.user.role,
-      },
+      user,
     };
   }
 

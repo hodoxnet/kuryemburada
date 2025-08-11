@@ -6,10 +6,23 @@ const USER_KEY = 'user_info';
 export interface User {
   id: string;
   email: string;
-  name: string;
+  name?: string;
   role: 'SUPER_ADMIN' | 'COMPANY' | 'COURIER';
-  companyId?: string;
-  courierId?: string;
+  status?: string;
+  company?: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  courier?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    vehicleType: string;
+  };
 }
 
 export interface AuthTokens {

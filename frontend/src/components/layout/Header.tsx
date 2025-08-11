@@ -28,6 +28,38 @@ export function Header() {
     router.push('/login');
   };
 
+  // Kullanıcı adını role göre belirle
+  const getUserDisplayName = () => {
+    if (!user) return 'Kullanıcı';
+    
+    switch (user.role) {
+      case 'SUPER_ADMIN':
+        return 'Süper Admin';
+      case 'COMPANY':
+        return user.company?.name || user.email;
+      case 'COURIER':
+        return user.courier ? `${user.courier.firstName} ${user.courier.lastName}` : user.email;
+      default:
+        return user.email;
+    }
+  };
+
+  // Kullanıcı tipini belirle
+  const getUserType = () => {
+    if (!user) return '';
+    
+    switch (user.role) {
+      case 'SUPER_ADMIN':
+        return 'Yönetici';
+      case 'COMPANY':
+        return 'Firma';
+      case 'COURIER':
+        return 'Kurye';
+      default:
+        return '';
+    }
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background px-4 md:px-6">
       <div className="flex flex-1 items-center justify-between md:ml-64">
@@ -58,7 +90,15 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
-                {user?.email || 'Süper Admin'}
+                <div className="flex flex-col">
+                  <span className="font-medium">{getUserDisplayName()}</span>
+                  {getUserType() && (
+                    <span className="text-xs text-muted-foreground mt-1">{getUserType()}</span>
+                  )}
+                  {user?.email && user.role !== 'SUPER_ADMIN' && (
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                  )}
+                </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>

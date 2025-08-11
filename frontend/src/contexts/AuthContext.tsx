@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthService, User, AuthTokens } from '@/lib/auth';
+import { useAuthStore } from '@/stores/authStore';
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const setAuthStore = useAuthStore((state) => state.setAuth);
+  const clearAuthStore = useAuthStore((state) => state.clearAuth);
 
   useEffect(() => {
     // Eski localStorage verilerini temizle (migration)
@@ -50,9 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await response.json();
           // Token geçerli, kullanıcı bilgilerini güncelle
           setUser(data.user);
+          // AuthStore'a da kaydet
+          if (data.user) {
+            setAuthStore(data.user);
+          }
         } else {
           // Token geçersiz, temizle ve login'e yönlendir
           AuthService.clearAuth();
+          clearAuthStore();
           setUser(null);
           router.push('/login');
         }
@@ -60,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Token doğrulama hatası:', error);
         // Hata durumunda güvenlik için temizle
         AuthService.clearAuth();
+        clearAuthStore();
         setUser(null);
         router.push('/login');
       } finally {
@@ -96,6 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // State'i güncelle
       setUser(data.user);
+      
+      // AuthStore'a da kaydet
+      setAuthStore(data.user);
       
       // Rol bazlı yönlendirme
       switch (data.user.role) {
@@ -135,6 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       // Her durumda local storage'ı temizle
       AuthService.clearAuth();
+      clearAuthStore();
       setUser(null);
       router.push('/login');
     }
