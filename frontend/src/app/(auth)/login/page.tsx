@@ -8,14 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, User, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/lib/api-client";
-import { useAuthStore } from "@/stores/authStore";
-import { handleApiError } from "@/lib/api-client";
-import { AuthService } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -33,28 +30,11 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      const response = await api.post('/auth/login', formData);
-      const { user, accessToken, refreshToken } = response.data;
-      
-      // AuthService ile cookie'leri kaydet
-      AuthService.setTokens({ accessToken, refreshToken });
-      AuthService.setUser(user);
-      
-      // Store'u güncelle (sadece user bilgisi)
-      setAuth(user);
-      
-      // Role göre yönlendir
-      if (user.role === 'SUPER_ADMIN') {
-        router.push('/admin');
-      } else if (user.role === 'COMPANY') {
-        router.push('/company/dashboard');
-      } else if (user.role === 'COURIER') {
-        router.push('/courier/dashboard');
-      }
-      
+      await login(formData.email, formData.password);
       toast.success('Giriş başarılı!');
+      // AuthContext login fonksiyonu içinde yönlendirme yapılıyor
     } catch (error: any) {
-      toast.error(handleApiError(error));
+      toast.error("Giriş başarısız");
     } finally {
       setLoading(false);
     }

@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Rol bazlı yönlendirme
       switch (data.user.role) {
         case 'SUPER_ADMIN':
-          router.push('/admin/dashboard');
+          router.push('/admin');
           break;
         case 'COMPANY':
           router.push('/company/dashboard');
