@@ -120,4 +120,10 @@ export const courierService = {
     const response = await api.patch(`/couriers/${courierId}/documents/${documentId}/reject`, { reason });
     return response.data;
   },
+
+  // Kuryeyi sil
+  deleteCourier: async (id: string) => {
+    const response = await api.delete(`/couriers/${id}`);
+    return response.data;
+  },
 };

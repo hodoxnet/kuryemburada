@@ -2,6 +2,7 @@ import {
   Controller, 
   Get, 
   Patch, 
+  Delete,
   Param, 
   Body, 
   Query, 
@@ -85,5 +86,14 @@ export class CompanyController {
     @Body() updateStatusDto: UpdateCompanyStatusDto,
   ) {
     return this.companyService.updateStatus(id, updateStatusDto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Firmayı sil' })
+  @ApiResponse({ status: 200, description: 'Firma başarıyla silindi' })
+  @ApiResponse({ status: 404, description: 'Firma bulunamadı' })
+  async delete(@Param('id') id: string) {
+    return this.companyService.delete(id);
   }
 }

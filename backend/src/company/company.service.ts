@@ -148,4 +148,58 @@ export class CompanyService {
       active,
     };
   }
+
+  async delete(id: string) {
+    const company = await this.findOne(id);
+
+    // Transaction ile firma ve ilişkili verileri sil
+    await this.prisma.$transaction(async (tx) => {
+      // Önce ilişkili belgeleri sil
+      await tx.document.deleteMany({
+        where: { companyId: id },
+      });
+
+      // Önce ilişkili siparişleri kontrol et
+      const activeOrders = await tx.order.count({
+        where: { 
+          companyId: id,
+          status: {
+            in: ['PENDING', 'ACCEPTED', 'IN_PROGRESS']
+          }
+        },
+      });
+
+      if (activeOrders > 0) {
+        throw new ForbiddenException('Aktif siparişi olan firma silinemez');
+      }
+
+      // Bildirimleri sil
+      await tx.notification.deleteMany({
+        where: { userId: company.userId },
+      });
+
+      // Refresh tokenları sil
+      await tx.refreshToken.deleteMany({
+        where: { userId: company.userId },
+      });
+
+      // Firmayı sil
+      await tx.company.delete({
+        where: { id },
+      });
+
+      // Kullanıcıyı sil
+      await tx.user.delete({
+        where: { id: company.userId },
+      });
+    });
+
+    this.logger.info('Firma silindi', {
+      companyId: id,
+      userId: company.userId,
+      name: company.name,
+    });
+
+    return { message: 'Firma başarıyla silindi' };
+  }
 }

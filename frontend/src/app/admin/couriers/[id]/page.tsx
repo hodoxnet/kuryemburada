@@ -26,7 +26,8 @@ import {
   Package,
   IdCard,
   UserCheck,
-  Cake
+  Cake,
+  Trash2
 } from "lucide-react";
 import { courierService, Courier } from "@/lib/api/courier.service";
 import { handleApiError, api } from "@/lib/api-client";
@@ -52,7 +53,7 @@ export default function CourierDetailPage() {
   const [loading, setLoading] = useState(true);
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
-    action: "" as "approve" | "reject" | "",
+    action: "" as "approve" | "reject" | "delete" | "",
   });
   const [rejectDialog, setRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -123,6 +124,18 @@ export default function CourierDetailPage() {
     }
   };
 
+  // Sil
+  const handleDelete = async () => {
+    try {
+      await courierService.deleteCourier(courierId);
+      toast.success("Kurye başarıyla silindi");
+      router.push("/admin/couriers");
+    } catch (error) {
+      toast.error(handleApiError(error));
+    }
+    setConfirmDialog({ open: false, action: "" });
+  };
+
   // Belge onaylama
   const handleApproveDocument = async (documentId: string) => {
     try {
@@ -173,25 +186,36 @@ export default function CourierDetailPage() {
           </div>
         </div>
         
-        {courier.status === "PENDING" && (
-          <div className="flex gap-2">
-            <Button
-              variant="default"
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => setConfirmDialog({ open: true, action: "approve" })}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Onayla
-            </Button>
+        <div className="flex gap-2">
+          {courier.status === "PENDING" && (
+            <>
+              <Button
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => setConfirmDialog({ open: true, action: "approve" })}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Onayla
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setRejectDialog(true)}
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                Reddet
+              </Button>
+            </>
+          )}
+          {(courier.status === "APPROVED" || courier.status === "REJECTED") && (
             <Button
               variant="destructive"
-              onClick={() => setRejectDialog(true)}
+              onClick={() => setConfirmDialog({ open: true, action: "delete" })}
             >
-              <XCircle className="mr-2 h-4 w-4" />
-              Reddet
+              <Trash2 className="mr-2 h-4 w-4" />
+              Kuryeyi Sil
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Durum Kartı */}
@@ -542,6 +566,17 @@ export default function CourierDetailPage() {
         description={`${courier.fullName} isimli kuryenin başvurusunu onaylamak istediğinizden emin misiniz?`}
         onConfirm={handleApprove}
         confirmText="Onayla"
+        cancelText="İptal"
+      />
+
+      {/* Silme Dialog */}
+      <ConfirmDialog
+        open={confirmDialog.open && confirmDialog.action === "delete"}
+        onOpenChange={(open) => setConfirmDialog({ open, action: "" })}
+        title="Kuryeyi Sil"
+        description={`${courier.fullName} isimli kuryeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+        onConfirm={handleDelete}
+        confirmText="Evet, Sil"
         cancelText="İptal"
       />
 

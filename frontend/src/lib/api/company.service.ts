@@ -82,4 +82,10 @@ export const companyService = {
     }>('/companies/statistics');
     return response.data;
   },
+
+  // Firmayı sil
+  deleteCompany: async (id: string) => {
+    const response = await api.delete(`/companies/${id}`);
+    return response.data;
+  },
 };

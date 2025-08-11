@@ -174,4 +174,58 @@ export class CourierService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async delete(id: string) {
+    const courier = await this.findOne(id);
+
+    // Transaction ile kurye ve ilişkili verileri sil
+    await this.prisma.$transaction(async (tx) => {
+      // Önce ilişkili belgeleri sil
+      await tx.document.deleteMany({
+        where: { courierId: id },
+      });
+
+      // Önce ilişkili siparişleri kontrol et
+      const activeOrders = await tx.order.count({
+        where: { 
+          courierId: id,
+          status: {
+            in: ['PENDING', 'ACCEPTED', 'IN_PROGRESS']
+          }
+        },
+      });
+
+      if (activeOrders > 0) {
+        throw new ForbiddenException('Aktif siparişi olan kurye silinemez');
+      }
+
+      // Bildirimleri sil
+      await tx.notification.deleteMany({
+        where: { userId: courier.userId },
+      });
+
+      // Refresh tokenları sil
+      await tx.refreshToken.deleteMany({
+        where: { userId: courier.userId },
+      });
+
+      // Kuryeyi sil
+      await tx.courier.delete({
+        where: { id },
+      });
+
+      // Kullanıcıyı sil
+      await tx.user.delete({
+        where: { id: courier.userId },
+      });
+    });
+
+    this.logger.info('Kurye silindi', {
+      courierId: id,
+      userId: courier.userId,
+      fullName: courier.fullName,
+    });
+
+    return { message: 'Kurye başarıyla silindi' };
+  }
 }

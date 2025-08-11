@@ -2,6 +2,7 @@ import {
   Controller, 
   Get, 
   Patch, 
+  Delete,
   Param, 
   Body, 
   Query, 
@@ -94,5 +95,14 @@ export class CourierController {
     @Body() updateStatusDto: UpdateCourierStatusDto,
   ) {
     return this.courierService.updateStatus(id, updateStatusDto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Kuryeyi sil' })
+  @ApiResponse({ status: 200, description: 'Kurye başarıyla silindi' })
+  @ApiResponse({ status: 404, description: 'Kurye bulunamadı' })
+  async delete(@Param('id') id: string) {
+    return this.courierService.delete(id);
   }
 }
