@@ -83,6 +83,11 @@ enum Urgency {
   VERY_URGENT
 }
 
+enum DeliveryType {
+  STANDARD
+  EXPRESS
+}
+
 enum DocumentType {
   TRADE_LICENSE
   TAX_CERTIFICATE
@@ -145,6 +150,7 @@ model Company {
   contactPerson  Json? // {name, phone, email, title}
   activityArea   String?
   tradeLicenseNo String?
+  defaultPackageType PackageType? // Firma varsayılan gönderi tipi
   status         CompanyStatus @default(PENDING)
   approvalReason String?
   rejectionReason String?
@@ -196,6 +202,8 @@ model Order {
   packageType      PackageType
   packageSize      PackageSize
   urgency          Urgency       @default(NORMAL)
+  deliveryType     DeliveryType  @default(STANDARD)
+  scheduledPickupTime DateTime?  // İleri tarih/saat planlama için
   notes            String?
   distance         Float? // in km
   estimatedTime    Int? // in minutes

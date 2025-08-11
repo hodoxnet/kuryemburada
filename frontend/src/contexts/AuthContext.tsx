@@ -103,10 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           router.push('/admin');
           break;
         case 'COMPANY':
-          router.push('/company/dashboard');
+          router.push('/company');
           break;
         case 'COURIER':
-          router.push('/courier/dashboard');
+          router.push('/courier');
           break;
         default:
           router.push('/dashboard');

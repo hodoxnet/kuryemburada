@@ -18,7 +18,7 @@ import {
 const companyMenuItems = [
   {
     title: "Dashboard",
-    href: "/company/dashboard",
+    href: "/company",
     icon: Home,
   },
   {
