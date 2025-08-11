@@ -44,7 +44,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar title="Admin Panel" />
       <Header />
       <main className="p-4 md:p-6 md:ml-64">
         {children}

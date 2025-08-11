@@ -11,9 +11,7 @@ import {
   Package, 
   FileText, 
   CreditCard, 
-  BarChart3, 
   Settings, 
-  MapPin,
   Clock
 } from "lucide-react";
 
@@ -34,19 +32,9 @@ const courierMenuItems = [
     icon: Clock,
   },
   {
-    title: "Harita",
-    href: "/courier/map",
-    icon: MapPin,
-  },
-  {
     title: "Kazançlarım",
     href: "/courier/earnings",
     icon: CreditCard,
-  },
-  {
-    title: "Raporlar",
-    href: "/courier/reports",
-    icon: BarChart3,
   },
   {
     title: "Belgelerim",

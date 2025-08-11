@@ -7,20 +7,19 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { 
+  Home,
   Building2, 
   Package, 
   FileText, 
-  CreditCard, 
   BarChart3, 
-  Settings, 
-  Users 
+  Settings
 } from "lucide-react";
 
 const companyMenuItems = [
   {
     title: "Dashboard",
     href: "/company/dashboard",
-    icon: BarChart3,
+    icon: Home,
   },
   {
     title: "Siparişler",
@@ -28,19 +27,14 @@ const companyMenuItems = [
     icon: Package,
   },
   {
-    title: "Ödemeler",
-    href: "/company/payments",
-    icon: CreditCard,
+    title: "Firma Bilgileri",
+    href: "/company/profile",
+    icon: Building2,
   },
   {
     title: "Raporlar",
     href: "/company/reports",
-    icon: FileText,
-  },
-  {
-    title: "Kurye Takip",
-    href: "/company/couriers",
-    icon: Users,
+    icon: BarChart3,
   },
   {
     title: "Ayarlar",

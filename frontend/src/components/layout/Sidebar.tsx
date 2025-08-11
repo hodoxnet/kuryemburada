@@ -24,7 +24,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { AuthService } from "@/lib/auth";
 
-const menuItems = [
+const defaultMenuItems = [
   {
     title: "Dashboard",
     href: "/admin",
@@ -67,11 +67,31 @@ const menuItems = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  title?: string;
+  menuItems?: Array<{
+    title: string;
+    href: string;
+    icon: any;
+  }>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function Sidebar({ 
+  title = "Kurye Admin", 
+  menuItems = defaultMenuItems,
+  open,
+  onOpenChange 
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Props'tan gelen open değeri varsa onu kullan, yoksa local state kullan
+  const isOpen = open !== undefined ? open : isMobileOpen;
+  const setIsOpen = onOpenChange || setIsMobileOpen;
 
   const handleLogout = () => {
     clearAuth();
@@ -82,27 +102,29 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden fixed top-4 left-4 z-50"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+      {/* Mobile menu button - eğer onOpenChange prop'u yoksa göster */}
+      {!onOpenChange && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden fixed top-4 left-4 z-50"
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+        >
+          {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      )}
 
       {/* Sidebar */}
       <aside
         className={cn(
           "fixed left-0 top-0 z-40 h-screen w-64 transition-transform bg-background border-r",
-          isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center justify-center border-b px-6">
-            <h1 className="text-xl font-bold">Kurye Admin</h1>
+            <h1 className="text-xl font-bold">{title}</h1>
           </div>
 
           {/* Navigation */}
