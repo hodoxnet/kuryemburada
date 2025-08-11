@@ -131,13 +131,18 @@ npm run test:cov
 - [x] Swagger API dokümantasyonu
 - [x] ESLint ve Prettier konfigürasyonu
 - [x] Environment değişkenleri yönetimi
+- [x] Redis cache entegrasyonu (temel seviye)
+- [x] Error handling ve Winston logging sistemi
+- [x] Next.js frontend kurulumu
+- [x] Tailwind CSS ve shadcn/ui konfigürasyonu
+- [x] Authentication middleware ve protected routes
+- [x] API client yapısı (Axios)
+- [x] Zustand state management
 
 ### 🔄 Devam Eden
-- [ ] Redis cache entegrasyonu
-- [ ] Error handling ve logging sistemi
+- [ ] Redis cache optimizasyonu ve gelişmiş kullanım
 
 ### 📅 Planlanan
-- [ ] Frontend (Next.js) kurulumu
 - [ ] Firma kayıt ve yönetim modülü
 - [ ] Kurye kayıt ve yönetim modülü
 - [ ] Sipariş yönetimi

@@ -119,13 +119,6 @@ enum NotificationType {
   SYSTEM
 }
 
-enum PricingRuleType {
-  DISTANCE
-  ZONE
-  PACKAGE_TYPE
-  TIME_SLOT
-}
-
 model User {
   id        String     @id @default(uuid())
   email     String     @unique
@@ -196,6 +189,7 @@ model Order {
   orderNumber      String        @unique
   companyId        String
   courierId        String?
+  pricingRuleId    String?
   recipientName    String
   recipientPhone   String
   pickupAddress    Json // {lat, lng, address, detail}
@@ -221,9 +215,10 @@ model Order {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  company  Company   @relation(fields: [companyId], references: [id])
-  courier  Courier?  @relation(fields: [courierId], references: [id])
-  payments Payment[]
+  company     Company      @relation(fields: [companyId], references: [id])
+  courier     Courier?     @relation(fields: [courierId], references: [id])
+  pricingRule PricingRule? @relation(fields: [pricingRuleId], references: [id])
+  payments    Payment[]
 }
 
 model Payment {
@@ -245,8 +240,11 @@ model Payment {
 model Document {
   id          String         @id @default(uuid())
   entityType  String // 'company' or 'courier'
-  entityId    String
-  documentType DocumentType
+  entityId    String?
+  companyId   String?
+  courierId   String?
+  type        DocumentType
+  documentType DocumentType?
   fileUrl     String
   fileName    String
   fileSize    Int? // in bytes
@@ -258,28 +256,34 @@ model Document {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  company Company? @relation(fields: [entityId], references: [id], map: "Document_company_entityId_fkey")
-  courier Courier? @relation(fields: [entityId], references: [id], map: "Document_courier_entityId_fkey")
+  company Company? @relation(fields: [companyId], references: [id])
+  courier Courier? @relation(fields: [courierId], references: [id])
 }
 
 model PricingRule {
-  id         String          @id @default(uuid())
-  ruleType   PricingRuleType
-  name       String
-  description String?
-  parameters Json // flexible structure for different rule types
-  priority   Int             @default(0) // higher priority rules apply first
-  isActive   Boolean         @default(true)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id                String   @id @default(uuid())
+  name              String   @unique
+  description       String?
+  basePrice         Float    @default(0)
+  pricePerKm        Float    @default(0)
+  pricePerMinute    Float    @default(0)
+  minimumPrice      Float    @default(0)
+  rushHourMultiplier Float?  @default(1)
+  weatherMultiplier Float?   @default(1)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  orders            Order[]
 }
 
 model Notification {
   id        String           @id @default(uuid())
   userId    String
-  type      NotificationType
+  type      NotificationType @default(SYSTEM)
   title     String
-  content   String
+  message   String
+  content   String?
   data      Json? // additional data
   isRead    Boolean          @default(false)
   readAt    DateTime?

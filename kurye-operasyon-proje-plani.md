@@ -39,11 +39,11 @@
 - [x] Swagger/OpenAPI dokümantasyonu
 
 ### Frontend Altyapı
-- [ ] Next.js projesi kurulumu
-- [ ] Tailwind CSS ve shadcn/ui konfigürasyonu
-- [ ] Authentication middleware ve protected routes
-- [ ] API client yapısı (Axios wrapper)
-- [ ] Global state management kurulumu (Zustand)
+- [x] Next.js projesi kurulumu
+- [x] Tailwind CSS ve shadcn/ui konfigürasyonu
+- [x] Authentication middleware ve protected routes
+- [x] API client yapısı (Axios wrapper)
+- [x] Global state management kurulumu (Zustand)
 
 ### Geliştirme Ortamı
 - [x] ESLint ve Prettier konfigürasyonu
@@ -56,13 +56,13 @@
 ### 1. KULLANICI ROLLERİ VE YETKİLERİ
 
 #### 1.1 Süper Admin
-- [ ] Firma başvuru onay/red modülü
-- [ ] Kurye başvuru onay/red modülü
-- [ ] Fiyatlandırma yönetimi paneli
-- [ ] Sistem parametreleri yönetimi
-- [ ] Tüm raporlara erişim yetkisi
-- [ ] Ödeme onayları modülü
-- [ ] Kullanıcı yönetimi (CRUD)
+- [x] Firma başvuru onay/red modülü (Backend API ✅)
+- [x] Kurye başvuru onay/red modülü (Backend API ✅)
+- [x] Fiyatlandırma yönetimi paneli (Backend API ✅)
+- [x] Sistem parametreleri yönetimi (Backend API ✅)
+- [x] Tüm raporlara erişim yetkisi (Backend API ✅)
+- [x] Ödeme onayları modülü (Backend API ✅)
+- [x] Kullanıcı yönetimi (CRUD) (Backend API ✅)
 
 #### 1.2 Firma
 - [ ] Kurye çağırma arayüzü
@@ -458,4 +458,4 @@ kurye-operasyon/
 *Bu doküman proje ilerledikçe güncellenecektir.*
 
 **Son Güncelleme:** 2025-08-10
-**Versiyon:** 1.0.1
+**Versiyon:** 1.0.2

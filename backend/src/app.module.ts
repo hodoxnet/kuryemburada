@@ -8,6 +8,14 @@ import { AuthModule } from './auth/auth.module';
 import { AppCacheModule } from './cache/cache.module';
 import { AllExceptionsFilter } from './common/exceptions/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { CompanyModule } from './company/company.module';
+import { CourierModule } from './courier/courier.module';
+import { PricingModule } from './pricing/pricing.module';
+import { SettingsModule } from './settings/settings.module';
+import { ReportsModule } from './reports/reports.module';
+import { PaymentsModule } from './payments/payments.module';
+import { UsersModule } from './users/users.module';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -15,9 +23,17 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    LoggerModule,
     PrismaModule,
     AuthModule,
     AppCacheModule,
+    CompanyModule,
+    CourierModule,
+    PricingModule,
+    SettingsModule,
+    ReportsModule,
+    PaymentsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
