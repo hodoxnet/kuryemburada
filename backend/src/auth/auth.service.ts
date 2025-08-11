@@ -139,6 +139,162 @@ export class AuthService {
     return result;
   }
 
+  async registerCourier(data: any) {
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    // TC numarası ile kurye kontrolü
+    const existingCourier = await this.prisma.courier.findUnique({
+      where: { tcNumber: data.tcNumber },
+    });
+
+    if (existingCourier) {
+      throw new BadRequestException('TC number already registered');
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    // Transaction ile kullanıcı ve kurye oluştur
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Kullanıcı oluştur
+      const user = await tx.user.create({
+        data: {
+          email: data.email,
+          password: hashedPassword,
+          role: UserRole.COURIER,
+          status: UserStatus.PENDING,
+        },
+      });
+
+      // Kurye profili oluştur
+      const courier = await tx.courier.create({
+        data: {
+          userId: user.id,
+          tcNumber: data.tcNumber,
+          fullName: data.fullName,
+          phone: data.phone,
+          birthDate: data.birthDate ? new Date(data.birthDate) : null,
+          licenseInfo: data.licenseInfo || {},
+          vehicleInfo: data.vehicleInfo || {},
+          bankInfo: data.bankInfo || {},
+          emergencyContact: data.emergencyContact || {},
+          status: 'PENDING',
+        },
+      });
+
+      // Adres bilgisi varsa ekle
+      if (data.address) {
+        await tx.notification.create({
+          data: {
+            userId: user.id,
+            title: 'Başvurunuz Alındı',
+            message: 'Kurye başvurunuz başarıyla alındı. En kısa sürede size dönüş yapacağız.',
+            type: 'SYSTEM',
+          },
+        });
+      }
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+        },
+        courier,
+      };
+    });
+
+    return result;
+  }
+
+  async registerCompany(data: any) {
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.email },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    // Vergi numarası ile firma kontrolü
+    const existingCompany = await this.prisma.company.findUnique({
+      where: { taxNumber: data.taxNumber },
+    });
+
+    if (existingCompany) {
+      throw new BadRequestException('Tax number already registered');
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    // Transaction ile kullanıcı ve firma oluştur
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Kullanıcı oluştur
+      const user = await tx.user.create({
+        data: {
+          email: data.email,
+          password: hashedPassword,
+          role: UserRole.COMPANY,
+          status: UserStatus.PENDING,
+        },
+      });
+
+      // Firma profili oluştur
+      const company = await tx.company.create({
+        data: {
+          userId: user.id,
+          name: data.name,
+          taxNumber: data.taxNumber,
+          taxOffice: data.taxOffice,
+          phone: data.phone,
+          address: data.address,
+          kepAddress: data.kepAddress,
+          tradeLicenseNo: data.tradeLicenseNo,
+          activityArea: data.activityArea,
+          bankInfo: data.bankInfo || {},
+          contactPerson: data.contactPerson,
+          status: 'PENDING',
+        },
+      });
+
+      // Bildirim oluştur
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          title: 'Başvurunuz Alındı',
+          message: 'Firma başvurunuz başarıyla alındı. En kısa sürede size dönüş yapacağız.',
+          type: 'SYSTEM',
+        },
+      });
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+        },
+        company,
+      };
+    });
+
+    return result;
+  }
+
   async changePassword(
     userId: string,
     oldPassword: string,

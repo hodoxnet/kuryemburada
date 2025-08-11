@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { applicationService, CourierApplicationData } from "@/lib/api/application.service";
 
 interface FormData {
   // Kişisel Bilgiler
@@ -228,37 +229,73 @@ export default function CourierApplicationPage() {
     setIsSubmitting(true);
     
     try {
-      // Form verilerini hazırla
-      const submitData = new FormData();
+      // API için veri hazırla
+      const applicationData: CourierApplicationData = {
+        email: formData.email,
+        password: formData.password,
+        tcNumber: formData.tcNumber,
+        fullName: formData.fullName,
+        phone: formData.phone,
+        birthDate: formData.birthDate || undefined,
+        address: {
+          city: formData.city,
+          district: formData.district,
+          neighborhood: formData.address.split(',')[0] || 'Merkez',
+          street: formData.address.split(',')[1] || formData.address,
+          detail: formData.address,
+        },
+        hasVehicle: formData.hasVehicle,
+      };
+
+      // Opsiyonel alanları ekle
+      if (formData.licenseClass && formData.licenseNumber) {
+        applicationData.licenseInfo = {
+          class: formData.licenseClass,
+          number: formData.licenseNumber,
+          issueDate: formData.licenseIssueDate || '',
+          expiryDate: formData.licenseExpiryDate || '',
+        };
+      }
+
+      if (formData.hasVehicle && formData.vehiclePlate) {
+        applicationData.vehicleInfo = {
+          plate: formData.vehiclePlate,
+          brand: formData.vehicleBrand,
+          model: formData.vehicleModel,
+          year: formData.vehicleYear,
+        };
+      }
+
+      if (formData.bankName && formData.iban) {
+        applicationData.bankInfo = {
+          bankName: formData.bankName,
+          iban: formData.iban,
+          accountHolder: formData.fullName,
+        };
+      }
+
+      if (formData.emergencyName && formData.emergencyPhone) {
+        applicationData.emergencyContact = {
+          name: formData.emergencyName,
+          phone: formData.emergencyPhone,
+          relationship: formData.emergencyRelation,
+        };
+      }
+
+      // Başvuruyu gönder
+      const response = await applicationService.submitCourierApplication(applicationData);
       
-      // Tüm text alanları ekle
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && typeof value !== 'object') {
-          submitData.append(key, String(value));
-        }
-      });
-      
-      // Dosyaları ekle
-      if (formData.identityFront) submitData.append('identityFront', formData.identityFront);
-      if (formData.identityBack) submitData.append('identityBack', formData.identityBack);
-      if (formData.driverLicense) submitData.append('driverLicense', formData.driverLicense);
-      if (formData.vehicleRegistration) submitData.append('vehicleRegistration', formData.vehicleRegistration);
-      if (formData.criminalRecord) submitData.append('criminalRecord', formData.criminalRecord);
-      
-      // API çağrısı yapılacak
-      // const response = await fetch('/api/apply/courier', {
-      //   method: 'POST',
-      //   body: submitData
-      // });
-      
-      // Simülasyon için
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Belgeleri yükle (eğer user ID döndüyse)
+      if (response.user?.id && formData.identityFront) {
+        // Belge yükleme işlemleri backend hazır olduğunda eklenecek
+        // await applicationService.uploadDocument(formData.identityFront, 'IDENTITY_CARD_FRONT', response.user.id);
+      }
       
       toast.success("Başvurunuz başarıyla alındı! En kısa sürede size dönüş yapacağız.");
       router.push("/apply/success");
       
-    } catch (error) {
-      toast.error("Başvuru sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+    } catch (error: any) {
+      toast.error(error.message || "Başvuru sırasında bir hata oluştu. Lütfen tekrar deneyin.");
     } finally {
       setIsSubmitting(false);
     }

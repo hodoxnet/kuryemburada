@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { applicationService, CompanyApplicationData } from "@/lib/api/application.service";
 
 interface CompanyFormData {
   // Firma Bilgileri
@@ -264,35 +265,81 @@ export default function CompanyApplicationPage() {
     setIsSubmitting(true);
     
     try {
-      // Form verilerini hazırla
-      const submitData = new FormData();
+      // API için veri hazırla
+      const applicationData: CompanyApplicationData = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.companyName,
+        taxNumber: formData.taxNumber,
+        taxOffice: formData.taxOffice,
+        phone: formData.companyPhone,
+        companyEmail: formData.companyEmail,
+        address: {
+          city: formData.city,
+          district: formData.district,
+          neighborhood: formData.address.split(',')[0] || 'Merkez',
+          street: formData.address.split(',')[1] || formData.address,
+          detail: formData.address,
+        },
+        contactPerson: {
+          name: formData.contactName,
+          phone: formData.contactPhone,
+          email: formData.contactEmail,
+          title: formData.contactTitle,
+        },
+      };
+
+      // Opsiyonel alanları ekle
+      if (formData.kepAddress) {
+        applicationData.kepAddress = formData.kepAddress;
+      }
+
+      if (formData.tradeLicenseNo) {
+        applicationData.tradeLicenseNo = formData.tradeLicenseNo;
+      }
+
+      if (formData.activityArea) {
+        applicationData.activityArea = formData.activityArea;
+      }
+
+      if (formData.website) {
+        applicationData.website = formData.website;
+      }
+
+      if (formData.bankName && formData.iban) {
+        applicationData.bankInfo = {
+          bankName: formData.bankName,
+          iban: formData.iban,
+          accountHolder: formData.accountHolder,
+        };
+      }
+
+      if (formData.employeeCount) {
+        applicationData.employeeCount = formData.employeeCount;
+      }
+
+      if (formData.monthlyShipmentVolume) {
+        applicationData.monthlyShipmentVolume = formData.monthlyShipmentVolume;
+      }
+
+      if (formData.currentLogisticsProvider) {
+        applicationData.currentLogisticsProvider = formData.currentLogisticsProvider;
+      }
+
+      // Başvuruyu gönder
+      const response = await applicationService.submitCompanyApplication(applicationData);
       
-      // Tüm text alanları ekle
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && typeof value !== 'object') {
-          submitData.append(key, String(value));
-        }
-      });
-      
-      // Dosyaları ekle
-      if (formData.taxCertificate) submitData.append('taxCertificate', formData.taxCertificate);
-      if (formData.tradeLicense) submitData.append('tradeLicense', formData.tradeLicense);
-      if (formData.signatureCircular) submitData.append('signatureCircular', formData.signatureCircular);
-      
-      // API çağrısı yapılacak
-      // const response = await fetch('/api/apply/company', {
-      //   method: 'POST',
-      //   body: submitData
-      // });
-      
-      // Simülasyon için
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Belgeleri yükle (eğer user ID döndüyse)
+      if (response.user?.id && formData.taxCertificate) {
+        // Belge yükleme işlemleri backend hazır olduğunda eklenecek
+        // await applicationService.uploadDocument(formData.taxCertificate, 'TAX_CERTIFICATE', response.user.id);
+      }
       
       toast.success("Başvurunuz başarıyla alındı! En kısa sürede size dönüş yapacağız.");
       router.push("/apply/success");
       
-    } catch (error) {
-      toast.error("Başvuru sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+    } catch (error: any) {
+      toast.error(error.message || "Başvuru sırasında bir hata oluştu. Lütfen tekrar deneyin.");
     } finally {
       setIsSubmitting(false);
     }

@@ -7,10 +7,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserRole } from '@prisma/client';
+import { RegisterCourierDto } from './dto/register-courier.dto';
+import { RegisterCompanyDto } from './dto/register-company.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -39,6 +41,20 @@ export class AuthController {
     },
   ) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('register/courier')
+  @ApiOperation({ summary: 'Courier registration' })
+  @ApiBody({ type: RegisterCourierDto })
+  async registerCourier(@Body() registerCourierDto: RegisterCourierDto) {
+    return this.authService.registerCourier(registerCourierDto);
+  }
+
+  @Post('register/company')
+  @ApiOperation({ summary: 'Company registration' })
+  @ApiBody({ type: RegisterCompanyDto })
+  async registerCompany(@Body() registerCompanyDto: RegisterCompanyDto) {
+    return this.authService.registerCompany(registerCompanyDto);
   }
 
   @Post('change-password')
