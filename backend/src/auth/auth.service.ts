@@ -2,11 +2,13 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { UserRole, UserStatus } from '@prisma/client';
 
 @Injectable()
@@ -45,6 +47,14 @@ export class AuthService {
     return result;
   }
 
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private generateTokenFamily(): string {
+    return crypto.randomBytes(16).toString('hex');
+  }
+
   async login(user: any) {
     const payload = {
       email: user.email,
@@ -52,8 +62,44 @@ export class AuthService {
       role: user.role,
     };
 
+    const accessToken = this.jwtService.sign(payload);
+    
+    // Refresh token oluştur
+    const refreshTokenValue = crypto.randomBytes(32).toString('hex');
+    const refreshTokenJwt = this.jwtService.sign(
+      { ...payload, tokenValue: refreshTokenValue },
+      { expiresIn: '7d' },
+    );
+    
+    // Token family oluştur (ilk login için)
+    const tokenFamily = this.generateTokenFamily();
+    
+    // Eski aktif refresh token'ları revoke et
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId: user.id,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'new_login',
+      },
+    });
+    
+    // Yeni refresh token'ı veritabanına kaydet
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: this.hashToken(refreshTokenValue),
+        family: tokenFamily,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 gün
+      },
+    });
+
     return {
-      access_token: this.jwtService.sign(payload),
+      accessToken,
+      refreshToken: refreshTokenJwt,
       user: {
         id: user.id,
         email: user.email,
@@ -117,7 +163,131 @@ export class AuthService {
       where: { id: userId },
       data: { password: hashedPassword },
     });
+    
+    // Şifre değişiminde tüm refresh token'ları revoke et
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'password_change',
+      },
+    });
 
     return { message: 'Password changed successfully' };
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      const tokenHash = this.hashToken(payload.tokenValue);
+      
+      // Atomic transaction ile race condition'ı önle
+      return await this.prisma.$transaction(async (tx) => {
+        // Token'ı veritabanında bul ve kilitle (SELECT FOR UPDATE)
+        const storedToken = await tx.refreshToken.findUnique({
+          where: { tokenHash },
+          include: { user: true },
+        });
+        
+        if (!storedToken) {
+          throw new UnauthorizedException('Invalid refresh token');
+        }
+        
+        // Token revoke edilmiş mi kontrol et
+        if (storedToken.isRevoked) {
+          // Token theft detection: Revoke edilmiş token kullanımı
+          // Aynı family'deki tüm aktif token'ları revoke et
+          await tx.refreshToken.updateMany({
+            where: {
+              family: storedToken.family,
+              isRevoked: false,
+            },
+            data: {
+              isRevoked: true,
+              revokedAt: new Date(),
+              revokedReason: 'suspicious_activity',
+            },
+          });
+          // Genel hata mesajı - detay verme
+          throw new UnauthorizedException('Invalid refresh token');
+        }
+        
+        // Token süresi dolmuş mu kontrol et
+        if (storedToken.expiresAt < new Date()) {
+          // Genel hata mesajı - detay verme
+          throw new UnauthorizedException('Invalid refresh token');
+        }
+        
+        // Eski token'ı revoke et (atomic olarak)
+        await tx.refreshToken.update({
+          where: { id: storedToken.id },
+          data: {
+            isRevoked: true,
+            revokedAt: new Date(),
+            revokedReason: 'rotation',
+          },
+        });
+        
+        // Yeni token'lar oluştur (rotation)
+        const newPayload = {
+          email: storedToken.user.email,
+          sub: storedToken.user.id,
+          role: storedToken.user.role,
+        };
+        
+        const newAccessToken = this.jwtService.sign(newPayload);
+        
+        // Yeni refresh token
+        const newRefreshTokenValue = crypto.randomBytes(32).toString('hex');
+        const newRefreshTokenJwt = this.jwtService.sign(
+          { ...newPayload, tokenValue: newRefreshTokenValue },
+          { expiresIn: '7d' },
+        );
+        
+        // Yeni refresh token'ı kaydet (aynı family)
+        await tx.refreshToken.create({
+          data: {
+            userId: storedToken.userId,
+            tokenHash: this.hashToken(newRefreshTokenValue),
+            family: storedToken.family, // Aynı family'yi koru
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        });
+        
+        return {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshTokenJwt,
+        };
+      }, {
+        isolationLevel: 'Serializable', // En yüksek izolasyon seviyesi
+        timeout: 10000, // 10 saniye timeout
+      });
+    } catch (error) {
+      if (error instanceof ForbiddenException || error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+  
+  async logout(userId: string) {
+    // Kullanıcının tüm aktif refresh token'larını revoke et
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        isRevoked: false,
+      },
+      data: {
+        isRevoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'logout',
+      },
+    });
+    
+    return { message: 'Logged out successfully' };
   }
 }

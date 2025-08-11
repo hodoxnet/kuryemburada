@@ -131,6 +131,7 @@ model User {
   company       Company?
   courier       Courier?
   notifications Notification[]
+  refreshTokens RefreshToken[]
 }
 
 model Company {
@@ -275,6 +276,25 @@ model PricingRule {
   updatedAt         DateTime @updatedAt
   
   orders            Order[]
+}
+
+model RefreshToken {
+  id           String   @id @default(uuid())
+  userId       String
+  tokenHash    String   @unique
+  family       String   // Token family for rotation tracking
+  expiresAt    DateTime
+  isRevoked    Boolean  @default(false)
+  revokedAt    DateTime?
+  revokedReason String? // logout, password_change, suspicious_activity
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([family])
 }
 
 model Notification {

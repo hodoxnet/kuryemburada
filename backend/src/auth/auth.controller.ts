@@ -59,4 +59,36 @@ export class AuthController {
       changePasswordDto.newPassword,
     );
   }
+
+  @Post('verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify JWT token and get user info' })
+  async verify(@Request() req) {
+    return {
+      valid: true,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role,
+      },
+    };
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  async refresh(@Body() refreshDto: { refreshToken: string }) {
+    return this.authService.refreshToken(refreshDto.refreshToken);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout and revoke all refresh tokens' })
+  async logout(@Request() req) {
+    return this.authService.logout(req.user.id);
+  }
 }

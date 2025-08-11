@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie';
 
-const TOKEN_KEY = 'auth_token';
+const TOKEN_KEY = 'accessToken';
 const USER_KEY = 'user_info';
 
 export interface User {

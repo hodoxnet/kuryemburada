@@ -16,6 +16,7 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor - Her istekte token ekle
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Cookie'den token al (AuthService üzerinden)
     const token = AuthService.getAccessToken();
     
     if (token && config.headers) {
@@ -50,10 +51,13 @@ apiClient.interceptors.response.use(
             refreshToken,
           });
 
-          const { accessToken } = response.data;
+          const { accessToken, refreshToken: newRefreshToken } = response.data;
           
-          // Yeni token'ı kaydet
-          AuthService.setTokens({ accessToken });
+          // Yeni token'ları kaydet (rotation)
+          AuthService.setTokens({ 
+            accessToken, 
+            refreshToken: newRefreshToken 
+          });
 
           // Orijinal isteği yeni token ile tekrar gönder
           if (originalRequest.headers) {
