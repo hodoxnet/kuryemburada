@@ -23,8 +23,8 @@ import {
   AlertCircle,
   Trash2
 } from "lucide-react";
-import { companyService, Company } from "@/lib/api/company.service";
-import { handleApiError } from "@/lib/api-client";
+import { companyService, Company, Document } from "@/lib/api/company.service";
+import { handleApiError, api } from "@/lib/api-client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -38,6 +38,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function CompanyDetailPage() {
   const params = useParams();
@@ -127,6 +128,28 @@ export default function CompanyDetailPage() {
       toast.error(handleApiError(error));
     }
     setConfirmDialog({ open: false, action: "" });
+  };
+
+  // Belge onaylama
+  const handleApproveDocument = async (documentId: string) => {
+    try {
+      await api.put(`/documents/${documentId}/verify`);
+      toast.success("Belge onaylandı");
+      loadCompany();
+    } catch (error) {
+      toast.error(handleApiError(error));
+    }
+  };
+
+  // Belge reddetme
+  const handleRejectDocument = async (documentId: string, reason: string) => {
+    try {
+      await api.put(`/documents/${documentId}/reject`, { reason });
+      toast.success("Belge reddedildi");
+      loadCompany();
+    } catch (error) {
+      toast.error(handleApiError(error));
+    }
   };
 
   if (loading) {
@@ -226,73 +249,226 @@ export default function CompanyDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Firma Bilgileri */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Firma Bilgileri
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-muted-foreground">Firma Adı</Label>
-              <p className="font-medium">{company.name}</p>
-            </div>
-            <Separator />
-            <div>
-              <Label className="text-muted-foreground">Vergi Numarası</Label>
-              <p className="font-medium">{company.taxNumber}</p>
-            </div>
-            <Separator />
-            <div>
-              <Label className="text-muted-foreground">Vergi Dairesi</Label>
-              <p className="font-medium">{company.taxOffice}</p>
-            </div>
-            {company.kepAddress && (
-              <>
+      {/* Detaylı Bilgiler */}
+      <Tabs defaultValue="company" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="company">Firma Bilgileri</TabsTrigger>
+          <TabsTrigger value="contact">Yetkili Kişi</TabsTrigger>
+          <TabsTrigger value="documents">Belgeler</TabsTrigger>
+          <TabsTrigger value="bank">Banka Bilgileri</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="company" className="space-y-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Firma Bilgileri */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Firma Bilgileri
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-muted-foreground">Firma Adı</Label>
+                  <p className="font-medium">{company.name}</p>
+                </div>
                 <Separator />
                 <div>
-                  <Label className="text-muted-foreground">KEP Adresi</Label>
-                  <p className="font-medium">{company.kepAddress}</p>
+                  <Label className="text-muted-foreground">Vergi Numarası</Label>
+                  <p className="font-medium">{company.taxNumber}</p>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* İletişim Bilgileri */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              İletişim Bilgileri
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-muted-foreground">Telefon</Label>
-              <p className="font-medium">{company.phone}</p>
-            </div>
-            {company.address && (
-              <>
                 <Separator />
                 <div>
-                  <Label className="text-muted-foreground">Adres</Label>
-                  <p className="font-medium">
-                    {typeof company.address === 'string' 
-                      ? company.address 
-                      : `${company.address.district || ''} ${company.address.city || ''}`}
-                  </p>
+                  <Label className="text-muted-foreground">Vergi Dairesi</Label>
+                  <p className="font-medium">{company.taxOffice}</p>
                 </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+                {company.kepAddress && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-muted-foreground">KEP Adresi</Label>
+                      <p className="font-medium">{company.kepAddress}</p>
+                    </div>
+                  </>
+                )}
+                {company.tradeLicenseNo && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-muted-foreground">Ticaret Sicil No</Label>
+                      <p className="font-medium">{company.tradeLicenseNo}</p>
+                    </div>
+                  </>
+                )}
+                {company.activityArea && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-muted-foreground">Faaliyet Alanı</Label>
+                      <p className="font-medium">{company.activityArea}</p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Banka Bilgileri */}
-        {company.bankInfo && (
+            {/* İletişim Bilgileri */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  İletişim Bilgileri
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-muted-foreground">Telefon</Label>
+                  <p className="font-medium">{company.phone}</p>
+                </div>
+                {company.address && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-muted-foreground">Adres</Label>
+                      <p className="font-medium">
+                        {typeof company.address === 'string' 
+                          ? company.address 
+                          : `${company.address.street || ''} ${company.address.neighborhood || ''} ${company.address.district || ''} ${company.address.city || ''}`}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="contact">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Yetkili Kişi Bilgileri
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {company.contactPerson ? (
+                <div className="space-y-4">
+                  {company.contactPerson.name && (
+                    <div>
+                      <Label className="text-muted-foreground">Ad Soyad</Label>
+                      <p className="font-medium">{company.contactPerson.name}</p>
+                    </div>
+                  )}
+                  {company.contactPerson.title && (
+                    <>
+                      <Separator />
+                      <div>
+                        <Label className="text-muted-foreground">Unvan</Label>
+                        <p className="font-medium">{company.contactPerson.title}</p>
+                      </div>
+                    </>
+                  )}
+                  {company.contactPerson.phone && (
+                    <>
+                      <Separator />
+                      <div>
+                        <Label className="text-muted-foreground">Telefon</Label>
+                        <p className="font-medium">{company.contactPerson.phone}</p>
+                      </div>
+                    </>
+                  )}
+                  {company.contactPerson.email && (
+                    <>
+                      <Separator />
+                      <div>
+                        <Label className="text-muted-foreground">E-posta</Label>
+                        <p className="font-medium">{company.contactPerson.email}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Yetkili kişi bilgisi bulunmuyor</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Belgeler
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {company.documents && company.documents.length > 0 ? (
+                <div className="space-y-4">
+                  {company.documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {doc.type === 'TAX_CERTIFICATE' && 'Vergi Levhası'}
+                            {doc.type === 'TRADE_LICENSE' && 'Ticaret Sicil Gazetesi'}
+                            {doc.type === 'KEP_ADDRESS' && 'KEP Adresi Belgesi'}
+                            {doc.type === 'IDENTITY_CARD' && 'Kimlik Kartı'}
+                            {doc.type === 'OTHER' && 'Diğer'}
+                            {!['TAX_CERTIFICATE', 'TRADE_LICENSE', 'KEP_ADDRESS', 'IDENTITY_CARD', 'OTHER'].includes(doc.type) && doc.type}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {doc.fileName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Yüklenme: {format(new Date(doc.createdAt), "dd MMM yyyy HH:mm", { locale: tr })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={doc.status as any} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/documents/${doc.id}/download`, '_blank')}
+                          >
+                            İndir
+                          </Button>
+                          {doc.status === "PENDING" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600"
+                                onClick={() => handleApproveDocument(doc.id)}
+                              >
+                                Onayla
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600"
+                                onClick={() => {
+                                  const reason = prompt("Red gerekçesi:");
+                                  if (reason) handleRejectDocument(doc.id, reason);
+                                }}
+                              >
+                                Reddet
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Henüz belge yüklenmemiş</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bank">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -301,22 +477,40 @@ export default function CompanyDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {typeof company.bankInfo === 'object' && (
-                  <>
-                    {company.bankInfo.bankName && (
-                      <p><span className="text-muted-foreground">Banka:</span> {company.bankInfo.bankName}</p>
-                    )}
-                    {company.bankInfo.iban && (
-                      <p><span className="text-muted-foreground">IBAN:</span> {company.bankInfo.iban}</p>
-                    )}
-                  </>
-                )}
-              </div>
+              {company.bankInfo ? (
+                <div className="space-y-4">
+                  {company.bankInfo.bankName && (
+                    <div>
+                      <Label className="text-muted-foreground">Banka</Label>
+                      <p className="font-medium">{company.bankInfo.bankName}</p>
+                    </div>
+                  )}
+                  {company.bankInfo.iban && (
+                    <>
+                      <Separator />
+                      <div>
+                        <Label className="text-muted-foreground">IBAN</Label>
+                        <p className="font-medium font-mono">{company.bankInfo.iban}</p>
+                      </div>
+                    </>
+                  )}
+                  {company.bankInfo.accountHolder && (
+                    <>
+                      <Separator />
+                      <div>
+                        <Label className="text-muted-foreground">Hesap Sahibi</Label>
+                        <p className="font-medium">{company.bankInfo.accountHolder}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Banka bilgisi bulunmuyor</p>
+              )}
             </CardContent>
           </Card>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Onay Dialog */}
       <ConfirmDialog

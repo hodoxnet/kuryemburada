@@ -66,6 +66,7 @@ export class CompanyService {
             status: true,
           },
         },
+        documents: true,
       },
     });
 
@@ -147,6 +148,15 @@ export class CompanyService {
       rejected,
       active,
     };
+  }
+
+  async getDocuments(companyId: string) {
+    const company = await this.findOne(companyId);
+    
+    return this.prisma.document.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async delete(id: string) {

@@ -75,6 +75,15 @@ export class CompanyController {
     return this.companyService.findOne(id);
   }
 
+  @Get(':id/documents')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Firma belgelerini getir' })
+  @ApiResponse({ status: 200, description: 'Firma belgeleri' })
+  @ApiResponse({ status: 404, description: 'Firma bulunamadı' })
+  async getDocuments(@Param('id') id: string) {
+    return this.companyService.getDocuments(id);
+  }
+
   @Patch(':id/status')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Firma durumunu güncelle (onay/red)' })

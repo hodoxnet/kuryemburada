@@ -1,5 +1,18 @@
 import { api } from '../api-client';
 
+export interface Document {
+  id: string;
+  userId: string;
+  type: string;
+  fileName: string;
+  fileSize?: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  verifiedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Company {
   id: string;
   userId: string;
@@ -10,6 +23,9 @@ export interface Company {
   phone: string;
   address: any;
   bankInfo?: any;
+  contactPerson?: any;
+  tradeLicenseNo?: string;
+  activityArea?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'INACTIVE';
   approvedAt?: string;
   rejectedAt?: string;
@@ -17,6 +33,7 @@ export interface Company {
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+  documents?: Document[];
 }
 
 export interface UpdateCompanyStatusDto {
@@ -62,6 +79,14 @@ export const companyService = {
   // Firma detayını getir
   getCompany: async (id: string) => {
     const response = await api.get<Company>(`/companies/${id}`);
+    // Belgeleri de yükle
+    try {
+      const documentsResponse = await api.get<Document[]>(`/documents/user/${response.data.userId}`);
+      response.data.documents = documentsResponse.data;
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+      response.data.documents = [];
+    }
     return response.data;
   },
 
