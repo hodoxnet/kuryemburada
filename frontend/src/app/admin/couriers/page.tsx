@@ -8,10 +8,11 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, CheckCircle, XCircle, Star, Bike, FileText } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Star, Bike, FileText, Trash2 } from "lucide-react";
 import { courierService, Courier } from "@/lib/api/courier.service";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -28,6 +29,11 @@ export default function CouriersPage() {
     rejected: 0,
     active: 0,
     busy: 0,
+  });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    courierId: "",
+    courierName: "",
   });
 
   // Kurye verilerini yükle
@@ -153,6 +159,7 @@ export default function CouriersPage() {
                 size="icon"
                 className="text-green-600 hover:text-green-700"
                 onClick={() => handleStatusUpdate(row.original.id, "APPROVED")}
+                title="Onayla"
               >
                 <CheckCircle className="h-4 w-4" />
               </Button>
@@ -161,10 +168,26 @@ export default function CouriersPage() {
                 size="icon"
                 className="text-red-600 hover:text-red-700"
                 onClick={() => handleStatusUpdate(row.original.id, "REJECTED")}
+                title="Reddet"
               >
                 <XCircle className="h-4 w-4" />
               </Button>
             </>
+          )}
+          {(row.original.status === "APPROVED" || row.original.status === "REJECTED") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-600 hover:text-red-700"
+              onClick={() => setDeleteDialog({
+                open: true,
+                courierId: row.original.id,
+                courierName: row.original.fullName,
+              })}
+              title="Sil"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           )}
         </div>
       ),
@@ -182,6 +205,19 @@ export default function CouriersPage() {
       );
       loadCouriers(activeTab);
       loadStats();
+    } catch (error) {
+      toast.error(handleApiError(error));
+    }
+  };
+
+  // Kurye silme
+  const handleDelete = async () => {
+    try {
+      await courierService.deleteCourier(deleteDialog.courierId);
+      toast.success("Kurye başarıyla silindi");
+      loadCouriers(activeTab);
+      loadStats();
+      setDeleteDialog({ open: false, courierId: "", courierName: "" });
     } catch (error) {
       toast.error(handleApiError(error));
     }
@@ -275,6 +311,18 @@ export default function CouriersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Silme Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => !open && setDeleteDialog({ open: false, courierId: "", courierName: "" })}
+        title="Kuryeyi Sil"
+        description={`${deleteDialog.courierName} isimli kuryeyi silmek istediğinizden emin misiniz?`}
+        onConfirm={handleDelete}
+        confirmText="Evet, Kuryeyi Sil"
+        cancelText="Vazgeç"
+        variant="destructive"
+      />
     </div>
   );
 }

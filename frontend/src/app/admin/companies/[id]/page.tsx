@@ -528,10 +528,11 @@ export default function CompanyDetailPage() {
         open={confirmDialog.open && confirmDialog.action === "delete"}
         onOpenChange={(open) => setConfirmDialog({ open, action: "" })}
         title="Firmayı Sil"
-        description={`${company.name} firmasını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+        description={`${company.name} firmasını silmek istediğinizden emin misiniz?`}
         onConfirm={handleDelete}
-        confirmText="Evet, Sil"
-        cancelText="İptal"
+        confirmText="Evet, Firmayı Sil"
+        cancelText="Vazgeç"
+        variant="destructive"
       />
 
       {/* Red Dialog */}

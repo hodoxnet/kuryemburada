@@ -574,10 +574,11 @@ export default function CourierDetailPage() {
         open={confirmDialog.open && confirmDialog.action === "delete"}
         onOpenChange={(open) => setConfirmDialog({ open, action: "" })}
         title="Kuryeyi Sil"
-        description={`${courier.fullName} isimli kuryeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+        description={`${courier.fullName} isimli kuryeyi silmek istediğinizden emin misiniz?`}
         onConfirm={handleDelete}
-        confirmText="Evet, Sil"
-        cancelText="İptal"
+        confirmText="Evet, Kuryeyi Sil"
+        cancelText="Vazgeç"
+        variant="destructive"
       />
 
       {/* Red Dialog */}

@@ -8,10 +8,11 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Eye, CheckCircle, XCircle } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { companyService, Company } from "@/lib/api/company.service";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -27,6 +28,11 @@ export default function CompaniesPage() {
     approved: 0,
     rejected: 0,
     active: 0,
+  });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    companyId: "",
+    companyName: "",
   });
 
   // Firma verilerini yükle
@@ -112,6 +118,7 @@ export default function CompaniesPage() {
                 size="icon"
                 className="text-green-600 hover:text-green-700"
                 onClick={() => handleStatusUpdate(row.original.id, "APPROVED")}
+                title="Onayla"
               >
                 <CheckCircle className="h-4 w-4" />
               </Button>
@@ -120,10 +127,26 @@ export default function CompaniesPage() {
                 size="icon"
                 className="text-red-600 hover:text-red-700"
                 onClick={() => handleStatusUpdate(row.original.id, "REJECTED")}
+                title="Reddet"
               >
                 <XCircle className="h-4 w-4" />
               </Button>
             </>
+          )}
+          {(row.original.status === "APPROVED" || row.original.status === "REJECTED") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-600 hover:text-red-700"
+              onClick={() => setDeleteDialog({
+                open: true,
+                companyId: row.original.id,
+                companyName: row.original.name,
+              })}
+              title="Sil"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           )}
         </div>
       ),
@@ -141,6 +164,19 @@ export default function CompaniesPage() {
       );
       loadCompanies(activeTab);
       loadStats();
+    } catch (error) {
+      toast.error(handleApiError(error));
+    }
+  };
+
+  // Firma silme
+  const handleDelete = async () => {
+    try {
+      await companyService.deleteCompany(deleteDialog.companyId);
+      toast.success("Firma başarıyla silindi");
+      loadCompanies(activeTab);
+      loadStats();
+      setDeleteDialog({ open: false, companyId: "", companyName: "" });
     } catch (error) {
       toast.error(handleApiError(error));
     }
@@ -225,6 +261,18 @@ export default function CompaniesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Silme Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => !open && setDeleteDialog({ open: false, companyId: "", companyName: "" })}
+        title="Firmayı Sil"
+        description={`${deleteDialog.companyName} firmasını silmek istediğinizden emin misiniz?`}
+        onConfirm={handleDelete}
+        confirmText="Evet, Firmayı Sil"
+        cancelText="Vazgeç"
+        variant="destructive"
+      />
     </div>
   );
 }
