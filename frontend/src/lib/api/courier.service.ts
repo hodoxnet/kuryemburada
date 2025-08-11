@@ -1,8 +1,8 @@
 import { api } from '../api-client';
 
 export interface Courier {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   tcNumber: string;
   fullName: string;
   birthDate?: string;
@@ -16,7 +16,7 @@ export interface Courier {
   totalDeliveries?: number;
   approvedAt?: string;
   rejectedAt?: string;
-  approvedBy?: number;
+  approvedBy?: string;
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -26,7 +26,7 @@ export interface Courier {
 export interface Document {
   id: number;
   entityType: string;
-  entityId: number;
+  entityId: string;
   documentType: string;
   fileUrl: string;
   status: string;
@@ -74,13 +74,13 @@ export const courierService = {
   },
 
   // Kurye detayını getir
-  getCourier: async (id: number) => {
+  getCourier: async (id: string) => {
     const response = await api.get<Courier>(`/couriers/${id}`);
     return response.data;
   },
 
   // Kurye durumunu güncelle (onayla/reddet)
-  updateCourierStatus: async (id: number, data: UpdateCourierStatusDto) => {
+  updateCourierStatus: async (id: string, data: UpdateCourierStatusDto) => {
     const response = await api.patch<Courier>(`/couriers/${id}/status`, data);
     return response.data;
   },
@@ -99,13 +99,13 @@ export const courierService = {
   },
 
   // Kurye belgelerini onayla
-  approveDocument: async (courierId: number, documentId: number) => {
+  approveDocument: async (courierId: string, documentId: number) => {
     const response = await api.patch(`/couriers/${courierId}/documents/${documentId}/approve`);
     return response.data;
   },
 
   // Kurye belgelerini reddet
-  rejectDocument: async (courierId: number, documentId: number, reason: string) => {
+  rejectDocument: async (courierId: string, documentId: number, reason: string) => {
     const response = await api.patch(`/couriers/${courierId}/documents/${documentId}/reject`, { reason });
     return response.data;
   },

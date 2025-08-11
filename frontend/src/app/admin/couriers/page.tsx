@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -12,11 +13,11 @@ import { courierService, Courier } from "@/lib/api/courier.service";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
 export default function CouriersPage() {
+  const router = useRouter();
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -138,11 +139,13 @@ export default function CouriersPage() {
       header: "İşlemler",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <Link href={`/admin/couriers/${row.original.id}`}>
-            <Button variant="ghost" size="icon">
-              <Eye className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => router.push(`/admin/couriers/${row.original.id}`)}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           {row.original.status === "PENDING" && (
             <>
               <Button
@@ -169,7 +172,7 @@ export default function CouriersPage() {
   ];
 
   // Durum güncelleme
-  const handleStatusUpdate = async (id: number, status: "APPROVED" | "REJECTED") => {
+  const handleStatusUpdate = async (id: string, status: "APPROVED" | "REJECTED") => {
     try {
       await courierService.updateCourierStatus(id, { status });
       toast.success(
