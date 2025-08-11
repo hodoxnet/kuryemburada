@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, Home, Phone, Mail, Clock, ArrowRight } from "lucide-react";
+import { CheckCircle, Home, Phone, Mail, Clock } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -58,14 +58,14 @@ export default function ApplicationSuccessPage() {
       time: "E-posta & SMS"
     },
     {
-      title: "Eğitim Süreci",
-      description: "Onay durumunda online eğitim programına davet edileceksiniz",
-      time: "Online"
+      title: "Belge Doğrulama",
+      description: "Yüklediğiniz belgeler kontrol edilip onaylanacak",
+      time: "İnceleme süreci"
     },
     {
-      title: "Aktivasyon",
-      description: "Eğitimi tamamladıktan sonra hesabınız aktif edilecek",
-      time: "Hemen"
+      title: "Hesap Aktivasyonu",
+      description: "Onay durumunda hesabınız aktif edilecek ve sisteme giriş yapabileceksiniz",
+      time: "Onay sonrası"
     }
   ];
 
@@ -159,19 +159,19 @@ export default function ApplicationSuccessPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          className="text-center"
         >
+          <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              <strong>Not:</strong> Başvurunuz değerlendirilip size en kısa sürede geri dönüş yapılacaktır. 
+              Başvuru sonucunuz e-posta ve SMS ile tarafınıza iletilecektir.
+            </p>
+          </div>
+          
           <Link href="/">
             <Button variant="outline" size="lg">
               <Home className="mr-2 h-5 w-5" />
               Ana Sayfaya Dön
-            </Button>
-          </Link>
-          
-          <Link href="/track-application">
-            <Button size="lg">
-              Başvuru Takibi
-              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </motion.div>
