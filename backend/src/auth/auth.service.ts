@@ -526,7 +526,7 @@ export class AuthService {
     }
   }
   
-  async getUserById(userId: number) {
+  async getUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {

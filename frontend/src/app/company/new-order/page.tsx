@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,11 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { orderService, CreateOrderDto, Address } from '@/lib/api/order.service';
 import GoogleMap from '@/components/shared/GoogleMap';
 import { toast } from 'sonner';
 import { ArrowLeft, MapPin, Package, Clock, User, Phone, FileText, Zap, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuthStore } from '@/stores/authStore';
 
 const orderSchema = z.object({
   recipientName: z.string().min(2, 'Alıcı adı en az 2 karakter olmalıdır'),
@@ -35,12 +37,15 @@ type OrderFormData = z.infer<typeof orderSchema>;
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [pickupAddress, setPickupAddress] = useState<Address>();
   const [deliveryAddress, setDeliveryAddress] = useState<Address>();
   const [estimatedPrice, setEstimatedPrice] = useState<number>(0);
   const [estimatedTime, setEstimatedTime] = useState<number>(0);
+  const [useCompanyAddress, setUseCompanyAddress] = useState(false);
+  const [companyAddressCoords, setCompanyAddressCoords] = useState<Address>();
 
   const {
     register,
@@ -62,6 +67,41 @@ export default function NewOrderPage() {
   const packageSize = watch('packageSize');
   const deliveryType = watch('deliveryType');
   const urgency = watch('urgency');
+
+  // Firma adresini geocode et
+  useEffect(() => {
+    console.log('User data:', user);
+    console.log('Company data:', user?.company);
+    console.log('Company address:', user?.company?.address);
+    
+    // Address JSON obje olarak geliyor, detail alanını kullanmalıyız
+    const companyAddress = user?.company?.address?.detail || user?.company?.address;
+    
+    if (companyAddress && typeof companyAddress === 'string') {
+      // Google Maps API yüklenene kadar bekle
+      const checkGoogleMaps = setInterval(() => {
+        if (typeof google !== 'undefined' && google.maps) {
+          clearInterval(checkGoogleMaps);
+          const geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ address: companyAddress + ', Türkiye' }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+              const location = results[0].geometry.location;
+              setCompanyAddressCoords({
+                lat: location.lat(),
+                lng: location.lng(),
+                address: companyAddress,
+                detail: user.company?.name,
+              });
+              console.log('Company address geocoded:', companyAddress);
+            }
+          });
+        }
+      }, 500);
+
+      // Cleanup
+      return () => clearInterval(checkGoogleMaps);
+    }
+  }, [user]);
 
   // Fiyat hesaplama (basit tahmin)
   const calculatePrice = () => {
@@ -186,9 +226,39 @@ export default function NewOrderPage() {
                 Harita üzerinden alım ve teslimat noktalarını belirleyin
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Firma adresi checkbox */}
+              {(user?.company?.address?.detail || user?.company?.address) && (
+                <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Checkbox
+                    id="useCompanyAddress"
+                    checked={useCompanyAddress}
+                    onCheckedChange={(checked) => {
+                      setUseCompanyAddress(checked as boolean);
+                      if (checked && companyAddressCoords) {
+                        // Geocode edilmiş firma adresini kullan
+                        setPickupAddress(companyAddressCoords);
+                      } else {
+                        setPickupAddress(undefined);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="useCompanyAddress" className="cursor-pointer flex-1">
+                    <div>
+                      <div className="font-medium">Firma adresimi kullan</div>
+                      <div className="text-sm text-muted-foreground">
+                        {user.company.name} - {user.company.address?.detail || user.company.address}
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+              )}
+              
               <GoogleMap
-                onPickupSelect={setPickupAddress}
+                onPickupSelect={(address) => {
+                  setPickupAddress(address);
+                  setUseCompanyAddress(false);
+                }}
                 onDeliverySelect={setDeliveryAddress}
                 pickupAddress={pickupAddress}
                 deliveryAddress={deliveryAddress}

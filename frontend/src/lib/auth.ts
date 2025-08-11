@@ -12,9 +12,9 @@ export interface User {
   company?: {
     id: number;
     name: string;
-    email: string;
+    email?: string;
     phone: string;
-    address: string;
+    address: any; // JSON object: {city, district, detail}
   };
   courier?: {
     id: number;
