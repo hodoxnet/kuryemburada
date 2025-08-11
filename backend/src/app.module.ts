@@ -18,6 +18,7 @@ import { UsersModule } from './users/users.module';
 import { LoggerModule } from './logger/logger.module';
 import { DocumentsModule } from './documents/documents.module';
 import { OrdersModule } from './orders/orders.module';
+import { ServiceAreaModule } from './service-area/service-area.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { OrdersModule } from './orders/orders.module';
     UsersModule,
     DocumentsModule,
     OrdersModule,
+    ServiceAreaModule,
   ],
   controllers: [AppController],
   providers: [

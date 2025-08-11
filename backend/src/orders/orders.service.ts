@@ -23,24 +23,79 @@ export class OrdersService {
     return `ORD-${year}${month}${day}-${random}`;
   }
 
-  // Mesafe bazlı fiyat hesaplama (Google Maps API entegrasyonu için placeholder)
+  // Noktanın bölge içinde olup olmadığını kontrol et
+  private isPointInPolygon(point: { lat: number; lng: number }, polygon: any[]): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].lat, yi = polygon[i].lng;
+      const xj = polygon[j].lat, yj = polygon[j].lng;
+      
+      const intersect = ((yi > point.lng) !== (yj > point.lng))
+        && (point.lat < (xj - xi) * (point.lng - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  // Hangi bölgede olduğunu bul
+  private async findServiceArea(point: { lat: number; lng: number }): Promise<any> {
+    const serviceAreas = await this.prisma.serviceArea.findMany({
+      where: { isActive: true },
+      orderBy: { priority: 'desc' },
+    });
+
+    for (const area of serviceAreas) {
+      const boundaries = area.boundaries as any[];
+      if (this.isPointInPolygon(point, boundaries)) {
+        return area;
+      }
+    }
+    return null;
+  }
+
+  // Mesafe bazlı fiyat hesaplama (bölge bazlı)
   private async calculatePrice(
     distance: number, 
     packageSize: PackageSize, 
     deliveryType: DeliveryType, 
-    urgency: Urgency
+    urgency: Urgency,
+    serviceArea?: any
   ): Promise<{ price: number; estimatedTime: number; commission: number; courierEarning: number }> {
-    // Aktif fiyatlandırma kuralını al
-    const pricingRule = await this.prisma.pricingRule.findFirst({
-      where: { isActive: true },
-    });
+    // Bölge varsa onun fiyatlandırmasını kullan, yoksa genel kurala bak
+    let basePrice: number;
+    let pricePerKm: number;
+    let minimumPrice: number = 10;
 
-    if (!pricingRule) {
-      throw new BadRequestException('Aktif fiyatlandırma kuralı bulunamadı');
+    if (serviceArea) {
+      basePrice = serviceArea.basePrice;
+      pricePerKm = serviceArea.pricePerKm;
+      
+      // Mesafe kontrolü
+      if (serviceArea.maxDistance && distance > serviceArea.maxDistance) {
+        throw new BadRequestException(
+          `Bu bölge için maksimum teslimat mesafesi ${serviceArea.maxDistance} km'dir. Sipariş mesafeniz: ${distance.toFixed(1)} km`
+        );
+      }
+    } else {
+      // Aktif genel fiyatlandırma kuralını al
+      const pricingRule = await this.prisma.pricingRule.findFirst({
+        where: { 
+          isActive: true,
+          serviceAreaId: null // Genel kural (bölgeye özel değil)
+        },
+      });
+
+      if (!pricingRule) {
+        throw new BadRequestException('Bu bölge hizmet alanı dışındadır');
+      }
+
+      basePrice = pricingRule.basePrice;
+      pricePerKm = pricingRule.pricePerKm;
+      minimumPrice = pricingRule.minimumPrice;
     }
 
     // Temel fiyat hesaplama
-    let price = pricingRule.basePrice + (distance * pricingRule.pricePerKm);
+    let price = basePrice + (distance * pricePerKm);
 
     // Paket boyutu katsayısı
     const sizeMultipliers = {
@@ -65,7 +120,7 @@ export class OrdersService {
     price *= urgencyMultipliers[urgency];
 
     // Minimum fiyat kontrolü
-    price = Math.max(price, pricingRule.minimumPrice);
+    price = Math.max(price, minimumPrice);
 
     // Tahmini teslimat süresi (dakika)
     let estimatedTime = Math.ceil(distance * 3); // Ortalama 20km/h hız varsayımı
@@ -104,15 +159,36 @@ export class OrdersService {
       throw new ForbiddenException('Firma onaylı değil');
     }
 
-    // Mesafe hesaplama (şimdilik sabit, Google Maps API eklenecek)
+    // Alım ve teslimat noktalarının koordinatlarını al
+    const pickupPoint = createOrderDto.pickupAddress as any;
+    const deliveryPoint = createOrderDto.deliveryAddress as any;
+
+    // Alım noktasının hangi bölgede olduğunu kontrol et
+    const pickupArea = await this.findServiceArea(pickupPoint);
+    if (!pickupArea) {
+      throw new BadRequestException(
+        `Alım noktası hizmet bölgesi dışındadır. Aktif bölgeler: Beylikdüzü, Avcılar, Esenyurt, Başakşehir, Bakırköy`
+      );
+    }
+
+    // Teslimat noktasının hangi bölgede olduğunu kontrol et
+    const deliveryArea = await this.findServiceArea(deliveryPoint);
+    if (!deliveryArea) {
+      throw new BadRequestException(
+        `Teslimat noktası hizmet bölgesi dışındadır. Aktif bölgeler: Beylikdüzü, Avcılar, Esenyurt, Başakşehir, Bakırköy`
+      );
+    }
+
+    // Mesafe hesaplama
     const distance = createOrderDto.distance || 5; // km
 
-    // Fiyat hesaplama
+    // Teslimat bölgesinin fiyatlandırmasını kullan
     const priceDetails = await this.calculatePrice(
       distance,
       createOrderDto.packageSize,
       createOrderDto.deliveryType,
       createOrderDto.urgency || 'NORMAL',
+      deliveryArea // Teslimat bölgesinin fiyatlandırması
     );
 
     // Sipariş oluştur
@@ -120,6 +196,7 @@ export class OrdersService {
       data: {
         orderNumber: this.generateOrderNumber(),
         companyId,
+        serviceAreaId: deliveryArea.id, // Teslimat bölgesi
         recipientName: createOrderDto.recipientName,
         recipientPhone: createOrderDto.recipientPhone,
         pickupAddress: createOrderDto.pickupAddress as any,

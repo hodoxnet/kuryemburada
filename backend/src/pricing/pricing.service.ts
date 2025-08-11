@@ -139,41 +139,68 @@ export class PricingService {
   }
 
   async calculatePrice(params: {
-    ruleId: string;
     distance: number;
-    duration: number;
-    isRushHour?: boolean;
-    isBadWeather?: boolean;
+    duration?: number;
+    packageSize?: 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
+    deliveryType?: 'STANDARD' | 'EXPRESS';
+    urgency?: 'NORMAL' | 'URGENT' | 'VERY_URGENT';
   }) {
-    const { ruleId, distance, duration, isRushHour = false, isBadWeather = false } = params;
+    const { 
+      distance, 
+      duration = 15, 
+      packageSize = 'MEDIUM',
+      deliveryType = 'STANDARD',
+      urgency = 'NORMAL'
+    } = params;
 
-    const rule = await this.findOne(ruleId);
+    // Aktif genel fiyatlandırma kuralını al
+    const rule = await this.prisma.pricingRule.findFirst({
+      where: { 
+        isActive: true,
+        serviceAreaId: null // Genel kural
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    if (!rule.isActive) {
-      throw new ConflictException('Bu fiyatlandırma kuralı aktif değil');
+    if (!rule) {
+      throw new NotFoundException('Aktif fiyatlandırma kuralı bulunamadı');
     }
 
+    // Temel fiyat hesaplama
     let price = rule.basePrice;
     price += distance * rule.pricePerKm;
     price += duration * rule.pricePerMinute;
 
-    if (isRushHour && rule.rushHourMultiplier) {
-      price *= rule.rushHourMultiplier;
+    // Paket boyutu katsayısı
+    const sizeMultipliers = {
+      SMALL: 1,
+      MEDIUM: 1.2,
+      LARGE: 1.5,
+      EXTRA_LARGE: 2,
+    };
+    price *= sizeMultipliers[packageSize];
+
+    // Teslimat tipi
+    if (deliveryType === 'EXPRESS') {
+      price *= 1.5;
     }
 
-    if (isBadWeather && rule.weatherMultiplier) {
-      price *= rule.weatherMultiplier;
-    }
+    // Aciliyet
+    const urgencyMultipliers = {
+      NORMAL: 1,
+      URGENT: 1.3,
+      VERY_URGENT: 1.6,
+    };
+    price *= urgencyMultipliers[urgency];
 
+    // Minimum fiyat kontrolü
     price = Math.max(price, rule.minimumPrice);
 
     return {
+      price: Math.round(price * 100) / 100,
       basePrice: rule.basePrice,
       distancePrice: distance * rule.pricePerKm,
       durationPrice: duration * rule.pricePerMinute,
-      rushHourMultiplier: isRushHour ? rule.rushHourMultiplier : 1,
-      weatherMultiplier: isBadWeather ? rule.weatherMultiplier : 1,
-      totalPrice: Math.round(price * 100) / 100,
       minimumPrice: rule.minimumPrice,
     };
   }

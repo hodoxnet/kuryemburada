@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   X,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,11 @@ const defaultMenuItems = [
     title: "Fiyatlandırma",
     href: "/admin/pricing",
     icon: DollarSign,
+  },
+  {
+    title: "Bölge Yönetimi",
+    href: "/admin/service-areas",
+    icon: MapPin,
   },
   {
     title: "Sistem Ayarları",

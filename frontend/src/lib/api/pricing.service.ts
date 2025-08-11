@@ -1,24 +1,17 @@
 import { api } from '../api-client';
 
 export interface PricingRule {
-  id: number;
+  id: string;
   name: string;
   description?: string;
-  ruleType: 'DISTANCE' | 'ZONE' | 'TIME' | 'PACKAGE' | 'CUSTOM';
+  serviceAreaId?: string;
   basePrice: number;
   pricePerKm?: number;
-  minDistance?: number;
-  maxDistance?: number;
-  zones?: string[];
-  timeSlots?: any[];
-  packageTypes?: string[];
-  priority: number;
-  multiplier?: number;
-  fixedAmount?: number;
-  conditions?: any;
+  pricePerMinute?: number;
+  minimumPrice?: number;
+  rushHourMultiplier?: number;
+  weatherMultiplier?: number;
   isActive: boolean;
-  validFrom?: string;
-  validUntil?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,18 +37,30 @@ export const pricingService = {
   },
 
   // Kuralı güncelle
-  updatePricingRule: async (id: number, data: Partial<PricingRule>) => {
+  updatePricingRule: async (id: string, data: Partial<PricingRule>) => {
     const response = await api.patch<PricingRule>(`/pricing/${id}`, data);
     return response.data;
   },
 
+  // Kuralı aktif/pasif yap
+  toggleActive: async (id: string) => {
+    const response = await api.patch<PricingRule>(`/pricing/${id}/toggle-active`);
+    return response.data;
+  },
+
   // Kuralı sil
-  deletePricingRule: async (id: number) => {
+  deletePricingRule: async (id: string) => {
     await api.delete(`/pricing/${id}`);
   },
 
   // Fiyat hesapla
-  calculatePrice: async (params: any) => {
+  calculatePrice: async (params: {
+    distance: number;
+    duration?: number;
+    packageSize?: string;
+    deliveryType?: string;
+    urgency?: string;
+  }) => {
     const response = await api.post<{ price: number }>('/pricing/calculate', params);
     return response.data;
   },

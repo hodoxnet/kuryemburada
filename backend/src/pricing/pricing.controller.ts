@@ -77,22 +77,23 @@ export class PricingController {
     schema: {
       type: 'object',
       properties: {
-        ruleId: { type: 'string' },
-        distance: { type: 'number' },
-        duration: { type: 'number' },
-        isRushHour: { type: 'boolean' },
-        isBadWeather: { type: 'boolean' },
+        distance: { type: 'number', description: 'Mesafe (km)' },
+        duration: { type: 'number', description: 'Süre (dakika)' },
+        packageSize: { type: 'string', enum: ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'] },
+        deliveryType: { type: 'string', enum: ['STANDARD', 'EXPRESS'] },
+        urgency: { type: 'string', enum: ['NORMAL', 'URGENT', 'VERY_URGENT'] },
       },
+      required: ['distance'],
     },
   })
   @ApiResponse({ status: 200, description: 'Hesaplanan fiyat' })
   async calculatePrice(
     @Body() params: {
-      ruleId: string;
       distance: number;
-      duration: number;
-      isRushHour?: boolean;
-      isBadWeather?: boolean;
+      duration?: number;
+      packageSize?: 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
+      deliveryType?: 'STANDARD' | 'EXPRESS';
+      urgency?: 'NORMAL' | 'URGENT' | 'VERY_URGENT';
     },
   ) {
     return this.pricingService.calculatePrice(params);

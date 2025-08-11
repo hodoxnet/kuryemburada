@@ -195,6 +195,7 @@ model Order {
   companyId        String
   courierId        String?
   pricingRuleId    String?
+  serviceAreaId    String?       // Hangi bölgedeki sipariş
   recipientName    String
   recipientPhone   String
   pickupAddress    Json // {lat, lng, address, detail}
@@ -225,6 +226,7 @@ model Order {
   company     Company      @relation(fields: [companyId], references: [id])
   courier     Courier?     @relation(fields: [courierId], references: [id])
   pricingRule PricingRule? @relation(fields: [pricingRuleId], references: [id])
+  serviceArea ServiceArea? @relation(fields: [serviceAreaId], references: [id])
   payments    Payment[]
 }
 
@@ -271,6 +273,7 @@ model PricingRule {
   id                String   @id @default(uuid())
   name              String   @unique
   description       String?
+  serviceAreaId     String?  // Bölgeye özel fiyatlandırma
   basePrice         Float    @default(0)
   pricePerKm        Float    @default(0)
   pricePerMinute    Float    @default(0)
@@ -281,6 +284,7 @@ model PricingRule {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
+  serviceArea       ServiceArea? @relation(fields: [serviceAreaId], references: [id])
   orders            Order[]
 }
 
@@ -325,6 +329,27 @@ model SystemSetting {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ServiceArea {
+  id          String   @id @default(uuid())
+  name        String   @unique // Örn: "Beylikdüzü", "Avcılar"
+  city        String   // Örn: "İstanbul"
+  district    String   // İlçe adı
+  boundaries  Json     // Poligon koordinatları: [{lat, lng}, ...]
+  basePrice   Float    // Bu bölge için taban fiyat
+  pricePerKm  Float    // Bu bölge için km başı fiyat
+  maxDistance Float?   // Maksimum teslimat mesafesi (km)
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0) // Öncelik sırası (büyük olan önce kontrol edilir)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  orders      Order[]  // Bu bölgedeki siparişler
+  pricingRules PricingRule[] // Bu bölgeye özel fiyatlandırma kuralları
+  
+  @@index([city, district])
+  @@index([isActive])
 }
 
 model AuditLog {

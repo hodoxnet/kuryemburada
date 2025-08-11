@@ -18,7 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { orderService, CreateOrderDto, Address } from '@/lib/api/order.service';
 import GoogleMap from '@/components/shared/GoogleMap';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Package, Clock, User, Phone, FileText, Zap, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, Package, Clock, User, Phone, FileText, Zap, Calendar, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -228,6 +228,43 @@ export default function NewOrderPage() {
       {/* Form Adımları */}
       {step === 1 && (
         <div className="space-y-6">
+          {/* Hizmet Bölgeleri Bilgisi */}
+          <Card className="border-blue-500/20 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Info className="w-5 h-5 text-blue-500" />
+                Hizmet Bölgelerimiz
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
+                  <div className="font-medium text-sm">Beylikdüzü</div>
+                  <div className="text-xs text-muted-foreground">₺15 + ₺3/km</div>
+                </div>
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
+                  <div className="font-medium text-sm">Avcılar</div>
+                  <div className="text-xs text-muted-foreground">₺15 + ₺3/km</div>
+                </div>
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
+                  <div className="font-medium text-sm">Esenyurt</div>
+                  <div className="text-xs text-muted-foreground">₺17 + ₺3.5/km</div>
+                </div>
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
+                  <div className="font-medium text-sm">Başakşehir</div>
+                  <div className="text-xs text-muted-foreground">₺20 + ₺4/km</div>
+                </div>
+                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
+                  <div className="font-medium text-sm">Bakırköy</div>
+                  <div className="text-xs text-muted-foreground">₺18 + ₺3.5/km</div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                ⚠️ Sadece yukarıdaki bölgelerde hizmet verilmektedir. Alım ve teslimat noktaları bu bölgeler içinde olmalıdır.
+              </p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Adres Seçimi</CardTitle>
