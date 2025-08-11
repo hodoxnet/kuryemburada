@@ -1,8 +1,8 @@
 import { api } from '../api-client';
 
 export interface Company {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   name: string;
   taxNumber: string;
   taxOffice: string;
@@ -13,7 +13,7 @@ export interface Company {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'INACTIVE';
   approvedAt?: string;
   rejectedAt?: string;
-  approvedBy?: number;
+  approvedBy?: string;
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -60,13 +60,13 @@ export const companyService = {
   },
 
   // Firma detayını getir
-  getCompany: async (id: number) => {
+  getCompany: async (id: string) => {
     const response = await api.get<Company>(`/companies/${id}`);
     return response.data;
   },
 
   // Firma durumunu güncelle (onayla/reddet)
-  updateCompanyStatus: async (id: number, data: UpdateCompanyStatusDto) => {
+  updateCompanyStatus: async (id: string, data: UpdateCompanyStatusDto) => {
     const response = await api.patch<Company>(`/companies/${id}/status`, data);
     return response.data;
   },

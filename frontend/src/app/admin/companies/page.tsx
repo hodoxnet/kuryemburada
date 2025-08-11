@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -12,11 +13,11 @@ import { companyService, Company } from "@/lib/api/company.service";
 import { handleApiError } from "@/lib/api-client";
 import { toast } from "sonner";
 import { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
 export default function CompaniesPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -97,11 +98,13 @@ export default function CompaniesPage() {
       header: "İşlemler",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <Link href={`/admin/companies/${row.original.id}`}>
-            <Button variant="ghost" size="icon">
-              <Eye className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => router.push(`/admin/companies/${row.original.id}`)}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           {row.original.status === "PENDING" && (
             <>
               <Button
@@ -128,7 +131,7 @@ export default function CompaniesPage() {
   ];
 
   // Durum güncelleme
-  const handleStatusUpdate = async (id: number, status: "APPROVED" | "REJECTED") => {
+  const handleStatusUpdate = async (id: string, status: "APPROVED" | "REJECTED") => {
     try {
       await companyService.updateCompanyStatus(id, { status });
       toast.success(

@@ -50,15 +50,24 @@ export default function CompanyDetailPage() {
   const [rejectDialog, setRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const companyId = Number(params.id);
+  const companyId = params.id as string;
 
   // Firma detaylarını yükle
   const loadCompany = async () => {
+    if (!companyId) {
+      toast.error("Geçersiz firma ID");
+      router.push("/admin/companies");
+      return;
+    }
+    
     try {
       setLoading(true);
+      console.log("Loading company with ID:", companyId);
       const data = await companyService.getCompany(companyId);
+      console.log("Company data loaded:", data);
       setCompany(data);
     } catch (error) {
+      console.error("Error loading company:", error);
       toast.error(handleApiError(error));
       router.push("/admin/companies");
     } finally {
