@@ -290,37 +290,69 @@ export default function GoogleMap({
 
   // Mevcut konumu al
   const getCurrentLocation = () => {
-    if (navigator.geolocation && map) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-          
-          const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-            if (status === 'OK' && results && results[0]) {
-              const address: Address = {
-                lat,
-                lng,
-                address: results[0].formatted_address,
-              };
-
-              if (addressMode === 'pickup') {
-                onPickupSelect(address);
-              } else {
-                onDeliverySelect(address);
-              }
-
-              map.setCenter({ lat, lng });
-              map.setZoom(15);
-            }
-          });
-        },
-        (error) => {
-          console.error('Konum alınamadı:', error);
-        }
-      );
+    if (!navigator.geolocation) {
+      alert('Tarayıcınız konum özelliğini desteklemiyor');
+      return;
     }
+
+    if (!map) {
+      alert('Harita henüz yüklenmedi, lütfen bekleyin');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === 'OK' && results && results[0]) {
+            const address: Address = {
+              lat,
+              lng,
+              address: results[0].formatted_address,
+            };
+
+            if (addressMode === 'pickup') {
+              onPickupSelect(address);
+            } else {
+              onDeliverySelect(address);
+            }
+
+            map.setCenter({ lat, lng });
+            map.setZoom(15);
+          } else {
+            console.error('Adres bilgisi alınamadı:', status);
+            alert('Konum alındı ama adres bilgisi bulunamadı');
+          }
+        });
+      },
+      (error) => {
+        let errorMessage = 'Konum alınamadı: ';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Konum izni reddedildi. Lütfen tarayıcı ayarlarından konum iznini kontrol edin.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Konum bilgisi şu anda kullanılamıyor.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Konum alma isteği zaman aşımına uğradı.';
+            break;
+          default:
+            errorMessage += 'Bilinmeyen bir hata oluştu.';
+            break;
+        }
+        console.error(errorMessage, error);
+        alert(errorMessage);
+      },
+      {
+        enableHighAccuracy: true, // Yüksek doğruluk
+        timeout: 10000, // 10 saniye timeout
+        maximumAge: 0 // Cache kullanma
+      }
+    );
   };
 
   return (
