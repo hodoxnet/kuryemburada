@@ -139,6 +139,7 @@ export class PricingService {
   }
 
   async calculatePrice(params: {
+    serviceAreaId: string;
     distance: number;
     duration?: number;
     packageSize?: 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';
@@ -146,6 +147,7 @@ export class PricingService {
     urgency?: 'NORMAL' | 'URGENT' | 'VERY_URGENT';
   }) {
     const { 
+      serviceAreaId,
       distance, 
       duration = 15, 
       packageSize = 'MEDIUM',
@@ -153,25 +155,25 @@ export class PricingService {
       urgency = 'NORMAL'
     } = params;
 
-    // Aktif genel fiyatlandırma kuralını al
-    const rule = await this.prisma.pricingRule.findFirst({
-      where: { 
-        isActive: true,
-        serviceAreaId: null // Genel kural
-      },
-      orderBy: { createdAt: 'desc' }
+    // Bölge bilgilerini al
+    const serviceArea = await this.prisma.serviceArea.findUnique({
+      where: { id: serviceAreaId }
     });
 
-    if (!rule) {
-      throw new NotFoundException('Aktif fiyatlandırma kuralı bulunamadı');
+    if (!serviceArea || !serviceArea.isActive) {
+      throw new NotFoundException('Aktif hizmet bölgesi bulunamadı');
+    }
+
+    // Mesafe kontrolü
+    if (serviceArea.maxDistance && distance > serviceArea.maxDistance) {
+      throw new ConflictException(`Bu bölge için maksimum mesafe ${serviceArea.maxDistance} km'dir`);
     }
 
     // Temel fiyat hesaplama
-    let price = rule.basePrice;
-    price += distance * rule.pricePerKm;
-    price += duration * rule.pricePerMinute;
+    let price = serviceArea.basePrice;
+    price += distance * serviceArea.pricePerKm;
 
-    // Paket boyutu katsayısı
+    // Sabit çarpanlar (sistem genelinde sabit)
     const sizeMultipliers = {
       SMALL: 1,
       MEDIUM: 1.2,
@@ -193,15 +195,21 @@ export class PricingService {
     };
     price *= urgencyMultipliers[urgency];
 
-    // Minimum fiyat kontrolü
-    price = Math.max(price, rule.minimumPrice);
+    // Minimum fiyat kontrolü (en az taban fiyat kadar olmalı)
+    price = Math.max(price, serviceArea.basePrice);
 
     return {
       price: Math.round(price * 100) / 100,
-      basePrice: rule.basePrice,
-      distancePrice: distance * rule.pricePerKm,
-      durationPrice: duration * rule.pricePerMinute,
-      minimumPrice: rule.minimumPrice,
+      basePrice: serviceArea.basePrice,
+      distancePrice: distance * serviceArea.pricePerKm,
+      serviceArea: serviceArea.name,
+      breakdown: {
+        base: serviceArea.basePrice,
+        distance: distance * serviceArea.pricePerKm,
+        packageSizeMultiplier: sizeMultipliers[packageSize],
+        deliveryTypeMultiplier: deliveryType === 'EXPRESS' ? 1.5 : 1,
+        urgencyMultiplier: urgencyMultipliers[urgency],
+      }
     };
   }
 

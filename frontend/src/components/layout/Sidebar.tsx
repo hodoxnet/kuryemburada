@@ -42,11 +42,6 @@ const defaultMenuItems = [
     icon: Bike,
   },
   {
-    title: "Fiyatlandırma",
-    href: "/admin/pricing",
-    icon: DollarSign,
-  },
-  {
     title: "Bölge Yönetimi",
     href: "/admin/service-areas",
     icon: MapPin,

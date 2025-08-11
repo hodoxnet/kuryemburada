@@ -53,15 +53,28 @@ export const pricingService = {
     await api.delete(`/pricing/${id}`);
   },
 
-  // Fiyat hesapla
+  // Bölge bazlı fiyat hesapla
   calculatePrice: async (params: {
+    serviceAreaId: string;
     distance: number;
     duration?: number;
     packageSize?: string;
     deliveryType?: string;
     urgency?: string;
   }) => {
-    const response = await api.post<{ price: number }>('/pricing/calculate', params);
+    const response = await api.post<{ 
+      price: number;
+      basePrice: number;
+      distancePrice: number;
+      serviceArea: string;
+      breakdown: {
+        base: number;
+        distance: number;
+        packageSizeMultiplier: number;
+        deliveryTypeMultiplier: number;
+        urgencyMultiplier: number;
+      }
+    }>('/pricing/calculate', params);
     return response.data;
   },
 };

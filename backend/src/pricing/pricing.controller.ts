@@ -72,23 +72,25 @@ export class PricingController {
 
   @Post('calculate')
   @Roles(UserRole.SUPER_ADMIN, UserRole.COMPANY)
-  @ApiOperation({ summary: 'Fiyat hesapla' })
+  @ApiOperation({ summary: 'Bölge bazlı fiyat hesapla' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
+        serviceAreaId: { type: 'string', description: 'Hizmet bölgesi ID' },
         distance: { type: 'number', description: 'Mesafe (km)' },
         duration: { type: 'number', description: 'Süre (dakika)' },
         packageSize: { type: 'string', enum: ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'] },
         deliveryType: { type: 'string', enum: ['STANDARD', 'EXPRESS'] },
         urgency: { type: 'string', enum: ['NORMAL', 'URGENT', 'VERY_URGENT'] },
       },
-      required: ['distance'],
+      required: ['serviceAreaId', 'distance'],
     },
   })
   @ApiResponse({ status: 200, description: 'Hesaplanan fiyat' })
   async calculatePrice(
     @Body() params: {
+      serviceAreaId: string;
       distance: number;
       duration?: number;
       packageSize?: 'SMALL' | 'MEDIUM' | 'LARGE' | 'EXTRA_LARGE';

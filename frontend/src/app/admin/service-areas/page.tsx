@@ -17,6 +17,15 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -47,7 +56,8 @@ import {
   Activity,
   X,
   Check,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Calculator
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -139,6 +149,14 @@ export default function ServiceAreasPage() {
     priority: 0,
   });
   const [statistics, setStatistics] = useState<ServiceAreaStatistics | null>(null);
+  const [calculateDialogOpen, setCalculateDialogOpen] = useState(false);
+  const [calculatedPrice, setCalculatedPrice] = useState<any>(null);
+  const [calculateForm, setCalculateForm] = useState({
+    distance: 10,
+    packageSize: 'MEDIUM',
+    deliveryType: 'STANDARD',
+    urgency: 'NORMAL',
+  });
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
 
@@ -466,6 +484,50 @@ export default function ServiceAreasPage() {
     map?.fitBounds(bounds);
   };
 
+  const calculatePrice = () => {
+    if (!selectedArea) return;
+
+    // Basit hesaplama (backend'deki mantıkla aynı)
+    let price = selectedArea.basePrice;
+    price += calculateForm.distance * selectedArea.pricePerKm;
+
+    // Çarpanlar
+    const sizeMultipliers: Record<string, number> = {
+      SMALL: 1,
+      MEDIUM: 1.2,
+      LARGE: 1.5,
+      EXTRA_LARGE: 2,
+    };
+    price *= sizeMultipliers[calculateForm.packageSize];
+
+    if (calculateForm.deliveryType === 'EXPRESS') {
+      price *= 1.5;
+    }
+
+    const urgencyMultipliers: Record<string, number> = {
+      NORMAL: 1,
+      URGENT: 1.3,
+      VERY_URGENT: 1.6,
+    };
+    price *= urgencyMultipliers[calculateForm.urgency];
+
+    price = Math.max(price, selectedArea.basePrice);
+
+    setCalculatedPrice({
+      price: Math.round(price * 100) / 100,
+      basePrice: selectedArea.basePrice,
+      distancePrice: calculateForm.distance * selectedArea.pricePerKm,
+      serviceArea: selectedArea.name,
+      breakdown: {
+        base: selectedArea.basePrice,
+        distance: calculateForm.distance * selectedArea.pricePerKm,
+        packageSizeMultiplier: sizeMultipliers[calculateForm.packageSize],
+        deliveryTypeMultiplier: calculateForm.deliveryType === 'EXPRESS' ? 1.5 : 1,
+        urgencyMultiplier: urgencyMultipliers[calculateForm.urgency],
+      }
+    });
+  };
+
   const handleCancel = () => {
     if (newPolygon) {
       newPolygon.setMap(null);
@@ -660,7 +722,17 @@ export default function ServiceAreasPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          setCalculateDialogOpen(true);
+                          setInfoWindowPosition(null);
+                        }}
+                      >
+                        <Calculator className="w-3 h-3 mr-1" />
+                        Fiyat Hesapla
+                      </Button>
                       <Button size="sm" onClick={() => startEditingExistingPolygon(selectedArea)}>
                         <Edit className="w-3 h-3 mr-1" />
                         Haritada Düzenle
@@ -822,6 +894,132 @@ export default function ServiceAreasPage() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Fiyat Hesaplama Dialog */}
+      <Dialog open={calculateDialogOpen} onOpenChange={setCalculateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedArea?.name} - Fiyat Hesaplama</DialogTitle>
+            <DialogDescription>
+              Bu bölge için teslimat fiyatını hesaplayın
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="calc-distance">Mesafe (km)</Label>
+              <Input
+                id="calc-distance"
+                type="number"
+                value={calculateForm.distance}
+                onChange={(e) => setCalculateForm({ ...calculateForm, distance: Number(e.target.value) })}
+                min="0"
+                step="0.5"
+              />
+              {selectedArea?.maxDistance && calculateForm.distance > selectedArea.maxDistance && (
+                <p className="text-sm text-red-500 mt-1">
+                  ⚠️ Max mesafe: {selectedArea.maxDistance} km
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="calc-package">Paket Boyutu</Label>
+              <Select
+                value={calculateForm.packageSize}
+                onValueChange={(value) => setCalculateForm({ ...calculateForm, packageSize: value })}
+              >
+                <SelectTrigger id="calc-package">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SMALL">Küçük (x1.0)</SelectItem>
+                  <SelectItem value="MEDIUM">Orta (x1.2)</SelectItem>
+                  <SelectItem value="LARGE">Büyük (x1.5)</SelectItem>
+                  <SelectItem value="EXTRA_LARGE">Çok Büyük (x2.0)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="calc-delivery">Teslimat Tipi</Label>
+              <Select
+                value={calculateForm.deliveryType}
+                onValueChange={(value) => setCalculateForm({ ...calculateForm, deliveryType: value })}
+              >
+                <SelectTrigger id="calc-delivery">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STANDARD">Standart (x1.0)</SelectItem>
+                  <SelectItem value="EXPRESS">Express (x1.5)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="calc-urgency">Aciliyet</Label>
+              <Select
+                value={calculateForm.urgency}
+                onValueChange={(value) => setCalculateForm({ ...calculateForm, urgency: value })}
+              >
+                <SelectTrigger id="calc-urgency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NORMAL">Normal (x1.0)</SelectItem>
+                  <SelectItem value="URGENT">Acil (x1.3)</SelectItem>
+                  <SelectItem value="VERY_URGENT">Çok Acil (x1.6)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {calculatedPrice && (
+              <div className="border rounded-lg p-4 bg-muted">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Taban Fiyat:</span>
+                    <span>₺{calculatedPrice.breakdown.base.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Mesafe ({calculateForm.distance} km):</span>
+                    <span>₺{calculatedPrice.breakdown.distance.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Paket Çarpanı:</span>
+                    <span>x{calculatedPrice.breakdown.packageSizeMultiplier}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Teslimat Çarpanı:</span>
+                    <span>x{calculatedPrice.breakdown.deliveryTypeMultiplier}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Aciliyet Çarpanı:</span>
+                    <span>x{calculatedPrice.breakdown.urgencyMultiplier}</span>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Toplam:</span>
+                      <span className="text-primary">₺{calculatedPrice.price.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setCalculateDialogOpen(false);
+              setCalculatedPrice(null);
+            }}>
+              Kapat
+            </Button>
+            <Button onClick={calculatePrice}>
+              <Calculator className="w-4 h-4 mr-2" />
+              Hesapla
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
