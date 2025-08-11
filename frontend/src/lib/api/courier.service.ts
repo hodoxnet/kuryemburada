@@ -24,13 +24,16 @@ export interface Courier {
 }
 
 export interface Document {
-  id: number;
-  entityType: string;
-  entityId: string;
-  documentType: string;
-  fileUrl: string;
-  status: string;
+  id: string;
+  userId: string;
+  type: string;
+  fileName: string;
+  fileSize?: number;
+  status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  verifiedAt?: string;
+  rejectionReason?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface UpdateCourierStatusDto {
@@ -76,6 +79,14 @@ export const courierService = {
   // Kurye detayını getir
   getCourier: async (id: string) => {
     const response = await api.get<Courier>(`/couriers/${id}`);
+    // Belgeleri de yükle
+    try {
+      const documentsResponse = await api.get<Document[]>(`/documents/user/${response.data.userId}`);
+      response.data.documents = documentsResponse.data;
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+      response.data.documents = [];
+    }
     return response.data;
   },
 

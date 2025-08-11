@@ -78,18 +78,58 @@ export interface CompanyApplicationData {
 }
 
 class ApplicationService {
-  async submitCourierApplication(data: CourierApplicationData) {
+  async submitCourierApplication(data: CourierApplicationData, files?: { [key: string]: File }) {
     try {
-      const response = await axios.post(`${API_URL}/auth/register/courier`, data);
+      const formData = new FormData();
+      
+      // JSON veriyi string olarak ekle
+      formData.append('data', JSON.stringify(data));
+      
+      // Belgeleri ekle - fieldName'i filename olarak gönder
+      if (files) {
+        Object.entries(files).forEach(([fieldName, file]) => {
+          if (file) {
+            // Dosyanın orijinal adını fieldName ile birleştir
+            const fileName = `${fieldName}_${file.name}`;
+            formData.append('documents', file, fileName);
+          }
+        });
+      }
+      
+      const response = await axios.post(`${API_URL}/auth/register/courier`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Kurye başvurusu sırasında bir hata oluştu');
     }
   }
 
-  async submitCompanyApplication(data: CompanyApplicationData) {
+  async submitCompanyApplication(data: CompanyApplicationData, files?: { [key: string]: File }) {
     try {
-      const response = await axios.post(`${API_URL}/auth/register/company`, data);
+      const formData = new FormData();
+      
+      // JSON veriyi string olarak ekle
+      formData.append('data', JSON.stringify(data));
+      
+      // Belgeleri ekle - fieldName'i filename olarak gönder
+      if (files) {
+        Object.entries(files).forEach(([fieldName, file]) => {
+          if (file) {
+            // Dosyanın orijinal adını fieldName ile birleştir
+            const fileName = `${fieldName}_${file.name}`;
+            formData.append('documents', file, fileName);
+          }
+        });
+      }
+      
+      const response = await axios.post(`${API_URL}/auth/register/company`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Firma başvurusu sırasında bir hata oluştu');

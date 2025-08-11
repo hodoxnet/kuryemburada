@@ -282,14 +282,16 @@ export default function CourierApplicationPage() {
         };
       }
 
-      // Başvuruyu gönder
-      const response = await applicationService.submitCourierApplication(applicationData);
+      // Belgeleri hazırla
+      const files: { [key: string]: File } = {};
+      if (formData.identityFront) files.identityFront = formData.identityFront;
+      if (formData.identityBack) files.identityBack = formData.identityBack;
+      if (formData.driverLicense) files.driverLicense = formData.driverLicense;
+      if (formData.vehicleRegistration) files.vehicleRegistration = formData.vehicleRegistration;
+      if (formData.criminalRecord) files.criminalRecord = formData.criminalRecord;
       
-      // Belgeleri yükle (eğer user ID döndüyse)
-      if (response.user?.id && formData.identityFront) {
-        // Belge yükleme işlemleri backend hazır olduğunda eklenecek
-        // await applicationService.uploadDocument(formData.identityFront, 'IDENTITY_CARD_FRONT', response.user.id);
-      }
+      // Başvuruyu ve belgeleri gönder
+      const response = await applicationService.submitCourierApplication(applicationData, files);
       
       toast.success("Başvurunuz başarıyla alındı! En kısa sürede size dönüş yapacağız.");
       router.push("/apply/success");

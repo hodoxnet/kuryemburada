@@ -29,7 +29,7 @@ import {
   Cake
 } from "lucide-react";
 import { courierService, Courier } from "@/lib/api/courier.service";
-import { handleApiError } from "@/lib/api-client";
+import { handleApiError, api } from "@/lib/api-client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -124,9 +124,9 @@ export default function CourierDetailPage() {
   };
 
   // Belge onaylama
-  const handleApproveDocument = async (documentId: number) => {
+  const handleApproveDocument = async (documentId: string) => {
     try {
-      await courierService.approveDocument(courierId, documentId);
+      await api.put(`/documents/${documentId}/verify`);
       toast.success("Belge onaylandı");
       loadCourier();
     } catch (error) {
@@ -135,9 +135,9 @@ export default function CourierDetailPage() {
   };
 
   // Belge reddetme
-  const handleRejectDocument = async (documentId: number, reason: string) => {
+  const handleRejectDocument = async (documentId: string, reason: string) => {
     try {
-      await courierService.rejectDocument(courierId, documentId, reason);
+      await api.put(`/documents/${documentId}/reject`, { reason });
       toast.success("Belge reddedildi");
       loadCourier();
     } catch (error) {
@@ -428,14 +428,34 @@ export default function CourierDetailPage() {
                 <div className="space-y-4">
                   {courier.documents.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{doc.documentType}</p>
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {doc.type === 'IDENTITY_CARD' && 'Kimlik Kartı'}
+                          {doc.type === 'DRIVER_LICENSE' && 'Ehliyet'}
+                          {doc.type === 'VEHICLE_REGISTRATION' && 'Araç Ruhsatı'}
+                          {doc.type === 'CRIMINAL_RECORD' && 'Adli Sicil Belgesi'}
+                          {doc.type === 'ADDRESS_PROOF' && 'İkametgah'}
+                          {doc.type === 'HEALTH_REPORT' && 'Sağlık Raporu'}
+                          {doc.type === 'INSURANCE' && 'Sigorta'}
+                          {doc.type === 'OTHER' && 'Diğer'}
+                          {!['IDENTITY_CARD', 'DRIVER_LICENSE', 'VEHICLE_REGISTRATION', 'CRIMINAL_RECORD', 'ADDRESS_PROOF', 'HEALTH_REPORT', 'INSURANCE', 'OTHER'].includes(doc.type) && doc.type}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          Yüklenme: {format(new Date(doc.createdAt), "dd MMM yyyy", { locale: tr })}
+                          {doc.fileName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Yüklenme: {format(new Date(doc.createdAt), "dd MMM yyyy HH:mm", { locale: tr })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={doc.status as any} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/documents/${doc.id}/download`, '_blank')}
+                        >
+                          İndir
+                        </Button>
                         {doc.status === "PENDING" && (
                           <>
                             <Button

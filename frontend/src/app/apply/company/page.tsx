@@ -326,14 +326,14 @@ export default function CompanyApplicationPage() {
         applicationData.currentLogisticsProvider = formData.currentLogisticsProvider;
       }
 
-      // Başvuruyu gönder
-      const response = await applicationService.submitCompanyApplication(applicationData);
+      // Belgeleri hazırla
+      const files: { [key: string]: File } = {};
+      if (formData.taxCertificate) files.taxCertificate = formData.taxCertificate;
+      if (formData.tradeLicense) files.tradeLicense = formData.tradeLicense;
+      if (formData.signatureCircular) files.signatureCircular = formData.signatureCircular;
       
-      // Belgeleri yükle (eğer user ID döndüyse)
-      if (response.user?.id && formData.taxCertificate) {
-        // Belge yükleme işlemleri backend hazır olduğunda eklenecek
-        // await applicationService.uploadDocument(formData.taxCertificate, 'TAX_CERTIFICATE', response.user.id);
-      }
+      // Başvuruyu ve belgeleri gönder
+      const response = await applicationService.submitCompanyApplication(applicationData, files);
       
       toast.success("Başvurunuz başarıyla alındı! En kısa sürede size dönüş yapacağız.");
       router.push("/apply/success");

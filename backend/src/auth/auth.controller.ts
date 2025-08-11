@@ -6,8 +6,11 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserRole } from '@prisma/client';
@@ -44,17 +47,67 @@ export class AuthController {
   }
 
   @Post('register/courier')
-  @ApiOperation({ summary: 'Courier registration' })
-  @ApiBody({ type: RegisterCourierDto })
-  async registerCourier(@Body() registerCourierDto: RegisterCourierDto) {
-    return this.authService.registerCourier(registerCourierDto);
+  @UseInterceptors(FilesInterceptor('documents', 10))
+  @ApiOperation({ summary: 'Courier registration with documents' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        data: { 
+          type: 'string',
+          description: 'JSON string of courier registration data' 
+        },
+        documents: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Document files (identity, license, etc.)'
+        }
+      },
+      required: ['data'],
+    }
+  })
+  async registerCourier(
+    @Body('data') dataString: string,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    const registerCourierDto: RegisterCourierDto = JSON.parse(dataString);
+    return this.authService.registerCourier(registerCourierDto, files);
   }
 
   @Post('register/company')
-  @ApiOperation({ summary: 'Company registration' })
-  @ApiBody({ type: RegisterCompanyDto })
-  async registerCompany(@Body() registerCompanyDto: RegisterCompanyDto) {
-    return this.authService.registerCompany(registerCompanyDto);
+  @UseInterceptors(FilesInterceptor('documents', 10))
+  @ApiOperation({ summary: 'Company registration with documents' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        data: { 
+          type: 'string',
+          description: 'JSON string of company registration data' 
+        },
+        documents: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Document files (tax certificate, trade license, etc.)'
+        }
+      },
+      required: ['data'],
+    }
+  })
+  async registerCompany(
+    @Body('data') dataString: string,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    const registerCompanyDto: RegisterCompanyDto = JSON.parse(dataString);
+    return this.authService.registerCompany(registerCompanyDto, files);
   }
 
   @Post('change-password')

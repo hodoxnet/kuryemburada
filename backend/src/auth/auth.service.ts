@@ -7,9 +7,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { DocumentsService } from '../documents/documents.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus, DocumentType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private documentsService: DocumentsService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -139,7 +141,7 @@ export class AuthService {
     return result;
   }
 
-  async registerCourier(data: any) {
+  async registerCourier(data: any, files?: Express.Multer.File[]) {
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -191,17 +193,15 @@ export class AuthService {
         },
       });
 
-      // Adres bilgisi varsa ekle
-      if (data.address) {
-        await tx.notification.create({
-          data: {
-            userId: user.id,
-            title: 'Başvurunuz Alındı',
-            message: 'Kurye başvurunuz başarıyla alındı. En kısa sürede size dönüş yapacağız.',
-            type: 'SYSTEM',
-          },
-        });
-      }
+      // Bildirim oluştur
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          title: 'Başvurunuz Alındı',
+          message: 'Kurye başvurunuz başarıyla alındı. En kısa sürede size dönüş yapacağız.',
+          type: 'SYSTEM',
+        },
+      });
 
       return {
         user: {
@@ -214,10 +214,64 @@ export class AuthService {
       };
     });
 
+    // Belgeleri yükle (transaction dışında)
+    if (files && files.length > 0) {
+      const documentTypeMap: { [key: string]: DocumentType } = {
+        'identityfront': DocumentType.IDENTITY_CARD,
+        'identityback': DocumentType.IDENTITY_CARD,
+        'driverlicense': DocumentType.DRIVER_LICENSE,
+        'vehicleregistration': DocumentType.VEHICLE_REGISTRATION,
+        'criminalrecord': DocumentType.CRIMINAL_RECORD,
+        'addressproof': DocumentType.ADDRESS_PROOF,
+        'healthreport': DocumentType.HEALTH_REPORT,
+        'tradelicense': DocumentType.TRADE_LICENSE,
+        'taxcertificate': DocumentType.TAX_CERTIFICATE,
+        'taxplate': DocumentType.TAX_PLATE,
+      };
+
+      for (const file of files) {
+        try {
+          // Dosya adından belge tipini belirle
+          // Frontend'den gelen dosyanın orijinal adı fieldName olarak geliyor
+          const originalName = file.originalname || '';
+          let documentType: DocumentType = DocumentType.OTHER;
+          
+          // Belge tipini belirle - originalname'den kontrol et
+          // Dosya adı formatı: identityFront_dosya.jpg gibi
+          Object.keys(documentTypeMap).forEach(key => {
+            if (originalName.toLowerCase().startsWith(key.toLowerCase())) {
+              documentType = documentTypeMap[key];
+            }
+          });
+
+          // Debug log
+          console.log('Uploading document:', {
+            originalName: originalName,
+            documentType: documentType,
+            userId: result.user.id,
+          });
+          
+          // Belgeyi kaydet
+          await this.documentsService.uploadDocument(
+            file,
+            { 
+              type: documentType,
+              userId: result.user.id,
+              description: `Kurye başvuru belgesi - ${originalName}`
+            },
+            result.user.id,
+          );
+        } catch (error) {
+          console.error('Document upload error:', error);
+          // Belge yükleme hatası olsa bile kaydı iptal etmiyoruz
+        }
+      }
+    }
+
     return result;
   }
 
-  async registerCompany(data: any) {
+  async registerCompany(data: any, files?: Express.Multer.File[]) {
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -291,6 +345,48 @@ export class AuthService {
         company,
       };
     });
+
+    // Belgeleri yükle (transaction dışında)
+    if (files && files.length > 0) {
+      const documentTypeMap: { [key: string]: DocumentType } = {
+        'taxCertificate': DocumentType.TAX_CERTIFICATE,
+        'tradeLicense': DocumentType.TRADE_LICENSE,
+        'signatureCircular': DocumentType.OTHER,
+        'kepAddress': DocumentType.KEP_ADDRESS,
+        'identityCard': DocumentType.IDENTITY_CARD,
+      };
+
+      for (const file of files) {
+        try {
+          // Dosya adından belge tipini belirle
+          // Frontend'den gelen dosyanın orijinal adı fieldName olarak geliyor
+          const originalName = file.originalname || '';
+          let documentType: DocumentType = DocumentType.OTHER;
+          
+          // Belge tipini belirle - originalname'den kontrol et
+          // Dosya adı formatı: identityFront_dosya.jpg gibi
+          Object.keys(documentTypeMap).forEach(key => {
+            if (originalName.toLowerCase().startsWith(key.toLowerCase())) {
+              documentType = documentTypeMap[key];
+            }
+          });
+
+          // Belgeyi kaydet
+          await this.documentsService.uploadDocument(
+            file,
+            { 
+              type: documentType,
+              userId: result.user.id,
+              description: `Firma başvuru belgesi - ${originalName}`
+            },
+            result.user.id,
+          );
+        } catch (error) {
+          console.error('Document upload error:', error);
+          // Belge yükleme hatası olsa bile kaydı iptal etmiyoruz
+        }
+      }
+    }
 
     return result;
   }
