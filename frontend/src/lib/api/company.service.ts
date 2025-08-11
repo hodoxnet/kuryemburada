@@ -26,7 +26,7 @@ export interface Company {
   contactPerson?: any;
   tradeLicenseNo?: string;
   activityArea?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'INACTIVE';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
   approvedAt?: string;
   rejectedAt?: string;
   approvedBy?: string;
@@ -103,7 +103,7 @@ export const companyService = {
       pending: number;
       approved: number;
       rejected: number;
-      active: number;
+      inactive: number;
     }>('/companies/statistics');
     return response.data;
   },

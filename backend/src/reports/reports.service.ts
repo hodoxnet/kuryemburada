@@ -23,9 +23,9 @@ export class ReportsService {
       totalRevenue,
     ] = await Promise.all([
       this.prisma.company.count(),
-      this.prisma.company.count({ where: { status: CompanyStatus.ACTIVE } }),
+      this.prisma.company.count({ where: { status: CompanyStatus.APPROVED } }),
       this.prisma.courier.count(),
-      this.prisma.courier.count({ where: { status: CourierStatus.ACTIVE } }),
+      this.prisma.courier.count({ where: { status: CourierStatus.APPROVED } }),
       this.prisma.order.count(),
       this.prisma.order.count({ where: { status: OrderStatus.PENDING } }),
       this.prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),

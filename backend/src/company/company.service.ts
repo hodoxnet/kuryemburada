@@ -133,12 +133,12 @@ export class CompanyService {
   }
 
   async getStatistics() {
-    const [total, pending, approved, rejected, active] = await Promise.all([
+    const [total, pending, approved, rejected, inactive] = await Promise.all([
       this.prisma.company.count(),
       this.prisma.company.count({ where: { status: CompanyStatus.PENDING } }),
       this.prisma.company.count({ where: { status: CompanyStatus.APPROVED } }),
       this.prisma.company.count({ where: { status: CompanyStatus.REJECTED } }),
-      this.prisma.company.count({ where: { status: CompanyStatus.ACTIVE } }),
+      this.prisma.company.count({ where: { status: CompanyStatus.INACTIVE } }),
     ]);
 
     return {
@@ -146,7 +146,7 @@ export class CompanyService {
       pending,
       approved,
       rejected,
-      active,
+      inactive,
     };
   }
 

@@ -27,7 +27,7 @@ export default function CompaniesPage() {
     pending: 0,
     approved: 0,
     rejected: 0,
-    active: 0,
+    inactive: 0,
   });
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
@@ -228,10 +228,10 @@ export default function CompaniesPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Aktif</CardTitle>
+            <CardTitle className="text-sm font-medium">Pasif</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
           </CardContent>
         </Card>
       </div>
@@ -245,7 +245,7 @@ export default function CompaniesPage() {
               <TabsTrigger value="pending">Bekleyen</TabsTrigger>
               <TabsTrigger value="approved">Onaylı</TabsTrigger>
               <TabsTrigger value="rejected">Reddedildi</TabsTrigger>
-              <TabsTrigger value="active">Aktif</TabsTrigger>
+              <TabsTrigger value="inactive">Pasif</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>

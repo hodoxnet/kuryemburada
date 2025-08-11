@@ -11,7 +11,7 @@ export interface Courier {
   vehicleInfo?: any;
   bankInfo?: any;
   emergencyContact?: any;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'INACTIVE' | 'BUSY';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE' | 'BUSY';
   rating?: number;
   totalDeliveries?: number;
   approvedAt?: string;
@@ -103,7 +103,7 @@ export const courierService = {
       pending: number;
       approved: number;
       rejected: number;
-      active: number;
+      inactive: number;
       busy: number;
     }>('/couriers/statistics');
     return response.data;

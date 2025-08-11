@@ -147,12 +147,12 @@ export class CourierService {
   }
 
   async getStatistics() {
-    const [total, pending, approved, rejected, active, busy] = await Promise.all([
+    const [total, pending, approved, rejected, inactive, busy] = await Promise.all([
       this.prisma.courier.count(),
       this.prisma.courier.count({ where: { status: CourierStatus.PENDING } }),
       this.prisma.courier.count({ where: { status: CourierStatus.APPROVED } }),
       this.prisma.courier.count({ where: { status: CourierStatus.REJECTED } }),
-      this.prisma.courier.count({ where: { status: CourierStatus.ACTIVE } }),
+      this.prisma.courier.count({ where: { status: CourierStatus.INACTIVE } }),
       this.prisma.courier.count({ where: { status: CourierStatus.BUSY } }),
     ]);
 
@@ -161,7 +161,7 @@ export class CourierService {
       pending,
       approved,
       rejected,
-      active,
+      inactive,
       busy,
     };
   }

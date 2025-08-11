@@ -47,7 +47,7 @@ async function main() {
         district: 'Çankaya',
         detail: 'Test Sokak No:1',
       },
-      status: 'ACTIVE',
+      status: 'APPROVED',
     },
   });
 
@@ -87,7 +87,7 @@ async function main() {
         plate: '34 ABC 123',
         year: 2020,
       },
-      status: 'ACTIVE',
+      status: 'APPROVED',
     },
   });
 
