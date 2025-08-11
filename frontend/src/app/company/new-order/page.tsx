@@ -44,6 +44,7 @@ export default function NewOrderPage() {
   const [deliveryAddress, setDeliveryAddress] = useState<Address>();
   const [estimatedPrice, setEstimatedPrice] = useState<number>(0);
   const [estimatedTime, setEstimatedTime] = useState<number>(0);
+  const [distance, setDistance] = useState<number>(0);
   const [useCompanyAddress, setUseCompanyAddress] = useState(false);
   const [companyAddressCoords, setCompanyAddressCoords] = useState<Address>();
 
@@ -115,9 +116,10 @@ export default function NewOrderPage() {
       Math.cos(pickupAddress.lat * Math.PI / 180) * Math.cos(deliveryAddress.lat * Math.PI / 180) *
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Mesafe (km)
+    const calculatedDistance = R * c; // Mesafe (km)
+    setDistance(calculatedDistance); // State'e kaydet
 
-    let price = 15 + (distance * 3); // Temel fiyat
+    let price = 15 + (calculatedDistance * 3); // Temel fiyat
 
     // Paket boyutu katsayısı
     const sizeMultipliers: Record<string, number> = {
@@ -142,7 +144,7 @@ export default function NewOrderPage() {
     price *= urgencyMultipliers[urgency];
 
     setEstimatedPrice(Math.round(price * 100) / 100);
-    setEstimatedTime(Math.ceil(distance * 3)); // Tahmini süre (dakika)
+    setEstimatedTime(Math.ceil(calculatedDistance * 3)); // Tahmini süre (dakika)
   };
 
   const onSubmit = async (data: OrderFormData) => {
@@ -154,10 +156,17 @@ export default function NewOrderPage() {
     try {
       setLoading(true);
       
+      // scheduledPickupTime'ı ISO formatına çevir ve varsayılan değerleri ekle
       const orderData: CreateOrderDto = {
         ...data,
         pickupAddress,
         deliveryAddress,
+        distance, // Mesafe bilgisini ekle
+        deliveryType: data.deliveryType || 'STANDARD',
+        urgency: data.urgency || 'NORMAL',
+        scheduledPickupTime: data.scheduledPickupTime 
+          ? new Date(data.scheduledPickupTime).toISOString() 
+          : undefined,
       };
 
       const response = await orderService.createOrder(orderData);
