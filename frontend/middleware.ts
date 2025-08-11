@@ -15,8 +15,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 
-  // Admin sayfaları - token yoksa login'e yönlendir
-  if (pathname.startsWith('/admin') && !token) {
+  // Korumalı sayfalar - token yoksa login'e yönlendir
+  const protectedPaths = ['/admin', '/company', '/courier'];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+  
+  if (isProtectedPath && !token) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);
@@ -29,6 +32,8 @@ export const config = {
   matcher: [
     '/',
     '/admin/:path*',
+    '/company/:path*',
+    '/courier/:path*',
     '/login',
   ],
 };
