@@ -4,7 +4,7 @@ import {
   IsObject,
   ValidateNested,
   IsEmail,
-  IsMobilePhone
+  Matches
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -52,7 +52,7 @@ class ContactPersonDto {
   name: string;
 
   @ApiProperty({ description: 'Telefon' })
-  @IsMobilePhone('tr-TR')
+  @Matches(/^[0-9]{10,11}$/, { message: 'Geçerli bir telefon numarası giriniz' })
   phone: string;
 
   @ApiProperty({ description: 'E-posta' })
@@ -72,7 +72,7 @@ export class UpdateCompanyDto {
 
   @ApiPropertyOptional({ description: 'Telefon numarası' })
   @IsOptional()
-  @IsMobilePhone('tr-TR')
+  @Matches(/^[0-9]{10,11}$/, { message: 'Geçerli bir telefon numarası giriniz' })
   phone?: string;
 
   @ApiPropertyOptional({ description: 'KEP adresi' })

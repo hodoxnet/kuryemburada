@@ -136,6 +136,25 @@ export default function CompanyProfilePage() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const getDocumentTypeLabel = (type: string) => {
+    const documentLabels: Record<string, string> = {
+      TRADE_LICENSE: 'Ticaret Sicil Gazetesi',
+      TAX_CERTIFICATE: 'Vergi Levhası',
+      KEP_ADDRESS: 'KEP Adresi Belgesi',
+      IDENTITY_CARD: 'Kimlik Kartı',
+      DRIVER_LICENSE: 'Ehliyet',
+      VEHICLE_REGISTRATION: 'Araç Ruhsatı',
+      INSURANCE: 'Sigorta Poliçesi',
+      ADDRESS_PROOF: 'İkametgah Belgesi',
+      CRIMINAL_RECORD: 'Adli Sicil Kaydı',
+      HEALTH_REPORT: 'Sağlık Raporu',
+      TAX_PLATE: 'Vergi Levhası',
+      OTHER: 'Diğer',
+    };
+
+    return documentLabels[type] || type;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -515,7 +534,7 @@ export default function CompanyProfilePage() {
                 <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{doc.type}</span>
+                    <span className="text-sm font-medium">{getDocumentTypeLabel(doc.type)}</span>
                   </div>
                   {getStatusBadge(doc.status)}
                 </div>
