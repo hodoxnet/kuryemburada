@@ -76,18 +76,21 @@ npm run lint               # ESLint kontrolü
 - **Logging**: Winston - Dosya ve konsol transport'ları
 - **API Dokümantasyon**: Swagger/OpenAPI (`http://localhost:3001/api-docs`)
 - **Validation**: class-validator ve class-transformer
-- **Testing**: Jest (unit ve e2e testler)
+- **Testing**: Jest v30 (unit ve e2e testler)
+- **File Upload**: Multer - Doküman ve görsel yükleme
 
 #### Frontend
 - **Framework**: Next.js 15 (App Router)
-- **Styling**: Tailwind CSS + shadcn/ui komponetleri
+- **Styling**: Tailwind CSS + shadcn/ui komponetleri (New York theme)
 - **State Management**: Zustand v5 (immer middleware ile)
-- **Form Handling**: React Hook Form + Zod validation
+- **Form Handling**: React Hook Form v7 + Zod validation
 - **HTTP Client**: Axios (interceptor'lar ile token yönetimi)
 - **UI Components**: Radix UI primitives
+- **Maps**: Google Maps JavaScript API (@react-google-maps/api)
 - **Utility Libraries**: date-fns, clsx, tailwind-merge
 - **Notifications**: Sonner toast library
 - **Tables**: TanStack Table v8
+- **Animations**: Framer Motion v12
 
 ### Veritabanı Mimarisi
 
@@ -102,14 +105,21 @@ PostgreSQL veritabanı Prisma ORM ile yönetilir. Ana varlıklar ve ilişkileri:
 - **Document**: Doğrulama belgeleri (ehliyet, sertifikalar)
 - **Notification**: Kullanıcı bildirimleri
 - **PricingRule**: Esnek fiyatlandırma kuralları
+- **ServiceArea**: Hizmet bölgeleri tanımları
 
 #### Enum Değerleri
 - **UserRole**: SUPER_ADMIN, COMPANY, COURIER
 - **UserStatus**: ACTIVE, INACTIVE, BLOCKED, PENDING
 - **CompanyStatus**: PENDING, APPROVED, REJECTED, ACTIVE, INACTIVE
 - **CourierStatus**: PENDING, APPROVED, REJECTED, ACTIVE, INACTIVE, BUSY
-- **OrderStatus**: PENDING, ACCEPTED, IN_PROGRESS, DELIVERED, CANCELLED, FAILED
+- **OrderStatus**: PENDING, ACCEPTED, IN_PROGRESS, DELIVERED, CANCELLED, REJECTED
 - **PaymentStatus**: PENDING, COMPLETED, FAILED, REFUNDED
+- **PaymentMethod**: CASH, CREDIT_CARD, BANK_TRANSFER
+- **PackageType**: DOCUMENT, PACKAGE, FOOD, OTHER
+- **PackageSize**: SMALL, MEDIUM, LARGE, EXTRA_LARGE
+- **Urgency**: NORMAL, URGENT, VERY_URGENT
+- **DeliveryType**: STANDARD, EXPRESS
+- **DocumentType**: TRADE_LICENSE, TAX_CERTIFICATE, KEP_ADDRESS, IDENTITY_CARD, DRIVER_LICENSE, VEHICLE_REGISTRATION, INSURANCE
 
 ### Modül Yapısı
 
@@ -124,10 +134,13 @@ backend/src/
 │   └── roles.decorator.ts # @Roles() decorator
 ├── company/               # Firma yönetimi modülü
 ├── courier/               # Kurye yönetimi modülü
+├── orders/                # Sipariş yönetimi modülü
 ├── payments/              # Ödeme işlemleri modülü
 ├── pricing/               # Fiyatlandırma kuralları modülü
 ├── reports/               # Raporlama modülü
 ├── settings/              # Sistem ayarları modülü
+├── service-area/          # Hizmet bölgeleri modülü
+├── documents/             # Belge yükleme ve yönetimi
 ├── users/                 # Kullanıcı CRUD işlemleri
 ├── prisma/                # Veritabanı servisi
 │   └── prisma.service.ts  # Prisma client wrapper
@@ -151,26 +164,43 @@ frontend/src/
 │   │   ├── companies/    # Firma yönetimi
 │   │   ├── couriers/     # Kurye yönetimi
 │   │   ├── payments/     # Ödeme yönetimi
-│   │   ├── pricing/      # Fiyatlandırma
 │   │   ├── reports/      # Raporlar
+│   │   ├── service-areas/# Hizmet bölgeleri
 │   │   ├── settings/     # Ayarlar
 │   │   └── users/        # Kullanıcı yönetimi
+│   ├── apply/            # Başvuru sayfaları
+│   │   ├── company/      # Firma başvurusu
+│   │   ├── courier/      # Kurye başvurusu
+│   │   └── success/      # Başvuru başarılı
 │   ├── company/          # Firma paneli
-│   └── courier/          # Kurye paneli
+│   │   ├── new-order/    # Yeni sipariş
+│   │   └── orders/       # Sipariş yönetimi
+│   ├── courier/          # Kurye paneli
+│   │   ├── available-orders/ # Müsait siparişler
+│   │   ├── dashboard/    # Kurye dashboard
+│   │   └── orders/       # Kurye siparişleri
+│   └── unauthorized/     # Yetkisiz erişim sayfası
 ├── components/            # React komponetleri
 │   ├── auth/             # Auth komponetleri
 │   ├── layout/           # Layout komponetleri (Header, Sidebar)
 │   ├── shared/           # Paylaşılan komponetler
+│   │   ├── DataTable.tsx # Veri tablosu
+│   │   ├── GoogleMap.tsx # Harita komponenti
+│   │   └── StatusBadge.tsx # Durum göstergesi
 │   └── ui/               # shadcn/ui komponetleri
 ├── contexts/              # React Context'ler
 │   └── AuthContext.tsx   # Authentication context
 ├── lib/                   # Utility ve servisler
 │   ├── api/              # API servis dosyaları
 │   ├── api-client.ts     # Axios instance ve interceptor'lar
-│   └── utils.ts          # Yardımcı fonksiyonlar
+│   ├── auth.ts           # Auth yardımcı fonksiyonlar
+│   └── utils.ts          # Genel yardımcı fonksiyonlar
 ├── services/              # Business logic servisleri
+│   ├── auth.service.ts   # Auth servisi
+│   └── order.service.ts  # Sipariş servisi
 └── stores/                # Zustand store'ları
     ├── authStore.ts      # Authentication store
+    ├── useAuthStore.ts   # Auth store hook
     ├── useNotificationStore.ts # Bildirim yönetimi
     ├── useOrderStore.ts  # Sipariş state yönetimi
     └── useUIStore.ts     # UI state yönetimi
@@ -230,11 +260,30 @@ SWAGGER_PATH=api-docs
 # File Upload
 MAX_FILE_SIZE=10485760
 UPLOAD_PATH=./uploads
+
+# Email (ileride kullanım için)
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+FROM_EMAIL=
+
+# SMS (ileride kullanım için) 
+SMS_API_KEY=
+SMS_API_URL=
+
+# Google Maps (ileride kullanım için)
+GOOGLE_MAPS_API_KEY=
+
+# Payment Gateway (ileride kullanım için)
+PAYMENT_API_KEY=
+PAYMENT_API_SECRET=
 ```
 
 ### Frontend (.env.local dosyası)
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 ```
 
 ## Test Stratejisi
@@ -259,6 +308,8 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 - **Migration'lar**: `backend/prisma/migrations/`
 - **Environment örneği**: `backend/.env.example`
 - **Test konfigürasyonu**: `backend/test/jest-e2e.json`
+- **Swagger UI**: `http://localhost:3001/api-docs`
+- **Static files (uploads)**: `backend/uploads/`
 
 ### Frontend  
 - **Ana layout**: `frontend/src/app/layout.tsx`
@@ -269,6 +320,7 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 - **UI komponetleri**: `frontend/src/components/ui/`
 - **Tailwind config**: `frontend/tailwind.config.ts`
 - **shadcn config**: `frontend/components.json`
+- **Public assets**: `frontend/public/`
 
 ## Geliştirme İpuçları
 
@@ -283,6 +335,7 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 8. Frontend'de ilgili sayfaları ve komponetleri oluştur
 9. API service dosyasını güncelle
 10. Zustand store oluştur (gerekirse)
+11. Role-based erişim kontrollerini ekle
 
 ### Debugging
 - **Backend**: `npm run start:debug` ile 9229 portunda debugger aç
@@ -296,6 +349,8 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 - Frontend'de React.memo ve useMemo kullan
 - Image optimization için Next.js Image component kullan
 - Bundle size analizi için `npm run build` sonrası .next/analyze/ kontrol et
+- Lazy loading için Next.js dynamic imports kullan
+- API response'larında pagination uygula
 
 ### Güvenlik Best Practices
 - Tüm protected route'larda `@UseGuards(JwtAuthGuard)` kullan

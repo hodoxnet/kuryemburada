@@ -9,9 +9,11 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
+  Request,
 } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -30,6 +32,27 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+
+  @Get('profile')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma kendi bilgilerini getir' })
+  @ApiResponse({ status: 200, description: 'Firma bilgileri' })
+  @ApiResponse({ status: 404, description: 'Firma bulunamadı' })
+  async getProfile(@Request() req) {
+    return this.companyService.findByUserId(req.user.id);
+  }
+
+  @Patch('profile')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma kendi bilgilerini güncelle' })
+  @ApiResponse({ status: 200, description: 'Firma bilgileri güncellendi' })
+  @ApiResponse({ status: 404, description: 'Firma bulunamadı' })
+  async updateProfile(
+    @Request() req,
+    @Body() updateCompanyDto: UpdateCompanyDto,
+  ) {
+    return this.companyService.updateByUserId(req.user.id, updateCompanyDto);
+  }
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN)

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyStatus, Prisma } from '@prisma/client';
 import { Logger } from 'winston';
 import { Inject } from '@nestjs/common';
@@ -75,6 +76,84 @@ export class CompanyService {
     }
 
     return company;
+  }
+
+  async findByUserId(userId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            createdAt: true,
+            status: true,
+          },
+        },
+        documents: {
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Firma bilgileri bulunamadı');
+    }
+
+    return company;
+  }
+
+  async updateByUserId(userId: string, updateCompanyDto: UpdateCompanyDto) {
+    const company = await this.prisma.company.findUnique({
+      where: { userId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Firma bilgileri bulunamadı');
+    }
+
+    // JSON alanlarını plain object'e dönüştür
+    const updateData: any = {
+      ...updateCompanyDto,
+    };
+
+    // Address, bankInfo ve contactPerson alanlarını JSON olarak ayarla
+    if (updateCompanyDto.address) {
+      updateData.address = JSON.parse(JSON.stringify(updateCompanyDto.address));
+    }
+    if (updateCompanyDto.bankInfo) {
+      updateData.bankInfo = JSON.parse(JSON.stringify(updateCompanyDto.bankInfo));
+    }
+    if (updateCompanyDto.contactPerson) {
+      updateData.contactPerson = JSON.parse(JSON.stringify(updateCompanyDto.contactPerson));
+    }
+
+    const updatedCompany = await this.prisma.company.update({
+      where: { userId },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    this.logger.info('Firma bilgileri güncellendi', {
+      companyId: updatedCompany.id,
+      userId,
+      updatedFields: Object.keys(updateCompanyDto),
+    });
+
+    return updatedCompany;
   }
 
   async updateStatus(id: string, updateStatusDto: UpdateCompanyStatusDto) {
