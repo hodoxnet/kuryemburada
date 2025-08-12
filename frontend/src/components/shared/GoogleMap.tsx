@@ -14,12 +14,23 @@ interface Address {
   detail?: string;
 }
 
+interface ServiceArea {
+  id: string;
+  name: string;
+  district: string;
+  boundaries: Array<{ lat: number; lng: number }>;
+  basePrice: number;
+  pricePerKm: number;
+  isActive: boolean;
+}
+
 interface GoogleMapProps {
   onPickupSelect: (address: Address) => void;
   onDeliverySelect: (address: Address) => void;
   pickupAddress?: Address;
   deliveryAddress?: Address;
   apiKey?: string;
+  serviceAreas?: ServiceArea[];
 }
 
 export default function GoogleMap({
@@ -28,6 +39,7 @@ export default function GoogleMap({
   pickupAddress,
   deliveryAddress,
   apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+  serviceAreas = [],
 }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -40,6 +52,7 @@ export default function GoogleMap({
   const [duration, setDuration] = useState<number | null>(null);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [areaPolygons, setAreaPolygons] = useState<google.maps.Polygon[]>([]);
 
   useEffect(() => {
     const loader = new Loader({
@@ -170,6 +183,31 @@ export default function GoogleMap({
       });
     }
   }, [addressMode, autocomplete, map, onPickupSelect, onDeliverySelect]);
+
+  // Service areas'ı haritada göster
+  useEffect(() => {
+    if (map && serviceAreas.length > 0) {
+      // Eski polygon'ları temizle
+      areaPolygons.forEach(polygon => polygon.setMap(null));
+      
+      // Yeni polygon'lar oluştur
+      const newPolygons = serviceAreas.map(area => {
+        const polygon = new google.maps.Polygon({
+          paths: area.boundaries,
+          strokeColor: '#3b82f6',
+          strokeOpacity: 0.5,
+          strokeWeight: 2,
+          fillColor: '#3b82f6',
+          fillOpacity: 0.1,
+          clickable: false,
+        });
+        polygon.setMap(map);
+        return polygon;
+      });
+      
+      setAreaPolygons(newPolygons);
+    }
+  }, [map, serviceAreas]);
 
   // Pickup marker güncelle
   useEffect(() => {

@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { orderService, CreateOrderDto, Address } from '@/lib/api/order.service';
+import { serviceAreaService, ServiceArea } from '@/lib/api/service-area.service';
 import GoogleMap from '@/components/shared/GoogleMap';
 import { toast } from 'sonner';
 import { ArrowLeft, MapPin, Package, Clock, User, Phone, FileText, Zap, Calendar, Info } from 'lucide-react';
@@ -47,6 +48,7 @@ export default function NewOrderPage() {
   const [distance, setDistance] = useState<number>(0);
   const [useCompanyAddress, setUseCompanyAddress] = useState(false);
   const [companyAddressCoords, setCompanyAddressCoords] = useState<Address>();
+  const [serviceAreas, setServiceAreas] = useState<ServiceArea[]>([]);
 
   const {
     register,
@@ -68,6 +70,26 @@ export default function NewOrderPage() {
   const packageSize = watch('packageSize');
   const deliveryType = watch('deliveryType');
   const urgency = watch('urgency');
+
+  // Aktif hizmet bölgelerini çek
+  useEffect(() => {
+    const fetchServiceAreas = async () => {
+      try {
+        const areas = await serviceAreaService.getActive();
+        setServiceAreas(areas);
+      } catch (error) {
+        console.error('Hizmet bölgeleri yüklenemedi:', error);
+      }
+    };
+    fetchServiceAreas();
+  }, []);
+
+  // Adres veya fiyat parametreleri değiştiğinde fiyat hesapla
+  useEffect(() => {
+    if (pickupAddress && deliveryAddress && serviceAreas.length > 0) {
+      calculatePrice();
+    }
+  }, [pickupAddress, deliveryAddress, serviceAreas, packageSize, deliveryType, urgency]);
 
   // Firma adresini geocode et
   useEffect(() => {
@@ -104,10 +126,35 @@ export default function NewOrderPage() {
     }
   }, [user]);
 
-  // Fiyat hesaplama (basit tahmin)
-  const calculatePrice = () => {
-    if (!pickupAddress || !deliveryAddress) return;
+  // Point-in-polygon algoritması
+  const isPointInPolygon = (point: { lat: number; lng: number }, polygon: Array<{ lat: number; lng: number }>) => {
+    let isInside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].lng, yi = polygon[i].lat;
+      const xj = polygon[j].lng, yj = polygon[j].lat;
+      
+      const intersect = ((yi > point.lat) !== (yj > point.lat))
+        && (point.lng < (xj - xi) * (point.lat - yi) / (yj - yi) + xi);
+      if (intersect) isInside = !isInside;
+    }
+    return isInside;
+  };
 
+  // Hangi bölgede olduğunu bul
+  const findServiceArea = (point: { lat: number; lng: number }) => {
+    for (const area of serviceAreas) {
+      if (area.boundaries && isPointInPolygon(point, area.boundaries)) {
+        return area;
+      }
+    }
+    return null;
+  };
+
+  // Fiyat hesaplama (bölge bazlı)
+  const calculatePrice = () => {
+    if (!pickupAddress || !deliveryAddress || serviceAreas.length === 0) return;
+
+    // Mesafe hesaplama
     const R = 6371; // Dünya yarıçapı (km)
     const dLat = (deliveryAddress.lat - pickupAddress.lat) * Math.PI / 180;
     const dLon = (deliveryAddress.lng - pickupAddress.lng) * Math.PI / 180;
@@ -117,9 +164,31 @@ export default function NewOrderPage() {
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     const calculatedDistance = R * c; // Mesafe (km)
-    setDistance(calculatedDistance); // State'e kaydet
+    setDistance(calculatedDistance);
 
-    let price = 15 + (calculatedDistance * 3); // Temel fiyat
+    // Hangi bölgede olduğunu tespit et
+    const pickupArea = findServiceArea(pickupAddress);
+    const deliveryArea = findServiceArea(deliveryAddress);
+
+    // En az bir adres hizmet bölgesi dışındaysa
+    if (!pickupArea || !deliveryArea) {
+      toast.error('Seçilen adreslerden en az biri hizmet bölgesi dışında!');
+      setEstimatedPrice(0);
+      return;
+    }
+
+    // Fiyatlandırma için kullanılacak bölgeyi seç (daha pahalı olanı kullan)
+    const selectedArea = pickupArea.basePrice > deliveryArea.basePrice ? pickupArea : deliveryArea;
+
+    // Mesafe limiti kontrolü
+    if (selectedArea.maxDistance && calculatedDistance > selectedArea.maxDistance) {
+      toast.error(`Bu bölge için maksimum mesafe ${selectedArea.maxDistance} km'dir`);
+      setEstimatedPrice(0);
+      return;
+    }
+
+    // Temel fiyat hesaplama
+    let price = selectedArea.basePrice + (calculatedDistance * selectedArea.pricePerKm);
 
     // Paket boyutu katsayısı
     const sizeMultipliers: Record<string, number> = {
@@ -237,31 +306,32 @@ export default function NewOrderPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
-                  <div className="font-medium text-sm">Beylikdüzü</div>
-                  <div className="text-xs text-muted-foreground">₺15 + ₺3/km</div>
+              {serviceAreas.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {serviceAreas.map((area) => (
+                      <div key={area.id} className="p-3 bg-white dark:bg-gray-800 rounded-lg border hover:border-primary transition-colors">
+                        <div className="font-medium text-sm">{area.name || area.district}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          ₺{area.basePrice} + ₺{area.pricePerKm}/km
+                        </div>
+                        {area.maxDistance && (
+                          <div className="text-xs text-muted-foreground">
+                            Max: {area.maxDistance}km
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    ⚠️ Sadece yukarıdaki bölgelerde hizmet verilmektedir. Alım ve teslimat noktaları bu bölgeler içinde olmalıdır.
+                  </p>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Hizmet bölgeleri yükleniyor...</p>
                 </div>
-                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
-                  <div className="font-medium text-sm">Avcılar</div>
-                  <div className="text-xs text-muted-foreground">₺15 + ₺3/km</div>
-                </div>
-                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
-                  <div className="font-medium text-sm">Esenyurt</div>
-                  <div className="text-xs text-muted-foreground">₺17 + ₺3.5/km</div>
-                </div>
-                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
-                  <div className="font-medium text-sm">Başakşehir</div>
-                  <div className="text-xs text-muted-foreground">₺20 + ₺4/km</div>
-                </div>
-                <div className="p-2 bg-white dark:bg-gray-800 rounded-lg border">
-                  <div className="font-medium text-sm">Bakırköy</div>
-                  <div className="text-xs text-muted-foreground">₺18 + ₺3.5/km</div>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                ⚠️ Sadece yukarıdaki bölgelerde hizmet verilmektedir. Alım ve teslimat noktaları bu bölgeler içinde olmalıdır.
-              </p>
+              )}
             </CardContent>
           </Card>
 
@@ -308,6 +378,7 @@ export default function NewOrderPage() {
                 onDeliverySelect={setDeliveryAddress}
                 pickupAddress={pickupAddress}
                 deliveryAddress={deliveryAddress}
+                serviceAreas={serviceAreas}
               />
             </CardContent>
           </Card>
