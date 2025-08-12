@@ -87,10 +87,11 @@ export default function NewOrderPage() {
 
   // Adres veya fiyat parametreleri değiştiğinde fiyat hesapla
   useEffect(() => {
-    if (pickupAddress && deliveryAddress && serviceAreas.length > 0) {
+    if (pickupAddress && deliveryAddress && serviceAreas.length > 0 && distance > 0) {
+      // Distance state'i varsa onu kullanarak hesapla
       calculatePrice();
     }
-  }, [pickupAddress, deliveryAddress, serviceAreas, packageSize, deliveryType, urgency]);
+  }, [pickupAddress, deliveryAddress, serviceAreas, packageSize, deliveryType, urgency, distance]);
 
   // Firma adresini geocode et
   useEffect(() => {
@@ -155,13 +156,16 @@ export default function NewOrderPage() {
   const calculatePrice = (googleMapsDistance?: number, googleMapsDuration?: number) => {
     if (!pickupAddress || !deliveryAddress || serviceAreas.length === 0) return;
 
-    // Google Maps'ten gelen mesafeyi kullan, yoksa Haversine formülü ile hesapla
+    // Google Maps'ten gelen mesafeyi kullan, yoksa state'teki distance'ı kullan
     let calculatedDistance: number;
     
     if (googleMapsDistance) {
       calculatedDistance = googleMapsDistance;
+    } else if (distance > 0) {
+      // Eğer daha önce Google Maps'ten mesafe geldiyse onu kullan
+      calculatedDistance = distance;
     } else {
-      // Haversine formülü (fallback)
+      // Haversine formülü (son çare)
       const R = 6371; // Dünya yarıçapı (km)
       const dLat = (deliveryAddress.lat - pickupAddress.lat) * Math.PI / 180;
       const dLon = (deliveryAddress.lng - pickupAddress.lng) * Math.PI / 180;
@@ -172,6 +176,13 @@ export default function NewOrderPage() {
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       calculatedDistance = R * c; // Mesafe (km)
     }
+    
+    console.log('calculatePrice çağrıldı:', {
+      parametre: googleMapsDistance,
+      state: distance,
+      kullanılan: calculatedDistance,
+      yöntem: googleMapsDistance ? 'GoogleMaps' : (distance > 0 ? 'State' : 'Haversine')
+    });
     
     setDistance(calculatedDistance);
 
@@ -256,6 +267,13 @@ export default function NewOrderPage() {
           ? new Date(data.scheduledPickupTime).toISOString() 
           : undefined,
       };
+      
+      console.log('Sipariş oluşturuluyor:', {
+        mesafe: distance,
+        süre: duration || estimatedTime,
+        googleMapsSüresi: duration,
+        hesaplanmışSüre: estimatedTime
+      });
 
       const response = await orderService.createOrder(orderData);
       
@@ -396,6 +414,10 @@ export default function NewOrderPage() {
                 }}
                 onDeliverySelect={setDeliveryAddress}
                 onDistanceChange={(newDistance, newDuration) => {
+                  console.log('Google Maps mesafe güncellendi:', {
+                    yeniMesafe: newDistance,
+                    yeniSüre: newDuration
+                  });
                   setDistance(newDistance);
                   setDuration(newDuration); // Google Maps'ten gelen süreyi kaydet
                   // Google Maps'ten gelen gerçek mesafe ve süre ile fiyat hesapla

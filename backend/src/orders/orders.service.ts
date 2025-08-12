@@ -194,6 +194,12 @@ export class OrdersService {
     // Mesafe ve süre (Frontend'den Google Maps tarafından hesaplanan gerçek değerler)
     const distance = createOrderDto.distance || 10; // Google Maps mesafesi yoksa varsayılan 10 km
     const googleMapsTime = createOrderDto.estimatedTime; // Google Maps süresi (dakika)
+    
+    this.logger.info('Sipariş oluşturuluyor - Mesafe bilgileri', {
+      gelenMesafe: createOrderDto.distance,
+      kullanılanMesafe: distance,
+      gelenSüre: createOrderDto.estimatedTime,
+    });
 
     // Teslimat bölgesinin fiyatlandırmasını kullan
     const priceDetails = await this.calculatePrice(

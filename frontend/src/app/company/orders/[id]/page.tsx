@@ -438,14 +438,7 @@ export default function OrderDetailPage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <p className="text-sm text-muted-foreground">Mesafe</p>
-                <p className="font-medium">
-                  {realDistance ? realDistance.toFixed(1) : order.distance?.toFixed(1)} km
-                  {realDistance && order.distance && Math.abs(realDistance - order.distance) > 1 && (
-                    <span className="text-xs text-muted-foreground block">
-                      (Kayıtlı: {order.distance.toFixed(1)} km)
-                    </span>
-                  )}
-                </p>
+                <p className="font-medium">{order.distance?.toFixed(1)} km</p>
               </div>
               <Separator />
               <div className="flex justify-between">
