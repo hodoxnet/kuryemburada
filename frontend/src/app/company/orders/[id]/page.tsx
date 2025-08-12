@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { orderService, Order } from '@/lib/api/order.service';
-import GoogleMap from '@/components/shared/GoogleMap';
+import SimpleGoogleMap from '@/components/shared/SimpleGoogleMap';
+import { Navigation2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   ArrowLeft,
@@ -304,16 +305,75 @@ export default function OrderDetailPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="h-[400px] relative">
-                <GoogleMap
+                <SimpleGoogleMap
                   pickupAddress={order.pickupAddress}
                   deliveryAddress={order.deliveryAddress}
-                  onPickupSelect={() => {}}
-                  onDeliverySelect={() => {}}
                   onDistanceChange={(newDistance, newDuration) => {
                     // Google Maps'ten gelen gerçek mesafeyi kaydet
                     setRealDistance(newDistance);
                   }}
                 />
+              </div>
+              
+              {/* Alım ve Teslimat Noktaları Info Kartları */}
+              <div className="p-4 space-y-3">
+                {/* Alım Noktası */}
+                <div className="flex items-start justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-green-900 dark:text-green-100">Alım Noktası:</span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {order.pickupAddress?.address}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => {
+                      const addr = order.pickupAddress;
+                      if (addr?.lat && addr?.lng) {
+                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.lat},${addr.lng}`, '_blank');
+                      }
+                    }}
+                  >
+                    <Navigation2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Teslimat Noktası */}
+                <div className="flex items-start justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="h-4 w-4 text-red-600" />
+                      <span className="font-medium text-red-900 dark:text-red-100">Teslimat Noktası:</span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {order.deliveryAddress?.address}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() => {
+                      const addr = order.deliveryAddress;
+                      if (addr?.lat && addr?.lng) {
+                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.lat},${addr.lng}`, '_blank');
+                      }
+                    }}
+                  >
+                    <Navigation2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Mesafe ve Süre Bilgisi */}
+                <div className="flex items-center justify-between p-2 text-sm text-muted-foreground">
+                  <span>Mesafe: {realDistance?.toFixed(1) || order.distance?.toFixed(1) || '?'} km</span>
+                  <span>Tahmini Süre: {order.estimatedDeliveryTime || order.estimatedTime || '?'} dakika</span>
+                </div>
               </div>
             </CardContent>
           </Card>
