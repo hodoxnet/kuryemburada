@@ -27,6 +27,7 @@ interface ServiceArea {
 interface GoogleMapProps {
   onPickupSelect: (address: Address) => void;
   onDeliverySelect: (address: Address) => void;
+  onDistanceChange?: (distance: number, duration: number) => void;
   pickupAddress?: Address;
   deliveryAddress?: Address;
   apiKey?: string;
@@ -36,6 +37,7 @@ interface GoogleMapProps {
 export default function GoogleMap({
   onPickupSelect,
   onDeliverySelect,
+  onDistanceChange,
   pickupAddress,
   deliveryAddress,
   apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -281,10 +283,18 @@ export default function GoogleMap({
             if (route && route.legs[0]) {
               const leg = route.legs[0];
               if (leg.distance) {
-                setDistance(leg.distance.value / 1000); // km cinsinden
-              }
-              if (leg.duration) {
-                setDuration(Math.ceil(leg.duration.value / 60)); // dakika cinsinden
+                const distanceInKm = leg.distance.value / 1000;
+                setDistance(distanceInKm); // km cinsinden
+                
+                if (leg.duration) {
+                  const durationInMinutes = Math.ceil(leg.duration.value / 60);
+                  setDuration(durationInMinutes); // dakika cinsinden
+                  
+                  // Parent component'e mesafe ve süre bilgisini ilet
+                  if (onDistanceChange) {
+                    onDistanceChange(distanceInKm, durationInMinutes);
+                  }
+                }
               }
             }
 

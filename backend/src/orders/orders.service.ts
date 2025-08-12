@@ -179,8 +179,8 @@ export class OrdersService {
       );
     }
 
-    // Mesafe hesaplama
-    const distance = createOrderDto.distance || 5; // km
+    // Mesafe hesaplama (Frontend'den Google Maps tarafından hesaplanan gerçek mesafe)
+    const distance = createOrderDto.distance || 10; // Google Maps mesafesi yoksa varsayılan 10 km
 
     // Teslimat bölgesinin fiyatlandırmasını kullan
     const priceDetails = await this.calculatePrice(
@@ -310,9 +310,12 @@ export class OrdersService {
         include: {
           courier: {
             select: {
+              id: true,
               fullName: true,
               phone: true,
               vehicleInfo: true,
+              rating: true,
+              userId: true,
             },
           },
           payments: {

@@ -151,19 +151,27 @@ export default function NewOrderPage() {
   };
 
   // Fiyat hesaplama (bölge bazlı)
-  const calculatePrice = () => {
+  const calculatePrice = (googleMapsDistance?: number) => {
     if (!pickupAddress || !deliveryAddress || serviceAreas.length === 0) return;
 
-    // Mesafe hesaplama
-    const R = 6371; // Dünya yarıçapı (km)
-    const dLat = (deliveryAddress.lat - pickupAddress.lat) * Math.PI / 180;
-    const dLon = (deliveryAddress.lng - pickupAddress.lng) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(pickupAddress.lat * Math.PI / 180) * Math.cos(deliveryAddress.lat * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const calculatedDistance = R * c; // Mesafe (km)
+    // Google Maps'ten gelen mesafeyi kullan, yoksa Haversine formülü ile hesapla
+    let calculatedDistance: number;
+    
+    if (googleMapsDistance) {
+      calculatedDistance = googleMapsDistance;
+    } else {
+      // Haversine formülü (fallback)
+      const R = 6371; // Dünya yarıçapı (km)
+      const dLat = (deliveryAddress.lat - pickupAddress.lat) * Math.PI / 180;
+      const dLon = (deliveryAddress.lng - pickupAddress.lng) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(pickupAddress.lat * Math.PI / 180) * Math.cos(deliveryAddress.lat * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      calculatedDistance = R * c; // Mesafe (km)
+    }
+    
     setDistance(calculatedDistance);
 
     // Hangi bölgede olduğunu tespit et
@@ -376,6 +384,13 @@ export default function NewOrderPage() {
                   setUseCompanyAddress(false);
                 }}
                 onDeliverySelect={setDeliveryAddress}
+                onDistanceChange={(newDistance, newDuration) => {
+                  setDistance(newDistance);
+                  // Google Maps'ten gelen gerçek mesafe ile fiyat hesapla
+                  if (pickupAddress && deliveryAddress) {
+                    calculatePrice(newDistance);
+                  }
+                }}
                 pickupAddress={pickupAddress}
                 deliveryAddress={deliveryAddress}
                 serviceAreas={serviceAreas}
