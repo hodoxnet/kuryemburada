@@ -19,6 +19,7 @@ import { LoggerModule } from './logger/logger.module';
 import { DocumentsModule } from './documents/documents.module';
 import { OrdersModule } from './orders/orders.module';
 import { ServiceAreaModule } from './service-area/service-area.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ServiceAreaModule } from './service-area/service-area.module';
     DocumentsModule,
     OrdersModule,
     ServiceAreaModule,
+    ReconciliationModule,
   ],
   controllers: [AppController],
   providers: [

@@ -124,6 +124,20 @@ enum NotificationType {
   SYSTEM
 }
 
+enum ReconciliationStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+}
+
+enum CompanyPaymentType {
+  DAILY_RECONCILIATION
+  MANUAL_PAYMENT
+  REFUND
+  ADJUSTMENT
+}
+
 model User {
   id        String     @id @default(uuid())
   email     String     @unique
@@ -162,6 +176,9 @@ model Company {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders    Order[]
   documents Document[]
+  balance   CompanyBalance?
+  reconciliations DailyReconciliation[]
+  payments  CompanyPayment[]
 }
 
 model Courier {
@@ -365,4 +382,66 @@ model AuditLog {
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
+}
+
+model CompanyBalance {
+  id              String   @id @default(uuid())
+  companyId       String   @unique
+  currentBalance  Float    @default(0) // Firma'nın borcu (pozitif = borç, negatif = alacak)
+  totalDebts      Float    @default(0) // Toplam borç
+  totalCredits    Float    @default(0) // Toplam alacak (ödemeler)
+  lastPaymentDate DateTime?
+  lastPaymentAmount Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model DailyReconciliation {
+  id                String               @id @default(uuid())
+  companyId         String
+  date              DateTime             @db.Date // Mutabakat tarihi
+  totalOrders       Int                  @default(0) // Gün içindeki toplam sipariş sayısı
+  deliveredOrders   Int                  @default(0) // Teslim edilen sipariş sayısı
+  cancelledOrders   Int                  @default(0) // İptal edilen sipariş sayısı
+  totalAmount       Float                @default(0) // Toplam tutar
+  courierCost       Float                @default(0) // Kurye maliyeti
+  platformCommission Float               @default(0) // Platform komisyonu
+  netAmount         Float                @default(0) // Net borç (totalAmount - platformCommission)
+  status            ReconciliationStatus @default(PENDING)
+  paidAmount        Float                @default(0) // Ödenen tutar
+  remainingAmount   Float                @default(0) // Kalan borç
+  notes             String?
+  reconciledBy      String?              // Admin user id
+  reconciledAt      DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, date]) // Her gün için bir mutabakat
+  @@index([date])
+  @@index([status])
+}
+
+model CompanyPayment {
+  id                   String             @id @default(uuid())
+  companyId            String
+  reconciliationId     String?            // İlgili mutabakat kaydı
+  paymentType          CompanyPaymentType
+  amount               Float
+  paymentMethod        PaymentMethod
+  transactionReference String?            // Banka dekont no, işlem referansı vb.
+  description          String?
+  processedBy          String?            // Admin user id
+  processedAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+  @@index([reconciliationId])
+  @@index([paymentType])
 }
