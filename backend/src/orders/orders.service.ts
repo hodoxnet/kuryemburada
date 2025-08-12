@@ -59,7 +59,8 @@ export class OrdersService {
     packageSize: PackageSize, 
     deliveryType: DeliveryType, 
     urgency: Urgency,
-    serviceArea?: any
+    serviceArea?: any,
+    googleMapsTime?: number
   ): Promise<{ price: number; estimatedTime: number; commission: number; courierEarning: number }> {
     // Bölge varsa onun fiyatlandırmasını kullan, yoksa genel kurala bak
     let basePrice: number;
@@ -123,9 +124,20 @@ export class OrdersService {
     price = Math.max(price, minimumPrice);
 
     // Tahmini teslimat süresi (dakika)
-    let estimatedTime = Math.ceil(distance * 3); // Ortalama 20km/h hız varsayımı
-    if (deliveryType === 'EXPRESS') {
-      estimatedTime = Math.ceil(estimatedTime * 0.7); // Express %30 daha hızlı
+    let estimatedTime: number;
+    
+    if (googleMapsTime) {
+      // Google Maps'ten gelen gerçek süreyi kullan
+      estimatedTime = googleMapsTime;
+      if (deliveryType === 'EXPRESS') {
+        estimatedTime = Math.ceil(estimatedTime * 0.7); // Express %30 daha hızlı
+      }
+    } else {
+      // Fallback: Mesafeye göre tahmin et
+      estimatedTime = Math.ceil(distance * 3); // Ortalama 20km/h hız varsayımı
+      if (deliveryType === 'EXPRESS') {
+        estimatedTime = Math.ceil(estimatedTime * 0.7); // Express %30 daha hızlı
+      }
     }
 
     // Komisyon hesaplama (sistem ayarlarından)
@@ -179,8 +191,9 @@ export class OrdersService {
       );
     }
 
-    // Mesafe hesaplama (Frontend'den Google Maps tarafından hesaplanan gerçek mesafe)
+    // Mesafe ve süre (Frontend'den Google Maps tarafından hesaplanan gerçek değerler)
     const distance = createOrderDto.distance || 10; // Google Maps mesafesi yoksa varsayılan 10 km
+    const googleMapsTime = createOrderDto.estimatedTime; // Google Maps süresi (dakika)
 
     // Teslimat bölgesinin fiyatlandırmasını kullan
     const priceDetails = await this.calculatePrice(
@@ -188,7 +201,8 @@ export class OrdersService {
       createOrderDto.packageSize,
       createOrderDto.deliveryType,
       createOrderDto.urgency || 'NORMAL',
-      deliveryArea // Teslimat bölgesinin fiyatlandırması
+      deliveryArea, // Teslimat bölgesinin fiyatlandırması
+      googleMapsTime // Google Maps'ten gelen süreyi kullan
     );
 
     // Sipariş oluştur

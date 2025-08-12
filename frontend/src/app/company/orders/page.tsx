@@ -90,16 +90,29 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       const data = await orderService.getCompanyOrders();
-      setOrders(data);
+      // Data'nın array olduğundan emin ol
+      if (Array.isArray(data)) {
+        setOrders(data);
+      } else {
+        console.error('Beklenmedik veri formatı:', data);
+        setOrders([]);
+      }
     } catch (error) {
       console.error('Siparişler yüklenemedi:', error);
       toast.error('Siparişler yüklenirken bir hata oluştu');
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
   const filterOrders = () => {
+    // orders'in array olduğundan emin ol
+    if (!Array.isArray(orders)) {
+      setFilteredOrders([]);
+      return;
+    }
+    
     let filtered = [...orders];
 
     // Durum filtresi
@@ -180,7 +193,7 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {orders.filter(o => o.status === 'PENDING').length}
+              {Array.isArray(orders) ? orders.filter(o => o.status === 'PENDING').length : 0}
             </div>
           </CardContent>
         </Card>
@@ -191,7 +204,7 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {orders.filter(o => o.status === 'IN_PROGRESS').length}
+              {Array.isArray(orders) ? orders.filter(o => o.status === 'IN_PROGRESS').length : 0}
             </div>
           </CardContent>
         </Card>
@@ -202,7 +215,7 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {orders.filter(o => o.status === 'DELIVERED').length}
+              {Array.isArray(orders) ? orders.filter(o => o.status === 'DELIVERED').length : 0}
             </div>
           </CardContent>
         </Card>

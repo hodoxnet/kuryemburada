@@ -31,11 +31,13 @@ export default function CompanyDashboard() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const response = await orderService.getCompanyOrders();
-      setOrders(response.data);
+      const data = await orderService.getCompanyOrders();
+      // Data'nın array olduğundan emin ol
+      const ordersArray = Array.isArray(data) ? data : [];
+      setOrders(ordersArray);
       
       // İstatistikleri hesapla
-      const statistics = response.data.reduce((acc, order) => {
+      const statistics = ordersArray.reduce((acc, order) => {
         acc.total++;
         switch (order.status) {
           case 'PENDING':
@@ -60,6 +62,14 @@ export default function CompanyDashboard() {
     } catch (error) {
       console.error('Siparişler yüklenemedi:', error);
       toast.error('Siparişler yüklenirken bir hata oluştu');
+      setOrders([]);
+      setStats({
+        total: 0,
+        pending: 0,
+        inProgress: 0,
+        delivered: 0,
+        cancelled: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -103,6 +113,8 @@ export default function CompanyDashboard() {
   };
 
   const filterOrdersByStatus = (status?: string) => {
+    // orders'in array olduğundan emin ol
+    if (!Array.isArray(orders)) return [];
     if (!status) return orders;
     if (status === 'IN_PROGRESS') {
       return orders.filter(o => o.status === 'ACCEPTED' || o.status === 'IN_PROGRESS');
@@ -233,6 +245,9 @@ export default function CompanyDashboard() {
 // Sipariş Tablosu Komponenti
 function OrderTable({ orders }: { orders: Order[] }) {
   const router = useRouter();
+  
+  // orders'in array olduğundan emin ol
+  const orderList = Array.isArray(orders) ? orders : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -271,7 +286,7 @@ function OrderTable({ orders }: { orders: Order[] }) {
     }
   };
 
-  if (orders.length === 0) {
+  if (!orderList || orderList.length === 0) {
     return (
       <div className="text-center py-12">
         <Package className="w-12 h-12 mx-auto text-gray-400 mb-4" />
@@ -296,7 +311,7 @@ function OrderTable({ orders }: { orders: Order[] }) {
           </tr>
         </thead>
         <tbody>
-          {orders.map((order) => (
+          {orderList.map((order) => (
             <tr key={order.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <td className="py-3 px-4">
                 <span className="font-mono text-sm">{order.orderNumber}</span>

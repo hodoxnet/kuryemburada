@@ -103,4 +103,13 @@ export class CreateOrderDto {
   @IsOptional()
   @Min(0.1)
   distance?: number;
+
+  @ApiPropertyOptional({ 
+    description: 'Tahmini teslimat süresi (dakika) - Google Maps API tarafından hesaplanacak',
+    minimum: 1
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  estimatedTime?: number;
 }

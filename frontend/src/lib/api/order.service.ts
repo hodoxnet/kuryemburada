@@ -19,6 +19,7 @@ export interface CreateOrderDto {
   scheduledPickupTime?: string;
   notes?: string;
   distance?: number;
+  estimatedTime?: number;
 }
 
 export interface Order {
@@ -115,7 +116,15 @@ export const orderService = {
     if (params?.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await api.get<any>(`/orders/company?${queryParams.toString()}`);
-    return response.data.map ? response.data.map(normalizeOrder) : response.data;
+    // Backend { data: [], total, skip, take } formatında döndürüyor
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data.map(normalizeOrder);
+    }
+    // Eğer direkt array dönerse (eski format)
+    if (Array.isArray(response.data)) {
+      return response.data.map(normalizeOrder);
+    }
+    return [];
   },
 
   // Sipariş detayını getir

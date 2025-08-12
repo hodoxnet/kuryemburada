@@ -46,6 +46,7 @@ export default function NewOrderPage() {
   const [estimatedPrice, setEstimatedPrice] = useState<number>(0);
   const [estimatedTime, setEstimatedTime] = useState<number>(0);
   const [distance, setDistance] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0); // Google Maps'ten gelen süre (dakika)
   const [useCompanyAddress, setUseCompanyAddress] = useState(false);
   const [companyAddressCoords, setCompanyAddressCoords] = useState<Address>();
   const [serviceAreas, setServiceAreas] = useState<ServiceArea[]>([]);
@@ -151,7 +152,7 @@ export default function NewOrderPage() {
   };
 
   // Fiyat hesaplama (bölge bazlı)
-  const calculatePrice = (googleMapsDistance?: number) => {
+  const calculatePrice = (googleMapsDistance?: number, googleMapsDuration?: number) => {
     if (!pickupAddress || !deliveryAddress || serviceAreas.length === 0) return;
 
     // Google Maps'ten gelen mesafeyi kullan, yoksa Haversine formülü ile hesapla
@@ -221,7 +222,16 @@ export default function NewOrderPage() {
     price *= urgencyMultipliers[urgency];
 
     setEstimatedPrice(Math.round(price * 100) / 100);
-    setEstimatedTime(Math.ceil(calculatedDistance * 3)); // Tahmini süre (dakika)
+    
+    // Google Maps'ten gelen süreyi kullan, yoksa tahmin et
+    if (googleMapsDuration) {
+      setEstimatedTime(googleMapsDuration);
+    } else if (duration > 0) {
+      setEstimatedTime(duration);
+    } else {
+      // Fallback: Mesafeye göre tahmin et (ortalama 20 km/h hız varsayımı)
+      setEstimatedTime(Math.ceil(calculatedDistance * 3));
+    }
   };
 
   const onSubmit = async (data: OrderFormData) => {
@@ -238,7 +248,8 @@ export default function NewOrderPage() {
         ...data,
         pickupAddress,
         deliveryAddress,
-        distance, // Mesafe bilgisini ekle
+        distance, // Google Maps'ten gelen mesafe
+        estimatedTime: duration || estimatedTime, // Google Maps'ten gelen süre
         deliveryType: data.deliveryType || 'STANDARD',
         urgency: data.urgency || 'NORMAL',
         scheduledPickupTime: data.scheduledPickupTime 
@@ -386,9 +397,10 @@ export default function NewOrderPage() {
                 onDeliverySelect={setDeliveryAddress}
                 onDistanceChange={(newDistance, newDuration) => {
                   setDistance(newDistance);
-                  // Google Maps'ten gelen gerçek mesafe ile fiyat hesapla
+                  setDuration(newDuration); // Google Maps'ten gelen süreyi kaydet
+                  // Google Maps'ten gelen gerçek mesafe ve süre ile fiyat hesapla
                   if (pickupAddress && deliveryAddress) {
-                    calculatePrice(newDistance);
+                    calculatePrice(newDistance, newDuration);
                   }
                 }}
                 pickupAddress={pickupAddress}
