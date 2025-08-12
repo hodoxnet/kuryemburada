@@ -157,7 +157,12 @@ export const orderService = {
     const response = await api.get<any>(`/orders/available?${queryParams.toString()}`);
     // Backend { data: [], total, skip, take } formatında döndürüyor
     if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      return response.data.data.map(normalizeOrder);
+      return {
+        data: response.data.data.map(normalizeOrder),
+        total: response.data.total,
+        skip: response.data.skip,
+        take: response.data.take
+      };
     }
     // Eğer direkt array dönerse
     if (Array.isArray(response.data)) {

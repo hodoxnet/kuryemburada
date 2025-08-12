@@ -12,7 +12,8 @@ import {
   FileText, 
   CreditCard, 
   Settings, 
-  Clock
+  Clock,
+  Bell
 } from "lucide-react";
 
 const courierMenuItems = [
@@ -20,6 +21,11 @@ const courierMenuItems = [
     title: "Dashboard",
     href: "/courier/dashboard",
     icon: Home,
+  },
+  {
+    title: "Yeni Siparişler",
+    href: "/courier/available-orders",
+    icon: Bell,
   },
   {
     title: "Aktif Teslimatlar",
