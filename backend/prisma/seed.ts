@@ -19,80 +19,6 @@ async function main() {
 
   console.log('Admin kullanıcı oluşturuldu:', admin.email);
 
-  // Test firma kullanıcısı
-  const companyPassword = await bcrypt.hash('firma123', 10);
-  const companyUser = await prisma.user.upsert({
-    where: { email: 'firma@test.com' },
-    update: {},
-    create: {
-      email: 'firma@test.com',
-      password: companyPassword,
-      role: UserRole.COMPANY,
-      status: UserStatus.ACTIVE,
-    },
-  });
-
-  // Firma profili oluştur
-  const company = await prisma.company.upsert({
-    where: { userId: companyUser.id },
-    update: {},
-    create: {
-      userId: companyUser.id,
-      name: 'Test Firma A.Ş.',
-      taxNumber: '1234567890',
-      taxOffice: 'Beylikdüzü Vergi Dairesi',
-      phone: '0212 123 45 67',
-      address: {
-        city: 'İstanbul',
-        district: 'Beylikdüzü',
-        detail: 'Kavaklı Mah. Ayazma Cad. Yaman Sok. Ayazma Konakları A Blok Daire 19 Beylikdüzü / İstanbul',
-      },
-      status: 'APPROVED',
-    },
-  });
-
-  console.log('Firma kullanıcı oluşturuldu:', companyUser.email);
-
-  // Test kurye kullanıcısı
-  const courierPassword = await bcrypt.hash('kurye123', 10);
-  const courierUser = await prisma.user.upsert({
-    where: { email: 'kurye@test.com' },
-    update: {},
-    create: {
-      email: 'kurye@test.com',
-      password: courierPassword,
-      role: UserRole.COURIER,
-      status: UserStatus.ACTIVE,
-    },
-  });
-
-  // Kurye profili oluştur
-  const courier = await prisma.courier.upsert({
-    where: { userId: courierUser.id },
-    update: {},
-    create: {
-      userId: courierUser.id,
-      tcNumber: '12345678901',
-      fullName: 'Ahmet Yılmaz',
-      phone: '0555 123 45 67',
-      birthDate: new Date('1990-01-01'),
-      licenseInfo: {
-        type: 'B',
-        issueDate: '2010-01-01',
-        expiryDate: '2025-01-01',
-      },
-      vehicleInfo: {
-        brand: 'Honda',
-        model: 'PCX 125',
-        plate: '34 ABC 123',
-        year: 2020,
-      },
-      status: 'APPROVED',
-    },
-  });
-
-  console.log('Kurye kullanıcı oluşturuldu:', courierUser.email);
-
   // Varsayılan sistem ayarları
   const defaultSettings = [
     { key: 'commission.rate', value: 0.15, description: 'Komisyon oranı' },
@@ -110,25 +36,6 @@ async function main() {
   }
 
   console.log('Sistem ayarları oluşturuldu');
-
-  // Örnek fiyatlandırma kuralı
-  const pricingRule = await prisma.pricingRule.upsert({
-    where: { name: 'Standart Mesafe Fiyatlandırması' },
-    update: {},
-    create: {
-      name: 'Standart Mesafe Fiyatlandırması',
-      description: 'Kilometre başına fiyatlandırma',
-      basePrice: 15,
-      pricePerKm: 3,
-      pricePerMinute: 0.5,
-      minimumPrice: 10,
-      rushHourMultiplier: 1.5,
-      weatherMultiplier: 1.2,
-      isActive: true,
-    },
-  });
-
-  console.log('Fiyatlandırma kuralı oluşturuldu:', pricingRule.name);
 
   // Hizmet bölgeleri oluştur
   const serviceAreas = [

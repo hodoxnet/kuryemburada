@@ -87,6 +87,31 @@ export class OrdersController {
     return this.ordersService.getAvailableOrders(courier.id, { skip, take });
   }
 
+  @Get('courier')
+  @Roles(UserRole.COURIER)
+  @ApiOperation({ summary: 'Kuryenin siparişlerini listele' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: OrderStatus })
+  async getCourierOrders(
+    @Request() req,
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @Query('status') status?: OrderStatus,
+  ) {
+    const courier = await this.getCourierFromUser(req.user.id);
+    return this.ordersService.getCourierOrders(courier.id, { skip, take, status });
+  }
+
+  @Get('courier/statistics')
+  @Roles(UserRole.COURIER)
+  @ApiOperation({ summary: 'Kurye istatistiklerini getir' })
+  @ApiResponse({ status: 200, description: 'Kurye istatistikleri' })
+  async getCourierStatistics(@Request() req) {
+    const courier = await this.getCourierFromUser(req.user.id);
+    return this.ordersService.getCourierStatistics(courier.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Sipariş detayını getir' })
   @ApiResponse({ status: 200, description: 'Sipariş detayı' })

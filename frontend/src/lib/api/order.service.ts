@@ -155,11 +155,38 @@ export const orderService = {
     if (params?.take !== undefined) queryParams.append('take', params.take.toString());
 
     const response = await api.get<any>(`/orders/available?${queryParams.toString()}`);
-    const data = response.data;
-    return {
-      ...data,
-      data: data.data ? data.data.map(normalizeOrder) : [],
-    };
+    // Backend { data: [], total, skip, take } formatında döndürüyor
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data.map(normalizeOrder);
+    }
+    // Eğer direkt array dönerse
+    if (Array.isArray(response.data)) {
+      return response.data.map(normalizeOrder);
+    }
+    return [];
+  },
+
+  // Kuryenin siparişlerini listele
+  getCourierOrders: async (params?: {
+    skip?: number;
+    take?: number;
+    status?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.take !== undefined) queryParams.append('take', params.take.toString());
+    if (params?.status) queryParams.append('status', params.status);
+
+    const response = await api.get<any>(`/orders/courier?${queryParams.toString()}`);
+    // Backend { data: [], total, skip, take } formatında döndürüyor
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data.map(normalizeOrder);
+    }
+    // Eğer direkt array dönerse
+    if (Array.isArray(response.data)) {
+      return response.data.map(normalizeOrder);
+    }
+    return [];
   },
 
   // Siparişi kabul et (kurye için)
@@ -178,5 +205,11 @@ export const orderService = {
       ...data
     });
     return normalizeOrder(response.data);
+  },
+
+  // Kurye istatistiklerini getir
+  getCourierStatistics: async () => {
+    const response = await api.get<any>('/orders/courier/statistics');
+    return response.data;
   },
 };

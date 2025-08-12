@@ -20,6 +20,8 @@ import {
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+import { orderService } from "@/lib/api/order.service";
+import { toast } from "sonner";
 
 export default function CourierDashboard() {
   const { user } = useAuth();
@@ -35,6 +37,7 @@ export default function CourierDashboard() {
     rating: 0,
     totalDeliveries: 0,
   });
+  const [activeDeliveries, setActiveDeliveries] = useState<any[]>([]);
 
   useEffect(() => {
     // İstatistikleri yükle
@@ -44,24 +47,41 @@ export default function CourierDashboard() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      // API çağrısı yapılacak
-      // const data = await deliveryService.getCourierStats();
-      // setStats(data);
+      const [statsData, ordersData] = await Promise.all([
+        orderService.getCourierStatistics(),
+        orderService.getCourierOrders()
+      ]);
       
-      // Şimdilik mock data
+      // Backend'den gelen veriyi uygun formata dönüştür
       setStats({
-        todayDeliveries: 8,
-        completedDeliveries: 6,
-        pendingDeliveries: 2,
-        totalDistance: 42.5,
-        todayEarnings: 420,
-        weeklyEarnings: 2100,
-        monthlyEarnings: 8500,
-        rating: 4.8,
-        totalDeliveries: 324,
+        todayDeliveries: statsData.todayDeliveries || 0,
+        completedDeliveries: statsData.todayDeliveries || 0,
+        pendingDeliveries: statsData.activeOrders || 0,
+        totalDistance: 0, // Backend'de henüz mesafe takibi yok
+        todayEarnings: statsData.todayEarnings || 0,
+        weeklyEarnings: 0, // Backend'de henüz haftalık veri yok
+        monthlyEarnings: statsData.totalEarnings || 0,
+        rating: statsData.averageRating || 0,
+        totalDeliveries: statsData.totalDeliveries || 0,
       });
+
+      // Aktif siparişleri filtrele ve formatlı hale getir
+      const activeOrders = ordersData?.filter(
+        (order: any) => order.status === 'ACCEPTED' || order.status === 'IN_PROGRESS'
+      ).map((order: any) => ({
+        id: order.orderNumber,
+        pickup: order.pickupAddress?.address || 'Alınma adresi',
+        delivery: order.deliveryAddress?.address || 'Teslimat adresi',
+        distance: order.distance ? `${order.distance} km` : 'Hesaplanıyor',
+        time: order.estimatedTime ? `${order.estimatedTime} dk` : 'Hesaplanıyor',
+        price: `₺${order.courierEarning || order.price}`,
+        status: order.status === 'ACCEPTED' ? 'pickup' : 'delivery',
+      })) || [];
+
+      setActiveDeliveries(activeOrders);
     } catch (error) {
       console.error("İstatistikler yüklenemedi:", error);
+      toast.error("İstatistikler yüklenirken hata oluştu");
     } finally {
       setLoading(false);
     }
@@ -124,27 +144,6 @@ export default function CourierDashboard() {
       color: "text-indigo-600",
       bgColor: "bg-indigo-100",
       change: "+12%",
-    },
-  ];
-
-  const activeDeliveries = [
-    {
-      id: "ORD-001",
-      pickup: "Kadıköy, Moda",
-      delivery: "Üsküdar, Çengelköy",
-      distance: "8.5 km",
-      time: "25 dk",
-      price: "₺65",
-      status: "pickup",
-    },
-    {
-      id: "ORD-002",
-      pickup: "Beşiktaş, Levent",
-      delivery: "Şişli, Mecidiyeköy",
-      distance: "4.2 km",
-      time: "15 dk",
-      price: "₺45",
-      status: "delivery",
     },
   ];
 
@@ -288,47 +287,56 @@ export default function CourierDashboard() {
           <CardTitle>Aktif Teslimatlar</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {activeDeliveries.map((delivery) => (
-              <div key={delivery.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-lg ${
-                    delivery.status === 'pickup' ? 'bg-blue-100' : 'bg-green-100'
-                  }`}>
-                    {delivery.status === 'pickup' ? (
-                      <MapPin className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <Navigation className="h-4 w-4 text-green-600" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{delivery.id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {delivery.pickup} → {delivery.delivery}
-                    </p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs text-muted-foreground">
-                        {delivery.distance}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {delivery.time}
-                      </span>
+          {activeDeliveries.length > 0 ? (
+            <>
+              <div className="space-y-4">
+                {activeDeliveries.map((delivery) => (
+                  <div key={delivery.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${
+                        delivery.status === 'pickup' ? 'bg-blue-100' : 'bg-green-100'
+                      }`}>
+                        {delivery.status === 'pickup' ? (
+                          <MapPin className="h-4 w-4 text-blue-600" />
+                        ) : (
+                          <Navigation className="h-4 w-4 text-green-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{delivery.id}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {delivery.pickup} → {delivery.delivery}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {delivery.distance}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {delivery.time}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{delivery.price}</p>
+                      <Badge variant={delivery.status === 'pickup' ? 'default' : 'secondary'}>
+                        {delivery.status === 'pickup' ? 'Alınacak' : 'Teslimatta'}
+                      </Badge>
                     </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">{delivery.price}</p>
-                  <Badge variant={delivery.status === 'pickup' ? 'default' : 'secondary'}>
-                    {delivery.status === 'pickup' ? 'Alınacak' : 'Teslimatta'}
-                  </Badge>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <Button variant="outline" className="w-full mt-4">
-            Tüm Teslimatları Görüntüle
-          </Button>
+              <Button variant="outline" className="w-full mt-4">
+                Tüm Teslimatları Görüntüle
+              </Button>
+            </>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>Aktif teslimatınız bulunmamaktadır</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -30,6 +30,7 @@ enum CompanyStatus {
   PENDING
   APPROVED
   REJECTED
+  ACTIVE
   INACTIVE
 }
 
@@ -37,6 +38,7 @@ enum CourierStatus {
   PENDING
   APPROVED
   REJECTED
+  ACTIVE
   INACTIVE
   BUSY
 }

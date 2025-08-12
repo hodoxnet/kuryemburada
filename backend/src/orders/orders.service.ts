@@ -417,6 +417,176 @@ export class OrdersService {
     };
   }
 
+  // Kuryenin kendi siparişlerini listele
+  async getCourierOrders(
+    courierId: string,
+    params: {
+      skip?: number;
+      take?: number;
+      status?: OrderStatus;
+    },
+  ) {
+    const { skip = 0, take = 10, status } = params;
+
+    // Kurye kontrolü
+    const courier = await this.prisma.courier.findUnique({
+      where: { id: courierId },
+    });
+
+    if (!courier) {
+      throw new NotFoundException('Kurye bulunamadı');
+    }
+
+    const where: any = { courierId };
+
+    if (status) {
+      where.status = status;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          company: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      skip,
+      take,
+    };
+  }
+
+  // Kurye istatistiklerini getir
+  async getCourierStatistics(courierId: string) {
+    // Kurye kontrolü
+    const courier = await this.prisma.courier.findUnique({
+      where: { id: courierId },
+    });
+
+    if (!courier) {
+      throw new NotFoundException('Kurye bulunamadı');
+    }
+
+    // Bugünün başlangıcı
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Bugünkü teslim edilen siparişler
+    const todayDeliveredOrders = await this.prisma.order.findMany({
+      where: {
+        courierId,
+        status: OrderStatus.DELIVERED,
+        deliveredAt: {
+          gte: today,
+        },
+      },
+    });
+
+    // Tüm teslim edilen siparişler
+    const allDeliveredOrders = await this.prisma.order.findMany({
+      where: {
+        courierId,
+        status: OrderStatus.DELIVERED,
+      },
+    });
+
+    // Aktif sipariş (kabul edilmiş veya yolda)
+    const activeOrder = await this.prisma.order.findFirst({
+      where: {
+        courierId,
+        status: {
+          in: [OrderStatus.ACCEPTED, OrderStatus.IN_PROGRESS],
+        },
+      },
+      include: {
+        company: {
+          select: {
+            name: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    // İstatistikleri hesapla
+    const todayEarnings = todayDeliveredOrders.reduce(
+      (sum, order) => sum + (order.courierEarning || 0),
+      0,
+    );
+    
+    const todayDeliveries = todayDeliveredOrders.length;
+    
+    const totalEarnings = allDeliveredOrders.reduce(
+      (sum, order) => sum + (order.courierEarning || 0),
+      0,
+    );
+    
+    const totalDeliveries = allDeliveredOrders.length;
+
+    // Ortalama puanı hesapla
+    const ordersWithRating = await this.prisma.order.findMany({
+      where: {
+        courierId,
+        rating: {
+          not: null,
+        },
+      },
+      select: {
+        rating: true,
+      },
+    });
+
+    let averageRating = 0;
+    if (ordersWithRating.length > 0) {
+      const totalRating = ordersWithRating.reduce(
+        (sum, order) => sum + (order.rating || 0),
+        0,
+      );
+      averageRating = totalRating / ordersWithRating.length;
+    }
+
+    // Aktif sipariş sayısını hesapla
+    const activeOrdersCount = await this.prisma.order.count({
+      where: {
+        courierId,
+        status: {
+          in: [OrderStatus.ACCEPTED, OrderStatus.IN_PROGRESS],
+        },
+      },
+    });
+
+    return {
+      todayEarnings,
+      todayDeliveries,
+      totalEarnings,
+      totalDeliveries,
+      averageRating: Math.round(averageRating * 10) / 10, // 1 ondalık basamak
+      activeOrder,
+      activeOrders: activeOrdersCount, // Aktif sipariş sayısı
+      courier: {
+        id: courier.id,
+        fullName: courier.fullName,
+        phone: courier.phone,
+        status: courier.status,
+        isAvailable: courier.isAvailable,
+        vehicleInfo: courier.vehicleInfo,
+      },
+    };
+  }
+
   // Kurye siparişi kabul etme
   async acceptOrder(orderId: string, courierId: string) {
     // Sipariş kontrolü
