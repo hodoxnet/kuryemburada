@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { orderService, Order } from '@/lib/api/order.service';
-import { Package, Clock, CheckCircle, XCircle, Plus, Eye } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Plus, Eye, Wifi, WifiOff, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useSocket } from '@/contexts/SocketContext';
 
 export default function CompanyDashboard() {
   const router = useRouter();
+  const { isConnected } = useSocket();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -27,6 +29,71 @@ export default function CompanyDashboard() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  // Socket bildirimleri için event listener
+  useEffect(() => {
+    const handleSocketNotification = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log('Company Dashboard - Socket bildirimi alındı:', data);
+      
+      // Sipariş ile ilgili bildirimler geldiğinde siparişleri yeniden yükle
+      if (data.type === 'ORDER_ACCEPTED' || data.type === 'ORDER_STATUS_UPDATE') {
+        setTimeout(() => {
+          loadOrders(); // Siparişleri güncelle
+        }, 1000);
+      }
+    };
+
+    const handleSocketToast = (event: CustomEvent) => {
+      const { title, message, data } = event.detail;
+      
+      // Sipariş kabul edildi bildirimi için özel toast
+      if (data?.type === 'ORDER_ACCEPTED') {
+        toast.success(title, {
+          description: message,
+          duration: 8000,
+          action: {
+            label: 'Siparişi Gör',
+            onClick: () => {
+              if (data?.orderId) {
+                router.push(`/company/orders/${data.orderId}`);
+              }
+            }
+          },
+        });
+      } else if (data?.type === 'ORDER_STATUS_UPDATE') {
+        // Sipariş durumu güncellemesi için özel toast
+        toast.info(title, {
+          description: message,
+          duration: 6000,
+          action: {
+            label: 'Siparişi Gör',
+            onClick: () => {
+              if (data?.orderId) {
+                router.push(`/company/orders/${data.orderId}`);
+              }
+            }
+          },
+        });
+      } else {
+        // Diğer bildirimler için normal toast
+        toast(title, {
+          description: message,
+          duration: 5000,
+        });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('socket-notification', handleSocketNotification as EventListener);
+      window.addEventListener('socket-toast', handleSocketToast as EventListener);
+
+      return () => {
+        window.removeEventListener('socket-notification', handleSocketNotification as EventListener);
+        window.removeEventListener('socket-toast', handleSocketToast as EventListener);
+      };
+    }
+  }, [router]);
 
   const loadOrders = async () => {
     try {
@@ -131,10 +198,23 @@ export default function CompanyDashboard() {
             Siparişlerinizi yönetin ve takip edin
           </p>
         </div>
-        <Button onClick={() => router.push('/company/new-order')} size="lg">
-          <Plus className="w-5 h-5 mr-2" />
-          Kurye Çağır
-        </Button>
+        <div className="flex items-center gap-3">
+          <Badge 
+            variant={isConnected ? "secondary" : "destructive"} 
+            className="py-2 px-4"
+          >
+            {isConnected ? (
+              <Wifi className="mr-2 h-3 w-3" />
+            ) : (
+              <WifiOff className="mr-2 h-3 w-3" />
+            )}
+            {isConnected ? "Anlık Bildirim Aktif" : "Bağlantı Yok"}
+          </Badge>
+          <Button onClick={() => router.push('/company/new-order')} size="lg">
+            <Plus className="w-5 h-5 mr-2" />
+            Kurye Çağır
+          </Button>
+        </div>
       </div>
 
       {/* İstatistik Kartları */}

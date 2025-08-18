@@ -5,12 +5,16 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Logger } from 'winston';
 import { Inject } from '@nestjs/common';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject('winston') private readonly logger: Logger,
+    private readonly notificationsGateway: NotificationsGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // Sipariş numarası oluştur
@@ -286,9 +290,19 @@ export class OrdersService {
     }));
 
     if (notifications.length > 0) {
+      // Veritabanına kaydet
       await this.prisma.notification.createMany({
         data: notifications,
       });
+
+      // WebSocket üzerinden tüm kuryelere anlık bildirim gönder
+      this.notificationsGateway.sendNewOrderToCouriers(order);
+
+      // Her kuryeye özel bildirim de gönderebiliriz
+      for (const courier of availableCouriers) {
+        const notificationData = this.notificationsService.createNewOrderNotification(order);
+        this.notificationsGateway.sendNotificationToRoom(`courier-${courier.id}`, notificationData);
+      }
     }
 
     this.logger.info('Kuryelere bildirim gönderildi', {
@@ -659,6 +673,26 @@ export class OrdersService {
       return updated;
     });
 
+    // WebSocket üzerinden firmaya anlık bildirim gönder
+    const notificationData = {
+      type: 'ORDER_ACCEPTED',
+      title: 'Sipariş Kabul Edildi',
+      message: `${updatedOrder.orderNumber} numaralı siparişiniz ${courier.fullName} tarafından kabul edildi`,
+      data: {
+        orderId: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        courierName: courier.fullName,
+        courierPhone: courier.phone,
+        status: OrderStatus.ACCEPTED,
+      },
+      sound: true,
+    };
+
+    this.notificationsGateway.sendNotificationToRoom(
+      `company-${updatedOrder.company.id}`,
+      notificationData
+    );
+
     this.logger.info('Sipariş kabul edildi', {
       orderId,
       courierId,
@@ -770,6 +804,33 @@ export class OrdersService {
 
       return updated;
     });
+
+    // WebSocket üzerinden firmaya anlık durum güncelleme bildirimi gönder
+    if (status === OrderStatus.IN_PROGRESS || status === OrderStatus.DELIVERED || status === OrderStatus.CANCELLED) {
+      const statusMessages = {
+        IN_PROGRESS: 'Kurye siparişinizi teslim etmek için yola çıktı',
+        DELIVERED: 'Siparişiniz başarıyla teslim edildi',
+        CANCELLED: 'Siparişiniz iptal edildi',
+      };
+
+      const notificationData = {
+        type: 'ORDER_STATUS_UPDATE',
+        title: 'Sipariş Durumu Güncellendi',
+        message: statusMessages[status] || `Sipariş durumu: ${status}`,
+        data: {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          status,
+          updatedAt: new Date(),
+        },
+        sound: true,
+      };
+
+      this.notificationsGateway.sendNotificationToRoom(
+        `company-${order.company.id}`,
+        notificationData
+      );
+    }
 
     this.logger.info('Sipariş durumu güncellendi', {
       orderId,
@@ -890,6 +951,27 @@ export class OrdersService {
 
       return updated;
     });
+
+    // Kurye atanmışsa WebSocket üzerinden kuryeye iptal bildirimi gönder
+    if (order.courierId && order.courier) {
+      const notificationData = {
+        type: 'ORDER_CANCELLED',
+        title: 'Sipariş İptal Edildi',
+        message: `${order.orderNumber} numaralı sipariş firma tarafından iptal edildi`,
+        data: {
+          orderId: cancelledOrder.id,
+          orderNumber: cancelledOrder.orderNumber,
+          reason,
+          cancelledAt: new Date(),
+        },
+        sound: true,
+      };
+
+      this.notificationsGateway.sendNotificationToRoom(
+        `courier-${order.courierId}`,
+        notificationData
+      );
+    }
 
     this.logger.info('Sipariş iptal edildi', {
       orderId,

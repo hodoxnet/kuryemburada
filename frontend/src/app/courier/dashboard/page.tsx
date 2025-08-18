@@ -15,16 +15,22 @@ import {
   DollarSign,
   Star,
   AlertCircle,
-  Navigation
+  Navigation,
+  Wifi,
+  WifiOff,
+  Bell,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { orderService } from "@/lib/api/order.service";
 import { toast } from "sonner";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function CourierDashboard() {
   const { user } = useAuth();
+  const { isConnected } = useSocket();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     todayDeliveries: 0,
@@ -42,6 +48,55 @@ export default function CourierDashboard() {
   useEffect(() => {
     // İstatistikleri yükle
     loadStats();
+  }, []);
+
+  // Socket bildirimleri için event listener
+  useEffect(() => {
+    const handleSocketNotification = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log('Dashboard - Socket bildirimi alındı:', data);
+      
+      // Sipariş ile ilgili bildirimler geldiğinde istatistikleri yeniden yükle
+      if (data.type === 'NEW_ORDER' || data.type === 'ORDER_ASSIGNED' || data.type === 'ORDER_STATUS_UPDATE') {
+        setTimeout(() => {
+          loadStats(); // İstatistikleri güncelle
+        }, 1000);
+      }
+    };
+
+    const handleSocketToast = (event: CustomEvent) => {
+      const { title, message, data } = event.detail;
+      
+      // Yeni sipariş bildirimi için özel toast
+      if (data?.type === 'NEW_ORDER') {
+        toast(title, {
+          description: message,
+          duration: 10000, // 10 saniye
+          action: {
+            label: 'Siparişleri Gör',
+            onClick: () => {
+              window.location.href = '/courier/available-orders';
+            }
+          },
+        });
+      } else {
+        // Diğer bildirimler için normal toast
+        toast(title, {
+          description: message,
+          duration: 5000,
+        });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('socket-notification', handleSocketNotification as EventListener);
+      window.addEventListener('socket-toast', handleSocketToast as EventListener);
+
+      return () => {
+        window.removeEventListener('socket-notification', handleSocketNotification as EventListener);
+        window.removeEventListener('socket-toast', handleSocketToast as EventListener);
+      };
+    }
   }, []);
 
   const loadStats = async () => {
@@ -167,6 +222,17 @@ export default function CourierDashboard() {
           <Badge variant="outline" className="py-2 px-4">
             <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
             Aktif
+          </Badge>
+          <Badge 
+            variant={isConnected ? "secondary" : "destructive"} 
+            className="py-2 px-4"
+          >
+            {isConnected ? (
+              <Wifi className="mr-2 h-3 w-3" />
+            ) : (
+              <WifiOff className="mr-2 h-3 w-3" />
+            )}
+            {isConnected ? "Bağlı" : "Bağlantı Yok"}
           </Badge>
           <Button>
             <MapPin className="mr-2 h-4 w-4" />
