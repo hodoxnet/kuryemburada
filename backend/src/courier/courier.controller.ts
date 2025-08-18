@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
+  Request,
 } from '@nestjs/common';
 import { CourierService } from './courier.service';
 import { UpdateCourierStatusDto } from './dto/update-courier-status.dto';
@@ -30,6 +31,15 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CourierController {
   constructor(private readonly courierService: CourierService) {}
+
+  @Get('profile')
+  @Roles(UserRole.COURIER)
+  @ApiOperation({ summary: 'Kurye kendi profilini getir' })
+  @ApiResponse({ status: 200, description: 'Kurye profil bilgileri' })
+  @ApiResponse({ status: 404, description: 'Kurye profili bulunamadı' })
+  async getProfile(@Request() req: any) {
+    return this.courierService.findByUserId(req.user.id);
+  }
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN)

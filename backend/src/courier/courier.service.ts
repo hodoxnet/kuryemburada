@@ -85,6 +85,36 @@ export class CourierService {
     return courier;
   }
 
+  async findByUserId(userId: string) {
+    const courier = await this.prisma.courier.findUnique({
+      where: { userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            createdAt: true,
+            status: true,
+          },
+        },
+        documents: {
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!courier) {
+      throw new NotFoundException(`Kullanıcı ID'si ile kurye bulunamadı: ${userId}`);
+    }
+
+    return courier;
+  }
+
   async updateStatus(id: string, updateStatusDto: UpdateCourierStatusDto) {
     const courier = await this.findOne(id);
 
