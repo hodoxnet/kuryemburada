@@ -10,6 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### MCP Context Kuralı
 **Güncel dokümantasyon ve API referansları için Context 7 MCP'yi kullan.** Özellikle NestJS, Prisma, Redis ve diğer teknolojilerle ilgili güncel bilgiler için Context 7 MCP aracılığıyla dokümantasyonlara erişim sağla. Bu, en güncel best practice'leri ve API değişikliklerini takip etmeni sağlayacaktır.
 
+### Özelleşmiş Agent Kullanımı
+Bu projede spesifik görevler için özelleşmiş agent'lar mevcuttur:
+
+- **kurye-operasyon-uzmani**: Kurye başvuruları, onay süreçleri, sipariş kabul/teslimat operasyonları, kurye dashboard geliştirme, araç ve belge yönetimi, kurye durum yönetimi (PENDING, APPROVED, ACTIVE, BUSY) ve kurye-sipariş eşleştirme algoritmalarıyla ilgili tüm görevlerde kullan.
+
+- **firma-operasyon-yoneticisi**: Firma yönetimi özellikleri, sipariş oluşturma iş akışları, firma operasyonları, onay süreçleri, firma dashboard geliştirme, firmalar için ödeme işlemleri, CompanyStatus yönetimi ve firma-sipariş ilişkileriyle ilgili görevlerde kullan.
+
+Bu agent'ları ilgili modüllerle çalışırken proaktif olarak kullan.
+
 ## Proje Özeti
 
 Bu proje, NestJS backend ve Next.js frontend kullanarak geliştirilmekte olan modern bir kurye operasyon yönetim sistemidir. Sistem, kurye firmalarını, kuryeleri, siparişleri ve ödemeleri rol tabanlı erişim kontrolü ile yönetir.
