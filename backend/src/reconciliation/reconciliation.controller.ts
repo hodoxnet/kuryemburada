@@ -50,8 +50,8 @@ export class ReconciliationController {
       throw new Error('Firma bilgisi bulunamadı');
     }
 
-    const start = startDate ? dayjs(startDate).toDate() : dayjs().startOf('month').toDate();
-    const end = endDate ? dayjs(endDate).toDate() : dayjs().endOf('month').toDate();
+    const start = startDate ? dayjs(startDate).startOf('day').toDate() : dayjs().startOf('month').toDate();
+    const end = endDate ? dayjs(endDate).endOf('day').toDate() : dayjs().endOf('month').toDate();
 
     return this.reconciliationService.getOrdersReport(company.id, start, end);
   }
@@ -73,8 +73,8 @@ export class ReconciliationController {
       throw new Error('Firma bilgisi bulunamadı');
     }
 
-    const start = startDate ? dayjs(startDate).toDate() : undefined;
-    const end = endDate ? dayjs(endDate).toDate() : undefined;
+    const start = startDate ? dayjs(startDate).startOf('day').toDate() : undefined;
+    const end = endDate ? dayjs(endDate).endOf('day').toDate() : undefined;
 
     return this.reconciliationService.findAllByCompany(company.id, start, end);
   }
@@ -96,8 +96,8 @@ export class ReconciliationController {
       throw new Error('Firma bilgisi bulunamadı');
     }
 
-    const start = startDate ? dayjs(startDate).toDate() : undefined;
-    const end = endDate ? dayjs(endDate).toDate() : undefined;
+    const start = startDate ? dayjs(startDate).startOf('day').toDate() : undefined;
+    const end = endDate ? dayjs(endDate).endOf('day').toDate() : undefined;
 
     return this.reconciliationService.getCompanySummary(company.id, start, end);
   }
@@ -124,8 +124,8 @@ export class ReconciliationController {
     return this.reconciliationService.findAll({
       status,
       companyId,
-      startDate: startDate ? dayjs(startDate).toDate() : undefined,
-      endDate: endDate ? dayjs(endDate).toDate() : undefined,
+      startDate: startDate ? dayjs(startDate).startOf('day').toDate() : undefined,
+      endDate: endDate ? dayjs(endDate).endOf('day').toDate() : undefined,
       skip: skip ? parseInt(skip) : 0,
       take: take ? parseInt(take) : 10,
     });
