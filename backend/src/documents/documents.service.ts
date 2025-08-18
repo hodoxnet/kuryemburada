@@ -1,14 +1,18 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DocumentType, DocumentStatus } from '@prisma/client';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createHash } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class DocumentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService
+  ) {}
 
   async uploadDocument(
     file: Express.Multer.File,
@@ -237,13 +241,68 @@ export class DocumentsService {
     return { message: 'Document deleted successfully' };
   }
 
-  async getDocumentFile(documentId: string) {
+  async validateTokenAndGetUser(token: string) {
+    if (!token) {
+      throw new UnauthorizedException('Token is required');
+    }
+
+    try {
+      // JWT token'ını doğrula
+      const payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+      });
+
+      // Kullanıcıyı veritabanından getir
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          status: true,
+        },
+      });
+
+      if (!user || user.status !== 'ACTIVE') {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+
+  async getDocumentFile(documentId: string, requestingUserId?: string) {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
+      include: {
+        courier: {
+          include: { user: true }
+        },
+        company: {
+          include: { user: true }
+        }
+      },
     });
 
     if (!document) {
       throw new NotFoundException('Document not found');
+    }
+
+    // Yetki kontrolü: Kullanıcı sadece kendi belgelerini görebilir (admin hariç)
+    if (requestingUserId) {
+      const requestingUser = await this.prisma.user.findUnique({
+        where: { id: requestingUserId },
+      });
+
+      const isOwner = (document.courier?.user?.id === requestingUserId) || 
+                     (document.company?.user?.id === requestingUserId);
+      const isAdmin = requestingUser?.role === 'SUPER_ADMIN';
+
+      if (!isOwner && !isAdmin) {
+        throw new NotFoundException('Document not found');
+      }
     }
 
     try {

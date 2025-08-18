@@ -21,6 +21,7 @@ import {
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { toast } from "sonner";
+import documentsAPI, { Document } from "@/lib/api/documents";
 import {
   Dialog,
   DialogContent,
@@ -39,18 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Document {
-  id: string;
-  type: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  fileName?: string;
-  uploadedAt: string;
-  approvedAt?: string;
-  rejectedAt?: string;
-  rejectionReason?: string;
-  expiryDate?: string;
-  notes?: string;
-}
+// Document interface documentsAPI'dan import ediliyor
 
 const DOCUMENT_TYPES = {
   IDENTITY_CARD: "Kimlik Kartı",
@@ -79,47 +69,8 @@ export default function CourierDocuments() {
   const loadDocuments = async () => {
     try {
       setLoading(true);
-      // TODO: Gerçek API endpoint'i eklendiğinde bu kısım güncellenecek
-      // const response = await courierAPI.getMyDocuments();
-      
-      // Mock data for development
-      const mockDocuments: Document[] = [
-        {
-          id: "1",
-          type: "DRIVER_LICENSE",
-          status: "APPROVED",
-          fileName: "ehliyet.jpg",
-          uploadedAt: "2024-01-15T10:00:00Z",
-          approvedAt: "2024-01-16T14:30:00Z",
-          expiryDate: "2029-01-15"
-        },
-        {
-          id: "2", 
-          type: "IDENTITY_CARD",
-          status: "APPROVED",
-          fileName: "kimlik.jpg",
-          uploadedAt: "2024-01-15T10:05:00Z",
-          approvedAt: "2024-01-16T14:30:00Z"
-        },
-        {
-          id: "3",
-          type: "VEHICLE_REGISTRATION", 
-          status: "PENDING",
-          fileName: "ruhsat.jpg",
-          uploadedAt: "2024-01-20T09:15:00Z"
-        },
-        {
-          id: "4",
-          type: "INSURANCE",
-          status: "REJECTED",
-          fileName: "sigorta.pdf",
-          uploadedAt: "2024-01-18T16:20:00Z",
-          rejectedAt: "2024-01-19T11:00:00Z",
-          rejectionReason: "Belge bulanık ve okunaklı değil. Lütfen daha net bir görüntü yükleyin."
-        }
-      ];
-      
-      setDocuments(mockDocuments);
+      const documents = await documentsAPI.getMyDocuments();
+      setDocuments(documents);
     } catch (error) {
       console.error("Belgeler yüklenemedi:", error);
       toast.error("Belgeler yüklenirken hata oluştu");
@@ -157,15 +108,10 @@ export default function CourierDocuments() {
     try {
       setUploading(true);
       
-      // TODO: Gerçek upload API'si eklendiğinde bu kısım güncellenecek
-      // const formData = new FormData();
-      // formData.append('file', selectedFile);
-      // formData.append('type', documentType);
-      // formData.append('notes', notes);
-      // await courierAPI.uploadDocument(formData);
-      
-      // Mock success
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await documentsAPI.uploadDocument(selectedFile, {
+        type: documentType,
+        notes: notes || undefined
+      });
       
       toast.success("Belge başarıyla yüklendi! İnceleme süreci 1-2 iş günü sürecektir.");
       setShowUploadDialog(false);
@@ -209,20 +155,7 @@ export default function CourierDocuments() {
     }
   };
 
-  const isDocumentExpiring = (expiryDate?: string) => {
-    if (!expiryDate) return false;
-    const expiry = new Date(expiryDate);
-    const now = new Date();
-    const daysUntilExpiry = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
-  };
-
-  const isDocumentExpired = (expiryDate?: string) => {
-    if (!expiryDate) return false;
-    const expiry = new Date(expiryDate);
-    const now = new Date();
-    return expiry < now;
-  };
+  // Belge süre kontrollerini kaldırdık çünkü backend'den expiryDate gelmiyor
 
   if (loading) {
     return <LoadingState text="Belgeleriniz yükleniyor..." />;
@@ -295,22 +228,6 @@ export default function CourierDocuments() {
         </Card>
       </div>
 
-      {/* Önemli Bildirimler */}
-      {documents.some(doc => isDocumentExpiring(doc.expiryDate) || isDocumentExpired(doc.expiryDate)) && (
-        <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
-          <CardContent className="flex items-center gap-3 pt-6">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-            <div>
-              <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                Dikkat! Süresi dolan veya dolmak üzere olan belgeleriniz var.
-              </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Teslimat hizmetinizin kesintisiz devam etmesi için belgelerinizi güncelleyin.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Belgeler Listesi */}
       <Card>
@@ -328,16 +245,11 @@ export default function CourierDocuments() {
             <div className="space-y-4">
               {documents.map((doc) => {
                 const StatusIcon = getStatusIcon(doc.status);
-                const isExpiring = isDocumentExpiring(doc.expiryDate);
-                const isExpired = isDocumentExpired(doc.expiryDate);
                 
                 return (
                   <div
                     key={doc.id}
-                    className={`border rounded-lg p-4 ${
-                      isExpired ? 'border-red-200 bg-red-50 dark:bg-red-900/20' :
-                      isExpiring ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20' : ''
-                    }`}
+                    className="border rounded-lg p-4"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
@@ -353,37 +265,15 @@ export default function CourierDocuments() {
                               <StatusIcon className="mr-1 h-3 w-3" />
                               {getStatusLabel(doc.status)}
                             </Badge>
-                            {isExpired && (
-                              <Badge variant="destructive">
-                                <AlertTriangle className="mr-1 h-3 w-3" />
-                                Süresi Dolmuş
-                              </Badge>
-                            )}
-                            {isExpiring && !isExpired && (
-                              <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-                                <AlertTriangle className="mr-1 h-3 w-3" />
-                                Süresi Doluyor
-                              </Badge>
-                            )}
                           </div>
                           <div className="text-sm text-muted-foreground space-y-1">
                             <div>Dosya: {doc.fileName}</div>
                             <div>
-                              Yükleme: {format(new Date(doc.uploadedAt), "dd MMMM yyyy, HH:mm", { locale: tr })}
+                              Yükleme: {format(new Date(doc.createdAt), "dd MMMM yyyy, HH:mm", { locale: tr })}
                             </div>
-                            {doc.expiryDate && (
-                              <div>
-                                Son Geçerlilik: {format(new Date(doc.expiryDate), "dd MMMM yyyy", { locale: tr })}
-                              </div>
-                            )}
-                            {doc.approvedAt && (
+                            {doc.verifiedAt && (
                               <div className="text-green-600">
-                                Onaylandı: {format(new Date(doc.approvedAt), "dd MMMM yyyy, HH:mm", { locale: tr })}
-                              </div>
-                            )}
-                            {doc.rejectedAt && (
-                              <div className="text-red-600">
-                                Reddedildi: {format(new Date(doc.rejectedAt), "dd MMMM yyyy, HH:mm", { locale: tr })}
+                                Onaylandı: {format(new Date(doc.verifiedAt), "dd MMMM yyyy, HH:mm", { locale: tr })}
                               </div>
                             )}
                           </div>
@@ -391,11 +281,19 @@ export default function CourierDocuments() {
                       </div>
                       
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => documentsAPI.viewDocument(doc.id)}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           Görüntüle
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => documentsAPI.downloadDocument(doc.id, doc.fileName)}
+                        >
                           <Download className="mr-2 h-4 w-4" />
                           İndir
                         </Button>
@@ -411,14 +309,6 @@ export default function CourierDocuments() {
                       </div>
                     )}
                     
-                    {doc.notes && (
-                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20">
-                        <p className="text-sm">
-                          <span className="font-medium text-blue-800 dark:text-blue-200">Notlar:</span>
-                          <span className="text-blue-700 dark:text-blue-300 ml-2">{doc.notes}</span>
-                        </p>
-                      </div>
-                    )}
                   </div>
                 );
               })}

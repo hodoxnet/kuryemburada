@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -117,10 +118,38 @@ export class DocumentsController {
     return this.documentsService.getDocument(id);
   }
 
+  @Get(':id/view')
+  @ApiOperation({ summary: 'View document file (inline)' })
+  async viewDocument(
+    @Param('id') id: string, 
+    @Query('token') token: string,
+    @Res() res: Response
+  ) {
+    // Token ile kullanıcıyı doğrula
+    const user = await this.documentsService.validateTokenAndGetUser(token);
+    
+    const fileData = await this.documentsService.getDocumentFile(id, user.id);
+    
+    res.set({
+      'Content-Type': fileData.mimeType,
+      'Content-Disposition': `inline; filename="${fileData.fileName}"`,
+      'Cache-Control': 'private, max-age=3600',
+    });
+    
+    res.status(HttpStatus.OK).send(fileData.buffer);
+  }
+
   @Get(':id/download')
   @ApiOperation({ summary: 'Download document file' })
-  async downloadDocument(@Param('id') id: string, @Res() res: Response) {
-    const fileData = await this.documentsService.getDocumentFile(id);
+  async downloadDocument(
+    @Param('id') id: string, 
+    @Query('token') token: string,
+    @Res() res: Response
+  ) {
+    // Token ile kullanıcıyı doğrula
+    const user = await this.documentsService.validateTokenAndGetUser(token);
+    
+    const fileData = await this.documentsService.getDocumentFile(id, user.id);
     
     res.set({
       'Content-Type': fileData.mimeType,
