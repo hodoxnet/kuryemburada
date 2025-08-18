@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getSocketService } from '@/lib/socket';
-import { useAuthStore } from '@/stores/useAuthStore';
+import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
 interface SocketContextType {
@@ -21,7 +21,7 @@ interface SocketProviderProps {
 
 export function SocketProvider({ children }: SocketProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuth();
   const socketService = getSocketService();
 
   // Socket bağlantı durumunu takip et

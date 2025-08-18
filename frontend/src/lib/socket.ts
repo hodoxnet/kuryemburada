@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import Cookies from 'js-cookie';
+import { AuthService } from './auth';
 
 class SocketService {
   private socket: Socket | null = null;
@@ -28,7 +28,7 @@ class SocketService {
 
   private getAuthToken(): string | null {
     if (typeof window !== 'undefined') {
-      return Cookies.get('token') || localStorage.getItem('token');
+      return AuthService.getAccessToken() || null;
     }
     return null;
   }
@@ -209,8 +209,9 @@ class SocketService {
   }
 
   // Token güncellendiğinde auth bilgisini güncelle
-  updateAuth(token: string) {
-    if (this.socket) {
+  updateAuth() {
+    const token = this.getAuthToken();
+    if (this.socket && token) {
       this.socket.auth = { token };
       // Eğer bağlıysa, yeniden bağlan
       if (this.isConnected) {
