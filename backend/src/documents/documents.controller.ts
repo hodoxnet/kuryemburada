@@ -125,18 +125,51 @@ export class DocumentsController {
     @Query('token') token: string,
     @Res() res: Response
   ) {
-    // Token ile kullanıcıyı doğrula
-    const user = await this.documentsService.validateTokenAndGetUser(token);
-    
-    const fileData = await this.documentsService.getDocumentFile(id, user.id);
-    
-    res.set({
-      'Content-Type': fileData.mimeType,
-      'Content-Disposition': `inline; filename="${fileData.fileName}"`,
-      'Cache-Control': 'private, max-age=3600',
-    });
-    
-    res.status(HttpStatus.OK).send(fileData.buffer);
+    try {
+      // Token ile kullanıcıyı doğrula
+      const user = await this.documentsService.validateTokenAndGetUser(token);
+      
+      const fileData = await this.documentsService.getDocumentFile(id, user.id);
+      
+      if (!fileData?.buffer || fileData.buffer.length === 0) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Document file not found or empty',
+        });
+      }
+      
+      res.set({
+        'Content-Type': fileData.mimeType || 'application/octet-stream',
+        'Content-Disposition': `inline; filename="${fileData.fileName}"`,
+        'Content-Length': fileData.buffer.length.toString(),
+        'Cache-Control': 'private, max-age=3600',
+      });
+      
+      res.status(HttpStatus.OK).end(fileData.buffer);
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      
+      // Response zaten gönderilmişse tekrar gönderme
+      if (res.headersSent) {
+        console.error('Headers already sent, cannot send error response');
+        return;
+      }
+      
+      if (error.name === 'UnauthorizedException') {
+        return res.status(HttpStatus.UNAUTHORIZED).json({
+          message: 'Authentication required',
+        });
+      }
+      
+      if (error.name === 'NotFoundException') {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Document not found',
+        });
+      }
+      
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error retrieving document',
+      });
+    }
   }
 
   @Get(':id/download')
@@ -146,17 +179,50 @@ export class DocumentsController {
     @Query('token') token: string,
     @Res() res: Response
   ) {
-    // Token ile kullanıcıyı doğrula
-    const user = await this.documentsService.validateTokenAndGetUser(token);
-    
-    const fileData = await this.documentsService.getDocumentFile(id, user.id);
-    
-    res.set({
-      'Content-Type': fileData.mimeType,
-      'Content-Disposition': `attachment; filename="${fileData.fileName}"`,
-    });
-    
-    res.status(HttpStatus.OK).send(fileData.buffer);
+    try {
+      // Token ile kullanıcıyı doğrula
+      const user = await this.documentsService.validateTokenAndGetUser(token);
+      
+      const fileData = await this.documentsService.getDocumentFile(id, user.id);
+      
+      if (!fileData?.buffer || fileData.buffer.length === 0) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Document file not found or empty',
+        });
+      }
+      
+      res.set({
+        'Content-Type': fileData.mimeType || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${fileData.fileName}"`,
+        'Content-Length': fileData.buffer.length.toString(),
+      });
+      
+      res.status(HttpStatus.OK).end(fileData.buffer);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      
+      // Response zaten gönderilmişse tekrar gönderme
+      if (res.headersSent) {
+        console.error('Headers already sent, cannot send error response');
+        return;
+      }
+      
+      if (error.name === 'UnauthorizedException') {
+        return res.status(HttpStatus.UNAUTHORIZED).json({
+          message: 'Authentication required',
+        });
+      }
+      
+      if (error.name === 'NotFoundException') {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Document not found',
+        });
+      }
+      
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error downloading document',
+      });
+    }
   }
 
   @Put(':id/verify')

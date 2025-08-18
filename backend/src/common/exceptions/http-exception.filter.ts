@@ -39,6 +39,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // Response zaten gönderilmişse tekrar gönderme
+    if (response.headersSent) {
+      this.logger.error(
+        `Headers already sent for ${request.method} ${request.url} - ${status} - ${message}`,
+      );
+      return;
+    }
+
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
@@ -52,6 +60,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       `${request.method} ${request.url} - ${status} - ${message}`,
     );
 
-    response.status(status).json(errorResponse);
+    try {
+      response.status(status).json(errorResponse);
+    } catch (responseError) {
+      this.logger.error(
+        `Failed to send error response: ${responseError.message}`,
+      );
+    }
   }
 }

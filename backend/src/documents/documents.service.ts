@@ -307,14 +307,29 @@ export class DocumentsService {
 
     try {
       const filePath = path.join(process.cwd(), document.fileUrl);
+      
+      // Dosyanın var olup olmadığını kontrol et
+      await fs.access(filePath);
+      
       const fileBuffer = await fs.readFile(filePath);
+      
+      if (!fileBuffer || fileBuffer.length === 0) {
+        throw new NotFoundException('Document file is empty');
+      }
+      
       return {
         buffer: fileBuffer,
         mimeType: document.mimeType,
         fileName: document.fileName,
       };
     } catch (error) {
-      throw new NotFoundException('Document file not found');
+      console.error('Error reading document file:', error);
+      
+      if (error.code === 'ENOENT') {
+        throw new NotFoundException('Document file not found on disk');
+      }
+      
+      throw new NotFoundException('Document file could not be read');
     }
   }
 
