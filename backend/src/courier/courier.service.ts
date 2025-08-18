@@ -258,4 +258,29 @@ export class CourierService {
 
     return { message: 'Kurye başarıyla silindi' };
   }
+
+  // Kurye müsaitlik durumunu güncelle
+  async updateAvailability(courierId: string, isAvailable: boolean) {
+    const courier = await this.findOne(courierId);
+
+    const updatedCourier = await this.prisma.courier.update({
+      where: { id: courierId },
+      data: { 
+        isAvailable,
+        status: isAvailable ? CourierStatus.APPROVED : courier.status 
+      },
+      include: {
+        user: true,
+        documents: true,
+      },
+    });
+
+    this.logger.info('Kurye müsaitlik durumu güncellendi', {
+      courierId,
+      isAvailable,
+      status: updatedCourier.status,
+    });
+
+    return updatedCourier;
+  }
 }

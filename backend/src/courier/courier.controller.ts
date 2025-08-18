@@ -115,4 +115,16 @@ export class CourierController {
   async delete(@Param('id') id: string) {
     return this.courierService.delete(id);
   }
+
+  @Patch(':id/availability')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.COURIER)
+  @ApiOperation({ summary: 'Kurye müsaitlik durumunu güncelle' })
+  @ApiResponse({ status: 200, description: 'Müsaitlik durumu güncellendi' })
+  @ApiResponse({ status: 404, description: 'Kurye bulunamadı' })
+  async updateAvailability(
+    @Param('id') id: string,
+    @Body('isAvailable') isAvailable: boolean,
+  ) {
+    return this.courierService.updateAvailability(id, isAvailable);
+  }
 }
