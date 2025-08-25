@@ -128,7 +128,7 @@ export default function CompanyLoginPage() {
               </p>
               <Button
                 variant="outline"
-                onClick={() => router.push('/company/register')}
+                onClick={() => router.push('/apply/company')}
                 className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
               >
                 <UserPlus className="mr-2 h-4 w-4" />

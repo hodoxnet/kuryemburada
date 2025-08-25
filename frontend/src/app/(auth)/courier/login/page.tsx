@@ -128,7 +128,7 @@ export default function CourierLoginPage() {
               </p>
               <Button
                 variant="outline"
-                onClick={() => router.push('/courier/register')}
+                onClick={() => router.push('/apply/courier')}
                 className="w-full border-green-200 text-green-600 hover:bg-green-50"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
