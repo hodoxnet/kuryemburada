@@ -108,7 +108,7 @@ export class CourierAuthService extends BaseAuthService {
     this.validateUserStatus(user);
 
     // Check courier status
-    if (!user.courier || user.courier.status !== CourierStatus.ACTIVE) {
+    if (!user.courier || user.courier.status !== CourierStatus.APPROVED) {
       throw new ForbiddenException('Courier account is not approved yet');
     }
 
