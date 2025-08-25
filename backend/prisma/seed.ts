@@ -19,6 +19,36 @@ async function main() {
 
   console.log('Admin kullanıcı oluşturuldu:', admin.email);
 
+  // Test firma kullanıcısı
+  const companyPassword = await bcrypt.hash('firma123', 10);
+  const company = await prisma.user.upsert({
+    where: { email: 'firma@test.com' },
+    update: {},
+    create: {
+      email: 'firma@test.com',
+      password: companyPassword,
+      role: UserRole.COMPANY,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  console.log('Test firma kullanıcısı oluşturuldu:', company.email);
+
+  // Test kurye kullanıcısı
+  const courierPassword = await bcrypt.hash('kurye123', 10);
+  const courier = await prisma.user.upsert({
+    where: { email: 'kurye@test.com' },
+    update: {},
+    create: {
+      email: 'kurye@test.com',
+      password: courierPassword,
+      role: UserRole.COURIER,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  console.log('Test kurye kullanıcısı oluşturuldu:', courier.email);
+
   // Varsayılan sistem ayarları
   const defaultSettings = [
     { key: 'commission.rate', value: 0.15, description: 'Komisyon oranı' },
