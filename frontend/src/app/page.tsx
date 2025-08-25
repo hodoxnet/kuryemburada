@@ -18,9 +18,11 @@ import {
   MapPin
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 export default function HomePage() {
+  const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const features = [
@@ -91,7 +93,7 @@ export default function HomePage() {
             <Link href="#contact" className="text-sm font-medium hover:text-primary transition-colors">
               İletişim
             </Link>
-            <Link href="/login">
+            <Link href="/auth">
               <Button variant="outline" size="sm">
                 Giriş Yap
               </Button>

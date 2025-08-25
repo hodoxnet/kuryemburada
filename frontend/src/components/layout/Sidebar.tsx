@@ -98,7 +98,7 @@ export function Sidebar({
     clearAuth();
     AuthService.clearAuth();
     toast.success('Çıkış yapıldı');
-    router.push('/login');
+    router.push('/auth');
   };
 
   return (

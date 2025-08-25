@@ -49,6 +49,72 @@ async function main() {
 
   console.log('Test kurye kullanıcısı oluşturuldu:', courier.email);
 
+  // Test firma için Company kaydı oluştur
+  await prisma.company.upsert({
+    where: { userId: company.id },
+    update: {},
+    create: {
+      userId: company.id,
+      name: 'Test Firma Ltd. Şti.',
+      taxNumber: '1234567890',
+      taxOffice: 'Beylikdüzü',
+      phone: '+90 212 555 0123',
+      address: {
+        street: 'Test Caddesi No:123',
+        city: 'İstanbul',
+        district: 'Beylikdüzü',
+        postalCode: '34520',
+        country: 'Türkiye'
+      },
+      contactPerson: {
+        fullName: 'Ahmet Yılmaz',
+        phone: '+90 532 555 0123',
+        email: 'ahmet@test-firma.com',
+        title: 'Genel Müdür'
+      },
+      status: 'APPROVED', // Onaylanmış durumda
+      activityArea: 'E-ticaret ve Lojistik',
+    },
+  });
+
+  console.log('Test firma Company kaydı oluşturuldu');
+
+  // Test kurye için Courier kaydı oluştur
+  await prisma.courier.upsert({
+    where: { userId: courier.id },
+    update: {},
+    create: {
+      userId: courier.id,
+      fullName: 'Mehmet Demir',
+      tcNumber: '12345678901',
+      phone: '+90 532 555 0456',
+      birthDate: new Date('1990-05-15'),
+      vehicleInfo: {
+        type: 'MOTORCYCLE',
+        brand: 'Honda',
+        model: 'CB150R',
+        year: '2020',
+        plateNumber: '34 ABC 123',
+        color: 'Kırmızı'
+      },
+      licenseInfo: {
+        licenseNumber: 'A12345678',
+        licenseType: 'A2',
+        expiryDate: new Date('2030-12-31')
+      },
+      status: 'APPROVED', // Onaylanmış durumda
+      rating: 4.8,
+      totalDeliveries: 0,
+      emergencyContact: {
+        name: 'Fatma Demir',
+        phone: '+90 532 555 0789',
+        relationship: 'Eş'
+      },
+    },
+  });
+
+  console.log('Test kurye Courier kaydı oluşturuldu');
+
   // Varsayılan sistem ayarları
   const defaultSettings = [
     { key: 'commission.rate', value: 0.15, description: 'Komisyon oranı' },

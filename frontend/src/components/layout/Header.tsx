@@ -25,7 +25,7 @@ export function Header() {
     clearAuth();
     AuthService.clearAuth();
     toast.success('Çıkış yapıldı');
-    router.push('/login');
+    router.push('/auth');
   };
 
   // Kullanıcı adını role göre belirle

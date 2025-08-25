@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           AuthService.clearAuth();
           clearAuthStore();
           setUser(null);
-          router.push('/login');
+          router.push('/auth');
         }
       } catch (error) {
         console.error('Token doğrulama hatası:', error);
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         AuthService.clearAuth();
         clearAuthStore();
         setUser(null);
-        router.push('/login');
+        router.push('/auth');
       } finally {
         setLoading(false);
       }
@@ -78,6 +78,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     verifyAuth();
   }, [router]);
+
+  // Login sayfalarından gelen güncellemeleri dinle ve state'i senkronize et
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => {
+      const currentUser = AuthService.getUser();
+      if (currentUser) {
+        setUser(currentUser);
+        setAuthStore(currentUser);
+      } else {
+        setUser(null);
+        clearAuthStore();
+      }
+    };
+    window.addEventListener('auth:updated', handler);
+    return () => window.removeEventListener('auth:updated', handler);
+  }, [setAuthStore, clearAuthStore]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -149,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       AuthService.clearAuth();
       clearAuthStore();
       setUser(null);
-      router.push('/login');
+      router.push('/auth');
     }
   };
 

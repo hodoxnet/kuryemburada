@@ -18,7 +18,7 @@ export default function AdminLayout({
   useEffect(() => {
     // Loading tamamlandıktan sonra kontrol et
     if (!loading && !isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
     }
   }, [loading, isAuthenticated, router]);
 

@@ -12,11 +12,11 @@ export default function UnauthorizedPage() {
 
   const handleGoBack = () => {
     if (user?.role === 'COMPANY') {
-      router.push('/company/dashboard');
+      router.push('/company');
     } else if (user?.role === 'COURIER') {
       router.push('/courier/dashboard');
     } else {
-      router.push('/login');
+      router.push('/auth');
     }
   };
 
@@ -43,7 +43,7 @@ export default function UnauthorizedPage() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/auth')}
             >
               Farklı Hesapla Giriş Yap
             </Button>

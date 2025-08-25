@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, InternalAxiosRequ
 import { AuthService } from './auth';
 
 // API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4004';
 
 // Axios instance oluştur
 const apiClient: AxiosInstance = axios.create({
@@ -69,7 +69,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         // Token yenileme başarısız - kullanıcıyı çıkış yaptır
         AuthService.clearAuth();
-        window.location.href = '/login';
+        window.location.href = '/auth';
         return Promise.reject(refreshError);
       }
     }
@@ -134,4 +134,6 @@ export const handleApiError = (error: any): string => {
   return 'Beklenmeyen bir hata oluştu';
 };
 
+// Export both apiClient and api for different use cases
+export { apiClient };
 export default apiClient;

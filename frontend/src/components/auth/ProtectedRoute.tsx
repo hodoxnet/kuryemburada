@@ -17,7 +17,7 @@ export function ProtectedRoute({ children, requiredRoles = [] }: ProtectedRouteP
     if (!loading) {
       // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
       if (!isAuthenticated) {
-        router.push('/login');
+        router.push('/auth');
         return;
       }
 
