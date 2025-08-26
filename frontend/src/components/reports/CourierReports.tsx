@@ -334,7 +334,7 @@ export default function CourierReports() {
             </Card>
           ) : earningsReport ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm">Toplam Teslimat</CardTitle>
@@ -348,28 +348,8 @@ export default function CourierReports() {
                     <CardTitle className="text-sm">Toplam Kazanç</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(earningsReport.summary.totalEarnings)}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Toplam Bahşiş</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(earningsReport.summary.totalTips)}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Genel Toplam</CardTitle>
-                  </CardHeader>
-                  <CardContent>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(earningsReport.summary.totalAmount)}
+                      {formatCurrency(earningsReport.summary.totalEarnings)}
                     </div>
                   </CardContent>
                 </Card>
@@ -394,8 +374,6 @@ export default function CourierReports() {
                         <TableHead>Tarih</TableHead>
                         <TableHead className="text-center">Teslimat Sayısı</TableHead>
                         <TableHead className="text-right">Kazanç</TableHead>
-                        <TableHead className="text-right">Bahşiş</TableHead>
-                        <TableHead className="text-right">Toplam</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -405,10 +383,8 @@ export default function CourierReports() {
                             {format(new Date(data.date), 'dd MMM yyyy', { locale: tr })}
                           </TableCell>
                           <TableCell className="text-center">{data.deliveryCount}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(data.earnings)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(data.tips)}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatCurrency(data.totalAmount)}
+                            {formatCurrency(data.earnings)}
                           </TableCell>
                         </TableRow>
                       ))}
