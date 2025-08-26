@@ -38,8 +38,9 @@ npm run prisma:studio      # Prisma Studio GUI'yi aç
 npm run prisma:seed        # Veritabanını seed et
 
 # Geliştirme
+npm run start              # Production modunda başlat
 npm run start:dev          # Watch modunda başlat (port 3001)
-npm run start:debug        # Debug modunda başlat
+npm run start:debug        # Debug modunda başlat (port 9229)
 npm run start:prod         # Production build'i çalıştır
 npm run build              # Production build oluştur
 
@@ -50,7 +51,7 @@ npm run format             # Prettier ile formatla
 # Test
 npm run test               # Unit testleri çalıştır
 npm run test:watch         # Test watch modu
-npm run test:cov           # Coverage raporu oluştur
+npm run test:cov           # Coverage raporu oluştur (coverage/ dizini)
 npm run test:e2e           # E2E testleri çalıştır
 npm run test:debug         # Debug modunda test çalıştır
 
@@ -217,13 +218,14 @@ frontend/src/
 
 ### Güvenlik Uygulamaları
 
-- **Authentication**: JWT token tabanlı (Access + Refresh token)
-- **Authorization**: Role-based access control (RBAC)
-- **Password**: bcrypt ile hashleme
-- **Error Handling**: Global exception filter
-- **Logging**: Request/response interceptor
-- **CORS**: Cross-origin istekler için aktif
-- **Validation**: class-validator ile DTO validation
+- **Authentication**: JWT token tabanlı (Access + Refresh token rotasyon sistemi)
+- **Authorization**: Role-based access control (RBAC) - Guard'lar ile korumalı endpoint'ler
+- **Password**: bcrypt ile hashleme (salt rounds: 10)
+- **Error Handling**: Global exception filter ve custom error sınıfları
+- **Logging**: Winston ile detaylı loglama (dosya + konsol)
+- **CORS**: Cross-origin istekler için yapılandırılabilir
+- **Validation**: class-validator ile DTO validation (whitelist aktif)
+- **Rate Limiting**: Planlanmış (henüz implement edilmemiş)
 
 ### API Desenleri
 
@@ -252,6 +254,7 @@ DATABASE_URL="postgresql://username:password@localhost:5432/kuryemburadav1?schem
 # JWT
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=7d
+JWT_REFRESH_EXPIRES_IN=30d
 
 # Redis Cache
 REDIS_HOST=localhost
@@ -281,7 +284,7 @@ FROM_EMAIL=
 SMS_API_KEY=
 SMS_API_URL=
 
-# Google Maps (ileride kullanım için)
+# Google Maps
 GOOGLE_MAPS_API_KEY=
 
 # Payment Gateway (ileride kullanım için)
@@ -315,10 +318,12 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 - **Global modül konfigürasyonu**: `backend/src/app.module.ts`
 - **Veritabanı şeması**: `backend/prisma/schema.prisma`
 - **Migration'lar**: `backend/prisma/migrations/`
+- **Seed dosyası**: `backend/prisma/seed.ts`
 - **Environment örneği**: `backend/.env.example`
-- **Test konfigürasyonu**: `backend/test/jest-e2e.json`
+- **Test konfigürasyonu**: `backend/jest.config.js` ve `backend/test/jest-e2e.json`
 - **Swagger UI**: `http://localhost:3001/api-docs`
 - **Static files (uploads)**: `backend/uploads/`
+- **Log dosyaları**: `backend/logs/` (Winston log output)
 
 ### Frontend  
 - **Ana layout**: `frontend/src/app/layout.tsx`
@@ -326,25 +331,27 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 - **API client**: `frontend/src/lib/api-client.ts`
 - **Auth context**: `frontend/src/contexts/AuthContext.tsx`
 - **Global store'lar**: `frontend/src/stores/`
-- **UI komponetleri**: `frontend/src/components/ui/`
+- **UI komponetleri**: `frontend/src/components/ui/` (shadcn/ui)
+- **Paylaşılan komponetler**: `frontend/src/components/shared/`
 - **Tailwind config**: `frontend/tailwind.config.ts`
-- **shadcn config**: `frontend/components.json`
+- **shadcn config**: `frontend/components.json` (New York theme)
 - **Public assets**: `frontend/public/`
 
 ## Geliştirme İpuçları
 
 ### Yeni Feature Ekleme Workflow
 1. Prisma şemasında gerekli model/field ekle
-2. Migration oluştur: `npm run prisma:migrate`
+2. Migration oluştur: `npm run prisma:migrate dev --name feature_name`
 3. Prisma client'ı yenile: `npm run prisma:generate`
-4. Backend'de ilgili modül, controller ve service oluştur
-5. DTO'ları tanımla ve validation rule'ları ekle
-6. Swagger decorator'ları ile API dokümantasyonu ekle
-7. Unit test yaz
-8. Frontend'de ilgili sayfaları ve komponetleri oluştur
-9. API service dosyasını güncelle
-10. Zustand store oluştur (gerekirse)
-11. Role-based erişim kontrollerini ekle
+4. Backend'de ilgili modül oluştur: `nest g module feature-name`
+5. Controller ve service oluştur: `nest g controller feature-name` ve `nest g service feature-name`
+6. DTO'ları tanımla ve validation rule'ları ekle
+7. Swagger decorator'ları ile API dokümantasyonu ekle (@ApiTags, @ApiOperation, @ApiResponse)
+8. Unit test yaz (*.spec.ts dosyaları)
+9. Frontend'de ilgili sayfaları ve komponetleri oluştur
+10. API service dosyasını güncelle veya yeni service oluştur
+11. Zustand store oluştur (gerekirse)
+12. Role-based erişim kontrollerini ekle (@Roles decorator)
 
 ### Debugging
 - **Backend**: `npm run start:debug` ile 9229 portunda debugger aç
@@ -368,3 +375,24 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 - Sensitive bilgileri asla commit'leme (.env, private keys vb.)
 - SQL injection koruması için Prisma parameterized queries kullan
 - XSS koruması için input sanitization yap
+- Token rotation stratejisi ile refresh token güvenliği
+- Frontend'de middleware ile route korumaları
+
+## Kritik Konular ve Dikkat Edilmesi Gerekenler
+
+1. **Port Konfigürasyonu**: Backend varsayılan olarak 3001 portunda çalışır
+2. **Database Adı**: PostgreSQL veritabanı adı `kuryemburadav1` olmalı
+3. **Token Yönetimi**: Access token cookie'de saklanır, refresh token rotation uygulanır
+4. **Route Korumaları**: Frontend middleware.ts dosyası tüm route korumaları için kritik
+5. **Dosya Yükleme**: Belgeler `backend/uploads/` dizinine kaydedilir
+6. **Role Hiyerarşisi**: SUPER_ADMIN > COMPANY = COURIER
+7. **Status Yönetimi**: User, Company ve Courier için ayrı status enum'ları mevcut
+8. **Cache Strategy**: Redis ile cache-manager v7 kullanılıyor (TTL ve max items konfigürasyonu)
+
+## Common Pitfalls ve Çözümleri
+
+1. **Prisma Client Hatası**: Migration sonrası `npm run prisma:generate` komutunu çalıştırmayı unutma
+2. **CORS Hatası**: Frontend farklı portta çalışıyorsa backend CORS ayarlarını kontrol et
+3. **Token Expired**: Refresh token mekanizması api-client.ts'de otomatik çalışır
+4. **File Upload Limiti**: MAX_FILE_SIZE env değişkeni ile ayarlanır (default: 10MB)
+5. **Test Database**: Test için ayrı veritabanı kullan, production veritabanını kullanma

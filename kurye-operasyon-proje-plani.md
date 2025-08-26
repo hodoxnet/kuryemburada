@@ -94,7 +94,6 @@
   - [x] Sözleşme onayı
 - [x] Belge yükleme sistemi
 - [x] Admin onay workflow'u
-- [ ] E-posta doğrulama
 
 #### 2.2 Kurye Kayıt Süreci
 - [x] Kurye kayıt formu
