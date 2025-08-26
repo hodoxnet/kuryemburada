@@ -2,6 +2,7 @@ import {
   Controller, 
   Get, 
   Query, 
+  Param,
   UseGuards,
   ParseEnumPipe,
 } from '@nestjs/common';
@@ -133,6 +134,62 @@ export class ReportsController {
       endDate: endDate ? new Date(endDate) : undefined,
       groupBy,
     });
+  }
+
+  @Get('company-balance/:companyId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Firma cari durumunu getir' })
+  @ApiResponse({ status: 200, description: 'Firma cari durumu' })
+  async getCompanyBalance(@Param('companyId') companyId: string) {
+    return this.reportsService.getCompanyBalance(companyId);
+  }
+
+  @Get('company-detailed/:companyId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Firma detaylı raporunu getir' })
+  @ApiQuery({ name: 'startDate', required: false, type: Date })
+  @ApiQuery({ name: 'endDate', required: false, type: Date })
+  @ApiQuery({ name: 'groupBy', required: false, enum: ['day', 'week', 'month'] })
+  @ApiResponse({ status: 200, description: 'Firma detaylı raporu' })
+  async getCompanyDetailedReport(
+    @Param('companyId') companyId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('groupBy') groupBy?: 'day' | 'week' | 'month',
+  ) {
+    return this.reportsService.getCompanyDetailedReport(companyId, {
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      groupBy,
+    });
+  }
+
+  @Get('courier-earnings/:courierId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Kurye kazanç raporunu getir' })
+  @ApiQuery({ name: 'startDate', required: false, type: Date })
+  @ApiQuery({ name: 'endDate', required: false, type: Date })
+  @ApiQuery({ name: 'groupBy', required: false, enum: ['day', 'week', 'month'] })
+  @ApiResponse({ status: 200, description: 'Kurye kazanç raporu' })
+  async getCourierEarnings(
+    @Param('courierId') courierId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('groupBy') groupBy?: 'day' | 'week' | 'month',
+  ) {
+    return this.reportsService.getCourierEarnings(courierId, {
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      groupBy,
+    });
+  }
+
+  @Get('all-companies-balance')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Tüm firmaların cari durumunu getir' })
+  @ApiResponse({ status: 200, description: 'Tüm firmaların cari durumu' })
+  async getAllCompaniesBalance() {
+    return this.reportsService.getAllCompaniesBalance();
   }
 
   @Get('export')

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderStatus, PaymentStatus, CourierStatus, CompanyStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus, CourierStatus, CompanyStatus, ReconciliationStatus } from '@prisma/client';
 import { Logger } from 'winston';
 import { Inject } from '@nestjs/common';
 
@@ -407,6 +407,259 @@ export class ReportsService {
     }));
   }
 
+  async getCompanyBalance(companyId: string) {
+    const balance = await this.prisma.companyBalance.findUnique({
+      where: { companyId },
+      include: {
+        company: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const recentPayments = await this.prisma.companyPayment.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    const unpaidReconciliations = await this.prisma.dailyReconciliation.findMany({
+      where: {
+        companyId,
+        status: { in: [ReconciliationStatus.PENDING, ReconciliationStatus.PARTIALLY_PAID, ReconciliationStatus.OVERDUE] },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    return {
+      balance,
+      recentPayments,
+      unpaidReconciliations,
+      summary: {
+        currentDebt: balance?.currentBalance || 0,
+        totalDebts: balance?.totalDebts || 0,
+        totalPayments: balance?.totalCredits || 0,
+        unpaidAmount: unpaidReconciliations.reduce((sum, r) => sum + (r.netAmount - r.paidAmount), 0),
+      },
+    };
+  }
+
+  async getCompanyDetailedReport(companyId: string, params: {
+    startDate?: Date;
+    endDate?: Date;
+    groupBy?: 'day' | 'week' | 'month';
+  }) {
+    const { startDate, endDate, groupBy = 'day' } = params;
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        companyId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        payments: true,
+        courier: {
+          select: { fullName: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const reconciliations = await this.prisma.dailyReconciliation.findMany({
+      where: {
+        companyId,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    const groupedOrders: Record<string, any> = {};
+    
+    orders.forEach((order) => {
+      const date = new Date(order.createdAt);
+      let key: string;
+
+      switch (groupBy) {
+        case 'day':
+          key = date.toISOString().split('T')[0];
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          key = weekStart.toISOString().split('T')[0];
+          break;
+        case 'month':
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+      }
+
+      if (!groupedOrders[key]) {
+        groupedOrders[key] = {
+          date: key,
+          totalOrders: 0,
+          deliveredOrders: 0,
+          cancelledOrders: 0,
+          totalAmount: 0,
+          paidAmount: 0,
+          orders: [],
+        };
+      }
+
+      groupedOrders[key].totalOrders += 1;
+      groupedOrders[key].totalAmount += order.price;
+      groupedOrders[key].orders.push(order);
+
+      if (order.status === OrderStatus.DELIVERED) {
+        groupedOrders[key].deliveredOrders += 1;
+      } else if (order.status === OrderStatus.CANCELLED) {
+        groupedOrders[key].cancelledOrders += 1;
+      }
+
+      const paidAmount = order.payments
+        .filter(p => p.status === PaymentStatus.COMPLETED)
+        .reduce((sum, p) => sum + p.amount, 0);
+      groupedOrders[key].paidAmount += paidAmount;
+    });
+
+    return {
+      groupedData: Object.values(groupedOrders),
+      reconciliations,
+      summary: {
+        totalOrders: orders.length,
+        totalAmount: orders.reduce((sum, o) => sum + o.price, 0),
+        totalPaid: orders.reduce((sum, o) => {
+          const paid = o.payments
+            .filter(p => p.status === PaymentStatus.COMPLETED)
+            .reduce((pSum, p) => pSum + p.amount, 0);
+          return sum + paid;
+        }, 0),
+        deliveredCount: orders.filter(o => o.status === OrderStatus.DELIVERED).length,
+        cancelledCount: orders.filter(o => o.status === OrderStatus.CANCELLED).length,
+      },
+    };
+  }
+
+  async getCourierEarnings(courierId: string, params: {
+    startDate?: Date;
+    endDate?: Date;
+    groupBy?: 'day' | 'week' | 'month';
+  }) {
+    const { startDate, endDate, groupBy = 'day' } = params;
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        courierId,
+        status: OrderStatus.DELIVERED,
+        deliveredAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      orderBy: { deliveredAt: 'desc' },
+    });
+
+    const groupedEarnings: Record<string, any> = {};
+    let totalEarnings = 0;
+    let totalTips = 0;
+
+    orders.forEach((order) => {
+      const date = new Date(order.deliveredAt!);
+      let key: string;
+
+      switch (groupBy) {
+        case 'day':
+          key = date.toISOString().split('T')[0];
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          key = weekStart.toISOString().split('T')[0];
+          break;
+        case 'month':
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+      }
+
+      if (!groupedEarnings[key]) {
+        groupedEarnings[key] = {
+          date: key,
+          deliveryCount: 0,
+          earnings: 0,
+          tips: 0,
+          totalAmount: 0,
+        };
+      }
+
+      const earning = order.courierEarning || 0;
+      const tip = 0; // courierTip alanı henüz schema'da yok
+
+      groupedEarnings[key].deliveryCount += 1;
+      groupedEarnings[key].earnings += earning;
+      groupedEarnings[key].tips += tip;
+      groupedEarnings[key].totalAmount += (earning + tip);
+
+      totalEarnings += earning;
+      totalTips += tip;
+    });
+
+    return {
+      groupedData: Object.values(groupedEarnings),
+      summary: {
+        totalDeliveries: orders.length,
+        totalEarnings,
+        totalTips,
+        totalAmount: totalEarnings + totalTips,
+        averageEarningPerDelivery: orders.length > 0 ? totalEarnings / orders.length : 0,
+      },
+      recentOrders: orders.slice(0, 10),
+    };
+  }
+
+  async getAllCompaniesBalance() {
+    const companies = await this.prisma.company.findMany({
+      where: { status: CompanyStatus.APPROVED },
+    });
+
+    const balances = await this.prisma.companyBalance.findMany({
+      where: {
+        companyId: { in: companies.map(c => c.id) },
+      },
+    });
+
+    const balanceMap = new Map(balances.map(b => [b.companyId, b]));
+
+    const balanceSummary = companies.map(company => {
+      const balance = balanceMap.get(company.id);
+      return {
+        companyId: company.id,
+        companyName: company.name,
+        currentDebt: balance?.currentBalance || 0,
+        lastPaymentDate: balance?.lastPaymentDate,
+        lastPaymentAmount: balance?.lastPaymentAmount || 0,
+        status: (balance?.currentBalance || 0) > 1000 ? 'HIGH_DEBT' : 
+                (balance?.currentBalance || 0) > 0 ? 'HAS_DEBT' : 'CLEAR',
+      };
+    });
+
+    const totalDebt = balanceSummary.reduce((sum, c) => sum + c.currentDebt, 0);
+    const companiesWithDebt = balanceSummary.filter(c => c.currentDebt > 0).length;
+
+    return {
+      companies: balanceSummary,
+      summary: {
+        totalDebt,
+        companiesWithDebt,
+        averageDebt: companiesWithDebt > 0 ? totalDebt / companiesWithDebt : 0,
+      },
+    };
+  }
+
   async exportReport(reportType: string, params: any) {
     let data: any;
 
@@ -425,6 +678,15 @@ export class ReportsService {
         break;
       case 'revenue':
         data = await this.getRevenueAnalysis(params);
+        break;
+      case 'company-balance':
+        data = await this.getCompanyBalance(params.companyId);
+        break;
+      case 'company-detailed':
+        data = await this.getCompanyDetailedReport(params.companyId, params);
+        break;
+      case 'courier-earnings':
+        data = await this.getCourierEarnings(params.courierId, params);
         break;
       default:
         throw new Error('Geçersiz rapor tipi');
