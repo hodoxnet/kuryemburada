@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   MapPin,
+  Calculator,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -60,6 +62,16 @@ const defaultMenuItems = [
     title: "Ödemeler",
     href: "/admin/payments",
     icon: CreditCard,
+  },
+  {
+    title: "Mutabakatlar",
+    href: "/admin/reconciliations",
+    icon: Calculator,
+  },
+  {
+    title: "Firma Ödemeleri",
+    href: "/admin/company-balance",
+    icon: Wallet,
   },
   {
     title: "Kullanıcılar",

@@ -21,6 +21,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ServiceAreaModule } from './service-area/service-area.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { CompanyPaymentsModule } from './company-payments/company-payments.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ServiceAreaModule,
     ReconciliationModule,
     NotificationsModule,
+    CompanyPaymentsModule,
   ],
   controllers: [AppController],
   providers: [
