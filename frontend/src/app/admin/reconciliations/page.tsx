@@ -821,13 +821,15 @@ export default function ReconciliationsPage() {
                 <>
                   {selectedReconciliation.company.name} - {' '}
                   {format(new Date(selectedReconciliation.date), 'dd MMMM yyyy', { locale: tr })}
-                  <div className="mt-2 text-sm">
-                    Kalan Borç: ₺{selectedReconciliation.remainingAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                  </div>
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
+          {selectedReconciliation && (
+            <div className="text-sm text-muted-foreground mb-4">
+              Kalan Borç: ₺{selectedReconciliation.remainingAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="space-y-2">
@@ -904,15 +906,17 @@ export default function ReconciliationsPage() {
                 <>
                   {selectedReconciliation.company.name} - {' '}
                   {format(new Date(selectedReconciliation.date), 'dd MMMM yyyy', { locale: tr })}
-                  <div className="mt-2 space-y-1">
-                    <div>Toplam Sipariş: {selectedReconciliation.totalOrders}</div>
-                    <div>Teslim Edilen: {selectedReconciliation.deliveredOrders}</div>
-                    <div>Net Tutar: ₺{selectedReconciliation.netAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
-                  </div>
                 </>
               )}
             </DialogDescription>
           </DialogHeader>
+          {selectedReconciliation && (
+            <div className="mt-2 space-y-1 text-sm text-muted-foreground mb-4">
+              <div>Toplam Sipariş: {selectedReconciliation.totalOrders}</div>
+              <div>Teslim Edilen: {selectedReconciliation.deliveredOrders}</div>
+              <div>Net Tutar: ₺{selectedReconciliation.netAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="space-y-2">
