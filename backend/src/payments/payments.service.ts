@@ -114,25 +114,71 @@ export class PaymentsService {
         },
       });
 
-      if (status === PaymentStatus.COMPLETED && updated.order.courier) {
-        const commission = updated.order.commission || 0;
-        const courierEarning = updated.amount - commission;
+      // Ödeme tamamlandıysa
+      if (status === PaymentStatus.COMPLETED) {
+        // Firma cari durumunu güncelle
+        const companyBalance = await tx.companyBalance.findUnique({
+          where: { companyId: updated.order.companyId },
+        });
 
-        await tx.order.update({
-          where: { id: updated.orderId },
-          data: {
-            commission,
-            courierEarning,
+        if (companyBalance) {
+          await tx.companyBalance.update({
+            where: { companyId: updated.order.companyId },
+            data: {
+              currentBalance: companyBalance.currentBalance - updated.amount,
+              totalCredits: companyBalance.totalCredits + updated.amount,
+              lastPaymentDate: new Date(),
+              lastPaymentAmount: updated.amount,
+              updatedAt: new Date(),
+            },
+          });
+        }
+
+        // Günlük mutabakat kaydını güncelle
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const reconciliation = await tx.dailyReconciliation.findFirst({
+          where: {
+            companyId: updated.order.companyId,
+            date: today,
           },
         });
 
-        await tx.notification.create({
-          data: {
-            userId: updated.order.courier.userId,
-            title: 'Ödeme Onaylandı',
-            message: `${updated.order.orderNumber} numaralı sipariş için ${courierEarning} TL kazancınız onaylandı.`,
-          },
-        });
+        if (reconciliation) {
+          await tx.dailyReconciliation.update({
+            where: { id: reconciliation.id },
+            data: {
+              paidAmount: reconciliation.paidAmount + updated.amount,
+              status: reconciliation.netAmount <= reconciliation.paidAmount + updated.amount 
+                ? 'PAID' 
+                : 'PARTIALLY_PAID',
+              updatedAt: new Date(),
+            },
+          });
+        }
+
+        // Kurye varsa kurye kazancını güncelle
+        if (updated.order.courier) {
+          const commission = updated.order.commission || 0;
+          const courierEarning = updated.amount - commission;
+
+          await tx.order.update({
+            where: { id: updated.orderId },
+            data: {
+              commission,
+              courierEarning,
+            },
+          });
+
+          await tx.notification.create({
+            data: {
+              userId: updated.order.courier.userId,
+              title: 'Ödeme Onaylandı',
+              message: `${updated.order.orderNumber} numaralı sipariş için ${courierEarning} TL kazancınız onaylandı.`,
+            },
+          });
+        }
       }
 
       await tx.notification.create({

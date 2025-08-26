@@ -27,6 +27,80 @@ export class OrdersService {
     return `ORD-${year}${month}${day}-${random}`;
   }
 
+  // Firma cari durumunu güncelle
+  private async updateCompanyBalance(companyId: string, amount: number): Promise<void> {
+    const existingBalance = await this.prisma.companyBalance.findUnique({
+      where: { companyId },
+    });
+
+    if (existingBalance) {
+      // Mevcut bakiyeyi güncelle
+      await this.prisma.companyBalance.update({
+        where: { companyId },
+        data: {
+          currentBalance: existingBalance.currentBalance + amount,
+          totalDebts: existingBalance.totalDebts + amount,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Yeni bakiye kaydı oluştur
+      await this.prisma.companyBalance.create({
+        data: {
+          companyId,
+          currentBalance: amount,
+          totalDebts: amount,
+          totalCredits: 0,
+        },
+      });
+    }
+  }
+
+  // Günlük mutabakat kaydını güncelle veya oluştur
+  private async updateDailyReconciliation(companyId: string, order: any): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingReconciliation = await this.prisma.dailyReconciliation.findFirst({
+      where: {
+        companyId,
+        date: today,
+      },
+    });
+
+    if (existingReconciliation) {
+      // Mevcut mutabakat kaydını güncelle
+      await this.prisma.dailyReconciliation.update({
+        where: { id: existingReconciliation.id },
+        data: {
+          totalOrders: existingReconciliation.totalOrders + 1,
+          totalAmount: existingReconciliation.totalAmount + order.price,
+          platformCommission: existingReconciliation.platformCommission + order.commission,
+          courierCost: existingReconciliation.courierCost + order.courierEarning,
+          netAmount: existingReconciliation.netAmount + order.price,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // Yeni mutabakat kaydı oluştur
+      await this.prisma.dailyReconciliation.create({
+        data: {
+          companyId,
+          date: today,
+          totalOrders: 1,
+          deliveredOrders: 0,
+          cancelledOrders: 0,
+          totalAmount: order.price,
+          courierCost: order.courierEarning,
+          platformCommission: order.commission,
+          netAmount: order.price,
+          paidAmount: 0,
+          status: 'PENDING',
+        },
+      });
+    }
+  }
+
   // Noktanın bölge içinde olup olmadığını kontrol et
   private isPointInPolygon(point: { lat: number; lng: number }, polygon: any[]): boolean {
     let inside = false;
@@ -247,6 +321,12 @@ export class OrdersService {
         },
       },
     });
+
+    // Firma cari durumunu güncelle
+    await this.updateCompanyBalance(companyId, order.price);
+    
+    // Günlük mutabakat kaydını güncelle veya oluştur
+    await this.updateDailyReconciliation(companyId, order);
 
     // Müsait kuryelere bildirim gönder
     await this.notifyAvailableCouriers(order);
@@ -754,6 +834,74 @@ export class OrdersService {
         where: { id: orderId },
         data: updateData,
       });
+
+      // DELIVERED durumunda mutabakat güncelle
+      if (status === OrderStatus.DELIVERED) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const reconciliation = await tx.dailyReconciliation.findFirst({
+          where: {
+            companyId: order.companyId,
+            date: today,
+          },
+        });
+
+        if (reconciliation) {
+          await tx.dailyReconciliation.update({
+            where: { id: reconciliation.id },
+            data: {
+              deliveredOrders: reconciliation.deliveredOrders + 1,
+              updatedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      // CANCELLED durumunda cari ve mutabakat güncelle
+      if (status === OrderStatus.CANCELLED) {
+        // CompanyBalance'dan düş
+        const balance = await tx.companyBalance.findUnique({
+          where: { companyId: order.companyId },
+        });
+
+        if (balance) {
+          await tx.companyBalance.update({
+            where: { companyId: order.companyId },
+            data: {
+              currentBalance: balance.currentBalance - order.price,
+              totalDebts: balance.totalDebts - order.price,
+              updatedAt: new Date(),
+            },
+          });
+        }
+
+        // DailyReconciliation güncelle
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const reconciliation = await tx.dailyReconciliation.findFirst({
+          where: {
+            companyId: order.companyId,
+            date: today,
+          },
+        });
+
+        if (reconciliation) {
+          await tx.dailyReconciliation.update({
+            where: { id: reconciliation.id },
+            data: {
+              cancelledOrders: reconciliation.cancelledOrders + 1,
+              totalOrders: reconciliation.totalOrders - 1,
+              totalAmount: reconciliation.totalAmount - order.price,
+              courierCost: reconciliation.courierCost - (order.courierEarning || 0),
+              platformCommission: reconciliation.platformCommission - (order.commission || 0),
+              netAmount: reconciliation.netAmount - order.price,
+              updatedAt: new Date(),
+            },
+          });
+        }
+      }
 
       // Teslimat tamamlandıysa veya iptal edildiyse kuryeyi müsait yap
       if (status === OrderStatus.DELIVERED || status === OrderStatus.CANCELLED) {
