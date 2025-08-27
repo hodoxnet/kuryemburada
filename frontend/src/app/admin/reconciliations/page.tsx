@@ -310,10 +310,12 @@ export default function ReconciliationsPage() {
     if (!selectedReconciliation) return;
 
     try {
-      await apiClient.patch(`/reconciliation/${selectedReconciliation.id}`, {
-        status: 'APPROVED',
-        notes: approvalForm.notes,
-      });
+      // Mutabakatı onaylamak notes eklemek demektir, status değişmez
+      if (approvalForm.notes) {
+        await apiClient.patch(`/reconciliation/${selectedReconciliation.id}`, {
+          notes: approvalForm.notes,
+        });
+      }
 
       toast.success('Mutabakat onaylandı');
       setShowApprovalDialog(false);
