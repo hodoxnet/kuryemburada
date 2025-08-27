@@ -9,7 +9,6 @@ import {
   DollarSign,
   Settings,
   FileText,
-  CreditCard,
   Users,
   Home,
   LogOut,
@@ -57,11 +56,6 @@ const defaultMenuItems = [
     title: "Raporlar",
     href: "/admin/reports",
     icon: FileText,
-  },
-  {
-    title: "Ödemeler",
-    href: "/admin/payments",
-    icon: CreditCard,
   },
   {
     title: "Mutabakatlar",
