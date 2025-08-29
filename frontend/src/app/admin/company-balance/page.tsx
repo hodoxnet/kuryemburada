@@ -207,6 +207,14 @@ export default function CompanyBalancePage() {
     return methods[method] || method;
   };
 
+  const getPaymentTypeLabel = (type: string) => {
+    const types: Record<string, string> = {
+      DAILY_RECONCILIATION: 'Günlük Mutabakat',
+      MANUAL_PAYMENT: 'Manuel Ödeme',
+    };
+    return types[type] || type;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex justify-between items-center">
@@ -374,7 +382,7 @@ export default function CompanyBalancePage() {
                           <TableCell>
                             {format(new Date(payment.createdAt), 'dd MMM yyyy HH:mm', { locale: tr })}
                           </TableCell>
-                          <TableCell>{payment.paymentType}</TableCell>
+                          <TableCell>{getPaymentTypeLabel(payment.paymentType)}</TableCell>
                           <TableCell>{getPaymentMethodLabel(payment.paymentMethod)}</TableCell>
                           <TableCell>{payment.transactionReference || '-'}</TableCell>
                           <TableCell className="text-right font-medium">
