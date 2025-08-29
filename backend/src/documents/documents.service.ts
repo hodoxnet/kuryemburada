@@ -79,6 +79,9 @@ export class DocumentsService {
     const courierId = user.courier?.id || null;
     const companyId = user.company?.id || null;
 
+    // Türkçe karakterleri temizle ve güvenli dosya adı oluştur
+    const cleanOriginalName = this.sanitizeFileName(file.originalname);
+    
     // Veritabanına kaydet
     const document = await this.prisma.document.create({
       data: {
@@ -88,7 +91,7 @@ export class DocumentsService {
         companyId: companyId,
         type: uploadDocumentDto.type,
         fileUrl: fileUrl,
-        fileName: file.originalname,
+        fileName: cleanOriginalName,
         fileSize: file.size,
         mimeType: file.mimetype,
         status: DocumentStatus.PENDING,
@@ -394,5 +397,49 @@ export class DocumentsService {
       },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  /**
+   * Türkçe karakterleri ve özel karakterleri temizleyerek güvenli dosya adı oluşturur
+   */
+  private sanitizeFileName(fileName: string): string {
+    // Türkçe karakter dönüşümleri
+    const turkishChars: Record<string, string> = {
+      'ç': 'c', 'Ç': 'C',
+      'ğ': 'g', 'Ğ': 'G', 
+      'ı': 'i', 'I': 'I',
+      'İ': 'I', 'i': 'i',
+      'ö': 'o', 'Ö': 'O',
+      'ş': 's', 'Ş': 'S',
+      'ü': 'u', 'Ü': 'U'
+    };
+
+    let cleanName = fileName;
+    
+    // Türkçe karakterleri değiştir
+    for (const [turkish, english] of Object.entries(turkishChars)) {
+      cleanName = cleanName.replace(new RegExp(turkish, 'g'), english);
+    }
+    
+    // Diğer özel karakterleri temizle (alfanumerik, nokta, tire, alt çizgi hariç)
+    cleanName = cleanName.replace(/[^a-zA-Z0-9.\-_\s]/g, '');
+    
+    // Boşlukları tire ile değiştir
+    cleanName = cleanName.replace(/\s+/g, '-');
+    
+    // Çoklu tireleri tek tireye çevir
+    cleanName = cleanName.replace(/-+/g, '-');
+    
+    // Başındaki ve sonundaki tireleri kaldır
+    cleanName = cleanName.replace(/^-+|-+$/g, '');
+    
+    // Dosya adının çok uzun olmasını engelle (100 karakter max)
+    if (cleanName.length > 100) {
+      const ext = path.extname(cleanName);
+      const nameWithoutExt = cleanName.substring(0, cleanName.lastIndexOf('.'));
+      cleanName = nameWithoutExt.substring(0, 100 - ext.length) + ext;
+    }
+    
+    return cleanName || 'belge'; // Boş isim durumunda varsayılan isim
   }
 }

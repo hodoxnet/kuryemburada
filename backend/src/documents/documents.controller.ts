@@ -253,6 +253,51 @@ export class DocumentsController {
     return this.documentsService.deleteDocument(id);
   }
 
+  @Get(':id/admin-download')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Download document file (Admin only)' })
+  async adminDownloadDocument(
+    @Param('id') id: string,
+    @Request() req,
+    @Res() res: Response
+  ) {
+    try {
+      const fileData = await this.documentsService.getDocumentFile(id, req.user.id);
+      
+      if (!fileData?.buffer || fileData.buffer.length === 0) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Document file not found or empty',
+        });
+      }
+      
+      res.set({
+        'Content-Type': fileData.mimeType || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${fileData.fileName}"`,
+        'Content-Length': fileData.buffer.length.toString(),
+      });
+      
+      res.status(HttpStatus.OK).end(fileData.buffer);
+    } catch (error) {
+      console.error('Error downloading document (admin):', error);
+      
+      if (res.headersSent) {
+        console.error('Headers already sent, cannot send error response');
+        return;
+      }
+      
+      if (error.name === 'NotFoundException') {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          message: 'Document not found',
+        });
+      }
+      
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Error downloading document',
+      });
+    }
+  }
+
   @Post('upload-for-user/:userId')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ 

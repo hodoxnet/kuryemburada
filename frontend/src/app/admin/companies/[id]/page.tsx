@@ -152,6 +152,29 @@ export default function CompanyDetailPage() {
     }
   };
 
+  const handleDownloadDocument = async (documentId: string, fileName: string) => {
+    try {
+      const response = await api.get(`/documents/${documentId}/admin-download`, {
+        responseType: 'blob',
+      });
+      
+      // Blob'u indirme linki oluştur
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Temizlik
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Belge indirme hatası:', error);
+      toast.error(handleApiError(error));
+    }
+  };
+
   if (loading) {
     return <LoadingState text="Firma bilgileri yükleniyor..." />;
   }
@@ -430,7 +453,7 @@ export default function CompanyDetailPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/documents/${doc.id}/download`, '_blank')}
+                            onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
                           >
                             İndir
                           </Button>
