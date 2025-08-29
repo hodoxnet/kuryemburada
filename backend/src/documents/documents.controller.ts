@@ -252,4 +252,48 @@ export class DocumentsController {
   async deleteDocument(@Param('id') id: string) {
     return this.documentsService.deleteDocument(id);
   }
+
+  @Post('upload-for-user/:userId')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ 
+    summary: 'Upload document for specific user (for application process)',
+    description: 'Special endpoint for uploading documents during application process before user login'
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+        type: {
+          type: 'string',
+          enum: [
+            'TAX_CERTIFICATE',
+            'TRADE_LICENSE',
+            'KEP_ADDRESS',
+            'OTHER',
+          ],
+        },
+        description: {
+          type: 'string',
+          description: 'Document description',
+        },
+      },
+      required: ['file', 'type'],
+    },
+  })
+  async uploadDocumentForUser(
+    @Param('userId') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() uploadDocumentDto: UploadDocumentDto,
+  ) {
+    return this.documentsService.uploadDocument(
+      file,
+      uploadDocumentDto,
+      userId,
+    );
+  }
 }

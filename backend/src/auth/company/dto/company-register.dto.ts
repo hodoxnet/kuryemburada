@@ -95,6 +95,14 @@ export class CompanyRegisterDto {
   taxNumber?: string;
 
   @ApiPropertyOptional({
+    description: 'Tax office',
+    example: 'Kadıköy Vergi Dairesi',
+  })
+  @IsString()
+  @IsOptional()
+  taxOffice?: string;
+
+  @ApiPropertyOptional({
     description: 'Trade registry number',
     example: '123456',
   })

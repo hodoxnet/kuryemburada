@@ -46,8 +46,20 @@ export class CompanyAuthService extends BaseAuthService {
       throw new Error(passwordValidation.errors.join(', '));
     }
 
-    // Create user and company in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    // Eğer vergi numarası verilmişse unique olup olmadığını kontrol et
+    if (data.taxNumber) {
+      const existingCompany = await this.prisma.company.findFirst({
+        where: { taxNumber: data.taxNumber }
+      });
+      
+      if (existingCompany) {
+        throw new ConflictException('Bu vergi numarası zaten kullanılıyor');
+      }
+    }
+
+    try {
+      // Create user and company in transaction
+      const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: data.email,
@@ -62,21 +74,37 @@ export class CompanyAuthService extends BaseAuthService {
           userId: user.id,
           name: data.companyName,
           phone: data.phone,
-          taxNumber: data.taxNumber,
-          tradeLicenseNo: data.tradeRegistryNumber,
+          taxNumber: data.taxNumber || null, // Opsiyonel vergi numarası
+          taxOffice: data.taxOffice || null, // Opsiyonel vergi dairesi
+          tradeLicenseNo: data.tradeRegistryNumber || null,
           status: CompanyStatus.PENDING,
           address: data.address as any,
           contactPerson: data.contactPerson as any,
         },
       });
 
-      return { user, company };
-    });
+        return { user, company };
+      });
 
-    return {
-      user: this.transformRegistrationResponse(result),
-      message: 'Company registration successful. Waiting for admin approval.',
-    };
+      return {
+        user: this.transformRegistrationResponse(result),
+        message: 'Company registration successful. Waiting for admin approval.',
+      };
+    } catch (error) {
+      // Prisma unique constraint hatalarını yakalayıp daha anlaşılır hale getir
+      if (error.code === 'P2002') {
+        if (error.meta?.target?.includes('taxNumber')) {
+          throw new ConflictException('Bu vergi numarası zaten kullanılıyor');
+        }
+        if (error.meta?.target?.includes('email')) {
+          throw new ConflictException('Bu e-posta adresi zaten kullanılıyor');
+        }
+        throw new ConflictException('Bu bilgiler zaten kullanılıyor');
+      }
+      
+      // Diğer hataları tekrar fırlat
+      throw error;
+    }
   }
 
   /**
