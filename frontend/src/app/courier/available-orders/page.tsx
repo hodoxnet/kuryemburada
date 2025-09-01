@@ -211,11 +211,11 @@ export default function AvailableOrders() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-6 lg:px-8">
       {/* Başlık */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Yeni Siparişler</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Yeni Siparişler</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Kabul edebileceğiniz siparişler aşağıda listelenmektedir.
         </p>
       </div>
@@ -223,15 +223,19 @@ export default function AvailableOrders() {
       {/* Bilgi Kartı */}
       {blockedByActiveOrder ? (
         <Card className="border-amber-300 bg-amber-50 dark:bg-amber-900/20">
-          <CardContent className="flex flex-col md:flex-row md:items-center gap-3 pt-6">
-            <AlertCircle className="h-5 w-5 text-amber-600" />
-            <div className="text-sm flex-1">
-              <p className="font-medium">Üzerinizde aktif bir sipariş var.</p>
-              <p className="text-muted-foreground">Aktif siparişi tamamlayana kadar yeni siparişleri görüntüleyemezsiniz.</p>
+          <CardContent className="flex flex-col gap-3 p-4 sm:pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+              <div className="text-sm flex-1 space-y-1">
+                <p className="font-medium">Üzerinizde aktif bir sipariş var.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Aktif siparişi tamamlayana kadar yeni siparişleri görüntüleyemezsiniz.
+                </p>
+              </div>
             </div>
             <Button
               onClick={() => router.push(`/courier/orders/${blockedByActiveOrder.orderId}`)}
-              className="whitespace-nowrap"
+              className="w-full sm:w-auto"
             >
               Aktif siparişi görüntüle
             </Button>
@@ -239,9 +243,9 @@ export default function AvailableOrders() {
         </Card>
       ) : orders.length > 0 && (
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
-          <CardContent className="flex items-center gap-3 pt-6">
-            <AlertCircle className="h-5 w-5 text-blue-600" />
-            <p className="text-sm">
+          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-4 sm:pt-6">
+            <AlertCircle className="h-5 w-5 text-blue-600 shrink-0" />
+            <p className="text-xs sm:text-sm">
               <span className="font-medium">{orders.length} adet</span> yeni sipariş mevcut.
               Siparişleri kabul ederek teslimat sürecini başlatabilirsiniz.
             </p>
@@ -254,21 +258,24 @@ export default function AvailableOrders() {
         <div className="grid gap-4">
           {orders.map((order) => (
             <Card key={order.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
+              <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <CardTitle className="text-base sm:text-lg">
                         Sipariş #{order.orderNumber}
                       </CardTitle>
-                      <Badge variant={getUrgencyColor(order.urgency)}>
+                      <Badge 
+                        variant={getUrgencyColor(order.urgency)}
+                        className="text-xs w-fit"
+                      >
                         {getUrgencyLabel(order.urgency)}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Building className="h-3 w-3" />
-                        <span>{order.company?.name}</span>
+                        <span className="truncate max-w-[150px] sm:max-w-none">{order.company?.name}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -276,8 +283,8 @@ export default function AvailableOrders() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="text-right sm:text-right">
+                    <div className="text-xl sm:text-2xl font-bold text-green-600">
                       ₺{(order.courierEarning ?? order.price)?.toFixed ? (order.courierEarning ?? order.price).toFixed(2) : (order.courierEarning ?? order.price)}
                     </div>
                     <div className="text-xs text-muted-foreground">Kazancınız</div>
@@ -286,7 +293,7 @@ export default function AvailableOrders() {
                       const earning = order.courierEarning ?? order.price;
                       if (typeof total === 'number' && typeof earning === 'number' && total !== earning) {
                         return (
-                          <div className="text-[11px] text-muted-foreground mt-0.5">Toplam: ₺{total.toFixed(2)}</div>
+                          <div className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">Toplam: ₺{total.toFixed(2)}</div>
                         );
                       }
                       return null;
@@ -294,18 +301,18 @@ export default function AvailableOrders() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
                 {/* Paket Bilgileri */}
-                <div className="flex gap-2">
-                  <Badge variant="outline">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-xs">
                     <Package className="mr-1 h-3 w-3" />
                     {getPackageTypeLabel(order.packageType)}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     {getPackageSizeLabel(order.packageSize)}
                   </Badge>
                   {order.deliveryType === 'EXPRESS' && (
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs">
                       <Timer className="mr-1 h-3 w-3" />
                       Express
                     </Badge>
@@ -315,24 +322,24 @@ export default function AvailableOrders() {
                 {/* Adresler */}
                 <div className="space-y-3">
                   <div className="flex gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                      <MapPin className="h-4 w-4 text-blue-600" />
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-blue-100 shrink-0">
+                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Alım Noktası</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium">Alım Noktası</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate sm:whitespace-normal">
                         {order.pickupAddress?.address || "Adres bilgisi yok"}
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                      <Navigation className="h-4 w-4 text-green-600" />
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-green-100 shrink-0">
+                      <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Teslimat Noktası</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium">Teslimat Noktası</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate sm:whitespace-normal">
                         {order.deliveryAddress?.address || "Adres bilgisi yok"}
                       </p>
                     </div>
@@ -340,21 +347,21 @@ export default function AvailableOrders() {
                 </div>
 
                 {/* Mesafe ve Süre */}
-                <div className="flex gap-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    <Navigation className="h-4 w-4 text-muted-foreground" />
+                <div className="flex gap-3 sm:gap-4 rounded-lg bg-gray-50 p-2.5 sm:p-3 dark:bg-gray-800">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-1">
+                    <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Mesafe</p>
-                      <p className="text-sm font-medium">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Mesafe</p>
+                      <p className="text-xs sm:text-sm font-medium">
                         {order.distance ? `${order.distance} km` : "Hesaplanıyor"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-1">
+                    <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Tahmini Süre</p>
-                      <p className="text-sm font-medium">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">Tahmini Süre</p>
+                      <p className="text-xs sm:text-sm font-medium">
                         {order.estimatedTime ? `${order.estimatedTime} dk` : "Hesaplanıyor"}
                       </p>
                     </div>
@@ -363,28 +370,29 @@ export default function AvailableOrders() {
 
                 {/* Alıcı Bilgileri */}
                 <div className="rounded-lg border p-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Alıcı: {order.recipientName}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs sm:text-sm font-medium">Alıcı: {order.recipientName}</p>
                       <div className="flex items-center gap-1 mt-1">
                         <Phone className="h-3 w-3 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">{order.recipientPhone}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{order.recipientPhone}</p>
                       </div>
                     </div>
                     <Button
                       onClick={() => handleAcceptOrder(order)}
                       disabled={acceptingOrderId === order.id}
-                      className="ml-4"
+                      className="w-full sm:w-auto"
+                      size="sm"
                     >
                       {acceptingOrderId === order.id ? (
                         <>
-                          <Clock className="mr-2 h-4 w-4 animate-spin" />
-                          Kabul ediliyor...
+                          <Clock className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                          <span className="text-xs sm:text-sm">Kabul ediliyor...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Siparişi Kabul Et
+                          <CheckCircle className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="text-xs sm:text-sm">Siparişi Kabul Et</span>
                         </>
                       )}
                     </Button>
@@ -393,8 +401,8 @@ export default function AvailableOrders() {
 
                 {/* Notlar */}
                 {order.notes && (
-                  <div className="rounded-lg bg-yellow-50 p-3 dark:bg-yellow-900/20">
-                    <p className="text-sm">
+                  <div className="rounded-lg bg-yellow-50 p-2.5 sm:p-3 dark:bg-yellow-900/20">
+                    <p className="text-xs sm:text-sm">
                       <span className="font-medium">Not:</span> {order.notes}
                     </p>
                   </div>
@@ -405,19 +413,20 @@ export default function AvailableOrders() {
         </div>
       ) : (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium mb-1">Yeni sipariş bulunmamaktadır</h3>
-            <p className="text-sm text-muted-foreground text-center">
+          <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12 px-4">
+            <Package className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-3 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-medium mb-1">Yeni sipariş bulunmamaktadır</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground text-center max-w-xs">
               Yeni siparişler geldiğinde burada görünecektir.
             </p>
             <Button 
               variant="outline" 
               onClick={loadAvailableOrders}
               className="mt-4"
+              size="sm"
             >
-              <Clock className="mr-2 h-4 w-4" />
-              Yenile
+              <Clock className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Yenile</span>
             </Button>
           </CardContent>
         </Card>
@@ -425,48 +434,52 @@ export default function AvailableOrders() {
 
       {/* Kabul Onay Dialog */}
       <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Siparişi Kabul Et</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-[95vw] sm:max-w-[425px] p-4 sm:p-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-base sm:text-lg">Siparişi Kabul Et</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Bu siparişi kabul etmek istediğinizden emin misiniz?
               Sipariş kabul edildikten sonra teslimat sürecini başlatmanız gerekecektir.
             </DialogDescription>
           </DialogHeader>
           {selectedOrder && (
-            <div className="space-y-2 py-4">
-              <p className="text-sm">
+            <div className="space-y-2 py-3 sm:py-4">
+              <p className="text-xs sm:text-sm">
                 <span className="font-medium">Sipariş No:</span> #{selectedOrder.orderNumber}
               </p>
-              <p className="text-sm">
+              <p className="text-xs sm:text-sm">
                 <span className="font-medium">Kazanç:</span> ₺{selectedOrder.courierEarning || selectedOrder.price}
               </p>
-              <p className="text-sm">
+              <p className="text-xs sm:text-sm">
                 <span className="font-medium">Mesafe:</span> {selectedOrder.distance || "?"} km
               </p>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setShowAcceptDialog(false)}
               disabled={acceptingOrderId !== null}
+              className="w-full sm:w-auto"
+              size="sm"
             >
-              İptal
+              <span className="text-xs sm:text-sm">İptal</span>
             </Button>
             <Button
               onClick={confirmAcceptOrder}
               disabled={acceptingOrderId !== null}
+              className="w-full sm:w-auto"
+              size="sm"
             >
               {acceptingOrderId !== null ? (
                 <>
-                  <Clock className="mr-2 h-4 w-4 animate-spin" />
-                  Kabul ediliyor...
+                  <Clock className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                  <span className="text-xs sm:text-sm">Kabul ediliyor...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Siparişi Kabul Et
+                  <CheckCircle className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Siparişi Kabul Et</span>
                 </>
               )}
             </Button>
