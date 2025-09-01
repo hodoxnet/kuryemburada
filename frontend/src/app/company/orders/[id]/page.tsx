@@ -6,6 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { orderService, Order } from '@/lib/api/order.service';
 import SimpleGoogleMap from '@/components/shared/SimpleGoogleMap';
 import { Navigation2 } from 'lucide-react';
@@ -90,6 +100,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [realDistance, setRealDistance] = useState<number | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -112,11 +123,12 @@ export default function OrderDetailPage() {
   };
 
   const handleCancelOrder = async () => {
-    if (!order || !confirm('Siparişi iptal etmek istediğinizden emin misiniz?')) return;
+    if (!order) return;
 
     try {
       await orderService.cancelOrder(order.id);
       toast.success('Sipariş iptal edildi');
+      setShowCancelDialog(false);
       fetchOrder(order.id);
     } catch (error) {
       console.error('Sipariş iptal edilemedi:', error);
@@ -219,7 +231,7 @@ export default function OrderDetailPage() {
             Takip Kodunu Kopyala
           </Button>
           {order.status === 'PENDING' && (
-            <Button variant="destructive" onClick={handleCancelOrder}>
+            <Button variant="destructive" onClick={() => setShowCancelDialog(true)}>
               <XCircle className="w-4 h-4 mr-2" />
               Siparişi İptal Et
             </Button>
@@ -554,6 +566,32 @@ export default function OrderDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* İptal Onay Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Siparişi İptal Et</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu siparişi iptal etmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              {order?.courier && (
+                <span className="block mt-2 font-medium text-amber-600">
+                  ⚠️ Dikkat: Bu sipariş için bir kurye atanmış durumda.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelOrder}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Siparişi İptal Et
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
