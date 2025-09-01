@@ -90,13 +90,25 @@ export class NotificationsGateway
   
   // Tüm kuryelere sipariş bildirimi gönderme
   sendNewOrderToCouriers(order: any) {
+    const pickup = order?.pickupAddress?.address || order?.pickupAddress || 'Belirtilmeyen adres';
+    const totalPrice = order?.totalPrice ?? order?.price;
+    const courierEarning = order?.courierEarning ?? null;
     this.server.to('couriers').emit('new-order', {
       type: 'NEW_ORDER',
       title: 'Yeni Sipariş',
-      message: `${order.pickupAddress} adresinden yeni bir sipariş var`,
-      data: order,
+      message: `${pickup} adresinden yeni bir sipariş var` ,
+      orderId: order?.id,
+      data: {
+        orderId: order?.id,
+        orderNumber: order?.orderNumber,
+        pickupAddress: order?.pickupAddress,
+        deliveryAddress: order?.deliveryAddress,
+        totalPrice,
+        courierEarning,
+        price: totalPrice, // geriye dönük uyumluluk
+      },
       timestamp: new Date(),
-      sound: true, // Zil sesi çalması için
+      sound: true,
     });
     
     this.logger.log(`New order notification sent to couriers: ${order.id}`);

@@ -422,7 +422,7 @@ function OrderTable({ orders }: { orders: Order[] }) {
                 </Badge>
               </td>
               <td className="py-3 px-4">
-                <span className="font-medium">₺{order.price.toFixed(2)}</span>
+                <span className="font-medium">₺{(order.totalPrice ?? order.price).toFixed(2)}</span>
               </td>
               <td className="py-3 px-4">
                 <span className="text-sm">

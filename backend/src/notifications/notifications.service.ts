@@ -161,11 +161,21 @@ export class NotificationsService {
   
   // Yeni sipariş bildirimi oluştur
   createNewOrderNotification(order: any): NotificationData {
+    const pickup = order?.pickupAddress?.address || order?.pickupAddress || '';
+    const delivery = order?.deliveryAddress?.address || order?.deliveryAddress || '';
+    const totalPrice = order?.totalPrice ?? order?.price;
+    const courierEarning = order?.courierEarning ?? null;
     return {
       type: 'NEW_ORDER',
       title: 'Yeni Sipariş Mevcut',
-      message: `${order.pickupAddress} adresinden ${order.deliveryAddress} adresine teslimat`,
-      data: order,
+      message: `${pickup} → ${delivery}`,
+      data: {
+        ...order,
+        orderId: order?.id,
+        totalPrice,
+        courierEarning,
+        price: totalPrice, // geriye dönük uyumluluk
+      },
       sound: true,
     };
   }

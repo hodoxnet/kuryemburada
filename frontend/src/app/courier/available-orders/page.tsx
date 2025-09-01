@@ -278,9 +278,19 @@ export default function AvailableOrders() {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-green-600">
-                      ₺{order.courierEarning || order.price}
+                      ₺{(order.courierEarning ?? order.price)?.toFixed ? (order.courierEarning ?? order.price).toFixed(2) : (order.courierEarning ?? order.price)}
                     </div>
                     <div className="text-xs text-muted-foreground">Kazancınız</div>
+                    {(() => {
+                      const total = order.totalPrice ?? order.price;
+                      const earning = order.courierEarning ?? order.price;
+                      if (typeof total === 'number' && typeof earning === 'number' && total !== earning) {
+                        return (
+                          <div className="text-[11px] text-muted-foreground mt-0.5">Toplam: ₺{total.toFixed(2)}</div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               </CardHeader>

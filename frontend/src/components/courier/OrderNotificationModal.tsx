@@ -214,9 +214,18 @@ export function OrderNotificationModal({
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-green-600">
-                    ₺{orderData.courierEarning || orderData.price}
+                    ₺{(orderData.totalPrice ?? orderData.price)?.toFixed ? (orderData.totalPrice ?? orderData.price).toFixed(2) : (orderData.totalPrice ?? orderData.price)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Kazanç</p>
+                  <p className="text-xs text-muted-foreground">Toplam Fiyat</p>
+                  {(() => {
+                    const earning = orderData.courierEarning;
+                    if (typeof earning === 'number') {
+                      return (
+                        <p className="text-[11px] text-muted-foreground mt-1">Kazanç: ₺{earning.toFixed(2)}</p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </CardContent>
