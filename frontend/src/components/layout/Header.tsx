@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, User, Settings, LogOut } from "lucide-react";
+import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/authStore";
@@ -17,7 +17,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const user = useAuthStore((state) => state.user);
@@ -71,10 +75,23 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background px-4 md:px-6">
-      <div className="flex flex-1 items-center justify-between md:ml-64">
-        {/* Sol taraf - Breadcrumb veya başlık için boşluk */}
-        <div className="ml-12 md:ml-0">
-          {/* Breadcrumb componenti buraya eklenebilir */}
+      <div className="flex flex-1 items-center justify-between">
+        {/* Sol taraf - Hamburger menü ve breadcrumb */}
+        <div className="flex items-center gap-3">
+          {/* Mobilde hamburger menü butonu */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onMenuClick}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          {/* Breadcrumb veya başlık için boşluk */}
+          <div>
+            {/* Breadcrumb componenti buraya eklenebilir */}
+          </div>
         </div>
 
         {/* Sağ taraf - Bildirimler ve kullanıcı menüsü */}

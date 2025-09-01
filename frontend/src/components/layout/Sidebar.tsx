@@ -18,13 +18,19 @@ import {
   Calculator,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { AuthService } from "@/lib/auth";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 const defaultMenuItems = [
   {
@@ -88,7 +94,7 @@ interface SidebarProps {
 export function Sidebar({ 
   title = "Kurye Admin", 
   menuItems = defaultMenuItems,
-  open,
+  open = false,
   onOpenChange 
 }: SidebarProps) {
   const pathname = usePathname();
@@ -96,9 +102,12 @@ export function Sidebar({
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Props'tan gelen open değeri varsa onu kullan, yoksa local state kullan
-  const isOpen = open !== undefined ? open : isMobileOpen;
-  const setIsOpen = onOpenChange || setIsMobileOpen;
+  // Props'tan gelen open değeri varsa onu kullan
+  useEffect(() => {
+    if (open !== undefined) {
+      setIsMobileOpen(open);
+    }
+  }, [open]);
 
   const handleLogout = () => {
     clearAuth();
@@ -107,82 +116,85 @@ export function Sidebar({
     router.push('/auth');
   };
 
-  return (
+  const handleLinkClick = () => {
+    // Mobilde link'e tıklandığında menüyü kapat
+    if (onOpenChange) {
+      onOpenChange(false);
+    }
+    setIsMobileOpen(false);
+  };
+
+  const NavigationContent = () => (
     <>
-      {/* Mobile menu button - eğer onOpenChange prop'u yoksa göster */}
-      {!onOpenChange && (
+      {/* Logo/Title */}
+      <div className="flex h-16 items-center justify-between border-b px-6">
+        <h1 className="text-xl font-bold">{title}</h1>
+      </div>
+
+      {/* Navigation */}
+      <ScrollArea className="flex-1 px-3 py-4">
+        <nav className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || 
+              (item.href !== "/admin" && item.href !== "/company" && item.href !== "/courier" && pathname.startsWith(item.href));
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={handleLinkClick}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.title}
+              </Link>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="border-t p-4">
         <Button
           variant="ghost"
-          size="icon"
-          className="md:hidden fixed top-4 left-4 z-50"
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="w-full justify-start gap-3"
+          onClick={handleLogout}
         >
-          {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <LogOut className="h-4 w-4" />
+          Çıkış Yap
         </Button>
-      )}
+      </div>
+    </>
+  );
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-40 h-screen w-64 transition-transform bg-background border-r",
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-center border-b px-6">
-            <h1 className="text-xl font-bold">{title}</h1>
-          </div>
-
-          {/* Navigation */}
-          <ScrollArea className="flex-1 px-3 py-4">
-            <nav className="space-y-1">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href || 
-                  (item.href !== "/admin" && pathname.startsWith(item.href));
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.title}
-                  </Link>
-                );
-              })}
-            </nav>
-          </ScrollArea>
-
-          {/* Footer */}
-          <div className="border-t p-4">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Çıkış Yap
-            </Button>
-          </div>
+  return (
+    <>
+      {/* Desktop Sidebar - Always visible on large screens */}
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-64 lg:flex-col">
+        <div className="flex h-full flex-col border-r bg-background">
+          <NavigationContent />
         </div>
       </aside>
 
-      {/* Mobile overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
+      {/* Mobile Sidebar - Sheet component for better mobile experience */}
+      <Sheet open={isMobileOpen} onOpenChange={(open) => {
+        setIsMobileOpen(open);
+        if (onOpenChange) {
+          onOpenChange(open);
+        }
+      }}>
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="flex h-full flex-col">
+            <NavigationContent />
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

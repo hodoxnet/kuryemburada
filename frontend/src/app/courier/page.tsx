@@ -134,10 +134,10 @@ export default function CourierDashboard() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Kurye Paneli</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold">Kurye Paneli</h1>
+        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1 sm:mt-2">
           Siparişlerinizi yönetin ve kazancınızı takip edin
         </p>
       </div>
@@ -156,22 +156,22 @@ export default function CourierDashboard() {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Alım Noktası</p>
-                <p className="font-medium">{stats.activeOrder.pickupAddress?.address}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Alım Noktası</p>
+                <p className="text-sm sm:text-base font-medium">{stats.activeOrder.pickupAddress?.address}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Teslimat Noktası</p>
-                <p className="font-medium">{stats.activeOrder.deliveryAddress?.address}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Teslimat Noktası</p>
+                <p className="text-sm sm:text-base font-medium">{stats.activeOrder.deliveryAddress?.address}</p>
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
               {stats.activeOrder.status === 'ACCEPTED' && (
                 <Button 
                   onClick={() => handleUpdateOrderStatus(stats.activeOrder!.id, 'IN_PROGRESS')}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   Yola Çıktım
                 </Button>
@@ -179,7 +179,7 @@ export default function CourierDashboard() {
               {stats.activeOrder.status === 'IN_PROGRESS' && (
                 <Button 
                   onClick={() => handleUpdateOrderStatus(stats.activeOrder!.id, 'DELIVERED')}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                   variant="default"
                 >
                   Teslim Ettim
@@ -188,6 +188,7 @@ export default function CourierDashboard() {
               <Button 
                 variant="outline"
                 onClick={() => router.push(`/courier/orders/${stats.activeOrder!.id}`)}
+                className="w-full sm:w-auto"
               >
                 <Eye className="h-4 w-4 mr-1" />
                 Detay
@@ -197,65 +198,65 @@ export default function CourierDashboard() {
         </Card>
       )}
 
-      {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      {/* İstatistik Kartları - Mobilde 2 sütun, tablet'te 3, desktop'ta 5 */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <DollarSign className="h-8 w-8 text-green-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">₺{stats.todayEarnings.toFixed(2)}</p>
-                <p className="text-sm text-gray-500">Bugünkü Kazanç</p>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <DollarSign className="h-6 sm:h-8 w-6 sm:w-8 text-green-500 mb-2 sm:mb-0" />
+              <div className="sm:text-right">
+                <p className="text-lg sm:text-2xl font-bold">₺{stats.todayEarnings.toFixed(2)}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Bugünkü Kazanç</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Package className="h-8 w-8 text-blue-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.todayDeliveries}</p>
-                <p className="text-sm text-gray-500">Bugünkü Teslimat</p>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <Package className="h-6 sm:h-8 w-6 sm:w-8 text-blue-500 mb-2 sm:mb-0" />
+              <div className="sm:text-right">
+                <p className="text-lg sm:text-2xl font-bold">{stats.todayDeliveries}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Bugünkü Teslimat</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <TrendingUp className="h-8 w-8 text-purple-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">₺{stats.totalEarnings.toFixed(2)}</p>
-                <p className="text-sm text-gray-500">Toplam Kazanç</p>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <TrendingUp className="h-6 sm:h-8 w-6 sm:w-8 text-purple-500 mb-2 sm:mb-0" />
+              <div className="sm:text-right">
+                <p className="text-lg sm:text-2xl font-bold">₺{stats.totalEarnings.toFixed(2)}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Toplam Kazanç</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <CheckCircle className="h-8 w-8 text-green-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.totalDeliveries}</p>
-                <p className="text-sm text-gray-500">Toplam Teslimat</p>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <CheckCircle className="h-6 sm:h-8 w-6 sm:w-8 text-green-500 mb-2 sm:mb-0" />
+              <div className="sm:text-right">
+                <p className="text-lg sm:text-2xl font-bold">{stats.totalDeliveries}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Toplam Teslimat</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <svg className="h-8 w-8 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+        <Card className="col-span-2 sm:col-span-1">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <svg className="h-6 sm:h-8 w-6 sm:w-8 text-yellow-500 mb-2 sm:mb-0" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.rating.toFixed(1)}</p>
-                <p className="text-sm text-gray-500">Ortalama Puan</p>
+              <div className="sm:text-right">
+                <p className="text-lg sm:text-2xl font-bold">{stats.rating.toFixed(1)}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Ortalama Puan</p>
               </div>
             </div>
           </CardContent>
@@ -270,12 +271,16 @@ export default function CourierDashboard() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="available">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="available">
-                Mevcut Siparişler ({availableOrders.length})
+            <TabsList className="grid w-full grid-cols-2 h-auto">
+              <TabsTrigger value="available" className="text-xs sm:text-sm py-2 sm:py-1.5">
+                <span className="hidden sm:inline">Mevcut Siparişler</span>
+                <span className="sm:hidden">Mevcut</span>
+                <span className="ml-1">({availableOrders.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="my">
-                Siparişlerim ({myOrders.length})
+              <TabsTrigger value="my" className="text-xs sm:text-sm py-2 sm:py-1.5">
+                <span className="hidden sm:inline">Siparişlerim</span>
+                <span className="sm:hidden">Siparişlerim</span>
+                <span className="ml-1">({myOrders.length})</span>
               </TabsTrigger>
             </TabsList>
 
@@ -289,44 +294,45 @@ export default function CourierDashboard() {
                 <div className="space-y-4">
                   {availableOrders.map((order) => (
                     <Card key={order.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline">#{order.orderNumber}</Badge>
-                              <Badge variant="secondary">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs">#{order.orderNumber}</Badge>
+                              <Badge variant="secondary" className="text-xs">
                                 ₺{order.courierEarning?.toFixed(2) || order.price?.toFixed(2)}
                               </Badge>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-1 gap-3 text-xs sm:text-sm">
                               <div className="flex items-start gap-2">
-                                <MapPin className="h-4 w-4 text-green-500 mt-0.5" />
-                                <div>
+                                <MapPin className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-green-500 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
                                   <p className="font-medium">Alım</p>
-                                  <p className="text-muted-foreground">
+                                  <p className="text-muted-foreground break-words">
                                     {order.pickupAddress?.address}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-start gap-2">
-                                <MapPin className="h-4 w-4 text-red-500 mt-0.5" />
-                                <div>
+                                <MapPin className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-red-500 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
                                   <p className="font-medium">Teslimat</p>
-                                  <p className="text-muted-foreground">
+                                  <p className="text-muted-foreground break-words">
                                     {order.deliveryAddress?.address}
                                   </p>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-3 mt-2 text-xs sm:text-sm text-muted-foreground">
                               <span>{order.distance?.toFixed(1)} km</span>
                               <span>{order.estimatedDeliveryTime || order.estimatedTime} dk</span>
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-row sm:flex-col gap-2 mt-3 sm:mt-0">
                             <Button 
                               size="sm" 
                               onClick={() => handleAcceptOrder(order.id)}
+                              className="flex-1 sm:flex-initial text-xs sm:text-sm h-8 sm:h-9"
                             >
                               Kabul Et
                             </Button>
@@ -334,6 +340,7 @@ export default function CourierDashboard() {
                               size="sm" 
                               variant="outline"
                               onClick={() => router.push(`/courier/orders/${order.id}`)}
+                              className="flex-1 sm:flex-initial text-xs sm:text-sm h-8 sm:h-9"
                             >
                               Detay
                             </Button>
