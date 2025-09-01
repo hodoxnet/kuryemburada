@@ -107,9 +107,28 @@ export class CourierAuthService extends BaseAuthService {
     // Check user status
     this.validateUserStatus(user);
 
-    // Check courier status
-    if (!user.courier || user.courier.status !== CourierStatus.APPROVED) {
-      throw new ForbiddenException('Courier account is not approved yet');
+    // Kurye durum kontrolü
+    if (!user.courier) {
+      throw new UnauthorizedException('Courier profile not found');
+    }
+
+    // Onay/erişim kuralları:
+    // - PENDING: onay bekliyor -> girişe izin verme
+    // - REJECTED: reddedildi -> girişe izin verme
+    // - INACTIVE: pasif -> girişe izin verme
+    // - APPROVED/ACTIVE/BUSY: girişe izin ver (operasyonel durumlar login'i engellememeli)
+    if (
+      user.courier.status === CourierStatus.PENDING ||
+      user.courier.status === CourierStatus.REJECTED ||
+      user.courier.status === CourierStatus.INACTIVE
+    ) {
+      const reason =
+        user.courier.status === CourierStatus.PENDING
+          ? 'Courier account is pending approval'
+          : user.courier.status === CourierStatus.REJECTED
+          ? 'Courier application has been rejected'
+          : 'Courier account is inactive';
+      throw new ForbiddenException(reason);
     }
 
     // Validate password

@@ -16,13 +16,17 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor - Her istekte token ekle
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Cookie'den token al (AuthService üzerinden)
-    const token = AuthService.getAccessToken();
-    
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Auth endpoint'lerinde Authorization ekleme (login/register/refresh vs.)
+    const url = (config.url || '').toString();
+    const isAuthEndpoint = url.startsWith('/auth') || url.includes('/auth/');
+
+    if (!isAuthEndpoint) {
+      const token = AuthService.getAccessToken();
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -74,13 +78,15 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // 403 Forbidden - Yetki hatası: gezinme taleplerinde yönlendir, işlem taleplerinde mesajı ilet
+    // 403 Forbidden - rol/erişim hatası
+    // Yönlendirme yapmak yerine hatayı üst katmana iletelim; sayfa akışı bozulmasın
+    // İlgili sayfa/çağrı hatayı ekranda uygun mesajla gösterebilir.
     if (error.response?.status === 403) {
-      const method = (originalRequest.method || '').toUpperCase();
-      if (method === 'GET') {
-        window.location.href = '/unauthorized';
+      // İsteğe bağlı: konsola bilgi amaçlı log
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.warn('403 Forbidden:', originalRequest?.url);
       }
-      // POST/PATCH/DELETE gibi durumlarda yönlendirmeden hatayı çağırana ilet
     }
 
     return Promise.reject(error);

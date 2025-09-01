@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const setAuthStore = useAuthStore((state) => state.setAuth);
   const clearAuthStore = useAuthStore((state) => state.clearAuth);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4004';
 
   useEffect(() => {
     // Eski localStorage verilerini temizle (migration)
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       try {
         // Backend'e token doğrulama isteği gönder
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
+        const response = await fetch(`${API_URL}/auth/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       // API çağrısı - backend'e istek gönder
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = AuthService.getAccessToken();
       if (token) {
         // Backend'e logout isteği gönder
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        await fetch(`${API_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

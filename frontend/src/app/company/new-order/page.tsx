@@ -103,28 +103,62 @@ export default function NewOrderPage() {
     const companyAddress = user?.company?.address?.detail || user?.company?.address;
     
     if (companyAddress && typeof companyAddress === 'string') {
-      // Google Maps API yüklenene kadar bekle
-      const checkGoogleMaps = setInterval(() => {
-        if (typeof google !== 'undefined' && google.maps) {
-          clearInterval(checkGoogleMaps);
-          const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ address: companyAddress + ', Türkiye' }, (results, status) => {
-            if (status === 'OK' && results && results[0]) {
-              const location = results[0].geometry.location;
-              setCompanyAddressCoords({
-                lat: location.lat(),
-                lng: location.lng(),
-                address: companyAddress,
-                detail: user.company?.name,
-              });
-              console.log('Company address geocoded:', companyAddress);
-            }
-          });
+      let cancelled = false;
+      const doGeocode = async () => {
+        try {
+          // Eğer yeni importLibrary API'si varsa geocoding kütüphanesini yükle
+          if (typeof google !== 'undefined' && (google.maps as any)?.importLibrary) {
+            const lib: any = await (google.maps as any).importLibrary('geocoding');
+            const GeocoderCtor = lib?.Geocoder || (google.maps as any).Geocoder;
+            if (!GeocoderCtor) return;
+            const geocoder = new GeocoderCtor();
+            geocoder.geocode({ address: companyAddress + ', Türkiye' }, (results: any, status: any) => {
+              if (!cancelled && status === 'OK' && results && results[0]) {
+                const location = results[0].geometry.location;
+                setCompanyAddressCoords({
+                  lat: location.lat(),
+                  lng: location.lng(),
+                  address: companyAddress,
+                  detail: user?.company?.name,
+                });
+                console.log('Company address geocoded:', companyAddress, location.lat(), location.lng());
+              }
+            });
+            return;
+          }
+
+          // Eski yol: Geocoder constructor hazırsa kullan
+          if (typeof google !== 'undefined' && google.maps && typeof (google.maps as any).Geocoder === 'function') {
+            const geocoder = new (google.maps as any).Geocoder();
+            geocoder.geocode({ address: companyAddress + ', Türkiye' }, (results: any, status: any) => {
+              if (!cancelled && status === 'OK' && results && results[0]) {
+                const location = results[0].geometry.location;
+                setCompanyAddressCoords({
+                  lat: location.lat(),
+                  lng: location.lng(),
+                  address: companyAddress,
+                  detail: user?.company?.name,
+                });
+                console.log('Company address geocoded:', companyAddress, location.lat(), location.lng());
+              }
+            });
+            return;
+          }
+        } catch (e) {
+          console.warn('Firma adresi geocode hatası:', e);
         }
-      }, 500);
+      };
+
+      // Kısa bekleme ile tekrar dene (harita yükleniyor olabilir)
+      const interval = setInterval(() => {
+        if (typeof google !== 'undefined' && google.maps) {
+          doGeocode();
+          clearInterval(interval);
+        }
+      }, 400);
 
       // Cleanup
-      return () => clearInterval(checkGoogleMaps);
+      return () => { cancelled = true; clearInterval(interval); };
     }
   }, [user]);
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
 export interface Notification {
@@ -10,98 +10,110 @@ export interface Notification {
   read: boolean;
   createdAt: Date;
   actionUrl?: string;
+  ownerKey: string; // 'COMPANY:123' | 'COURIER:456' | 'SUPER_ADMIN:...'
 }
 
 interface NotificationState {
   // State
   notifications: Notification[];
-  unreadCount: number;
   isOpen: boolean;
 
   // Actions
   addNotification: (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => void;
   markAsRead: (notificationId: string) => void;
-  markAllAsRead: () => void;
+  markAllAsRead: (ownerKey: string) => void;
   removeNotification: (notificationId: string) => void;
   clearAll: () => void;
   togglePanel: () => void;
   setOpen: (isOpen: boolean) => void;
+  // Selectors
+  getNotifications: (ownerKey: string) => Notification[];
+  getUnreadCount: (ownerKey: string) => number;
 }
 
 export const useNotificationStore = create<NotificationState>()(
-  devtools(
-    immer((set) => ({
-      // Initial State
-      notifications: [],
-      unreadCount: 0,
-      isOpen: false,
+  persist(
+    devtools(
+      immer((set, get) => ({
+        // Initial State
+        notifications: [],
+        isOpen: false,
 
-      // Actions
-      addNotification: (notification) =>
-        set((state) => {
-          const newNotification: Notification = {
-            ...notification,
-            id: Date.now().toString(),
-            read: false,
-            createdAt: new Date(),
-          };
-          
-          state.notifications.unshift(newNotification);
-          state.unreadCount += 1;
-
-          // Maksimum 50 bildirim tut
-          if (state.notifications.length > 50) {
-            state.notifications = state.notifications.slice(0, 50);
-          }
-        }),
-
-      markAsRead: (notificationId) =>
-        set((state) => {
-          const notification = state.notifications.find(n => n.id === notificationId);
-          if (notification && !notification.read) {
-            notification.read = true;
-            state.unreadCount = Math.max(0, state.unreadCount - 1);
-          }
-        }),
-
-      markAllAsRead: () =>
-        set((state) => {
-          state.notifications.forEach(n => {
-            n.read = true;
-          });
-          state.unreadCount = 0;
-        }),
-
-      removeNotification: (notificationId) =>
-        set((state) => {
-          const index = state.notifications.findIndex(n => n.id === notificationId);
-          if (index !== -1) {
-            const notification = state.notifications[index];
-            if (!notification.read) {
-              state.unreadCount = Math.max(0, state.unreadCount - 1);
+        // Actions
+        addNotification: (notification) =>
+          set((state) => {
+            const newNotification: Notification = {
+              ...notification,
+              id: Date.now().toString(),
+              read: false,
+              createdAt: new Date(),
+            };
+            // Aynı ownerKey + aynı title + yakın zamanlı aynı mesajı tekrar eklemeyi engelle (son 5 kayıt içinde)
+            const recent = state.notifications.slice(0, 5);
+            const duplicate = recent.find(
+              (n) => n.ownerKey === (newNotification as any).ownerKey && n.title === newNotification.title && n.message === newNotification.message
+            );
+            if (!duplicate) {
+              state.notifications.unshift(newNotification);
             }
-            state.notifications.splice(index, 1);
-          }
-        }),
 
-      clearAll: () =>
-        set((state) => {
-          state.notifications = [];
-          state.unreadCount = 0;
-        }),
+            // Maksimum 200 bildirim tut
+            if (state.notifications.length > 200) {
+              state.notifications = state.notifications.slice(0, 200);
+            }
+          }),
 
-      togglePanel: () =>
-        set((state) => {
-          state.isOpen = !state.isOpen;
-        }),
+        markAsRead: (notificationId) =>
+          set((state) => {
+            const notification = state.notifications.find(n => n.id === notificationId);
+            if (notification && !notification.read) {
+              notification.read = true;
+            }
+          }),
 
-      setOpen: (isOpen) =>
-        set((state) => {
-          state.isOpen = isOpen;
-        }),
-    })),
+        markAllAsRead: (ownerKey: string) =>
+          set((state) => {
+            state.notifications.forEach(n => {
+              if (n.ownerKey === ownerKey) n.read = true;
+            });
+          }),
+
+        removeNotification: (notificationId) =>
+          set((state) => {
+            const index = state.notifications.findIndex(n => n.id === notificationId);
+            if (index !== -1) {
+              state.notifications.splice(index, 1);
+            }
+          }),
+
+        clearAll: () =>
+          set((state) => {
+            state.notifications = [];
+          }),
+
+        togglePanel: () =>
+          set((state) => {
+            state.isOpen = !state.isOpen;
+          }),
+
+        setOpen: (isOpen) =>
+          set((state) => {
+            state.isOpen = isOpen;
+          }),
+
+        // Selectors
+        getNotifications: (ownerKey: string) => {
+          return get().notifications.filter(n => n.ownerKey === ownerKey);
+        },
+        getUnreadCount: (ownerKey: string) => {
+          return get().notifications.filter(n => n.ownerKey === ownerKey && !n.read).length;
+        },
+      }))
+    ),
     {
-      name: 'notification-store',
+      name: 'notification-store-v1',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ notifications: state.notifications }),
     }
   )
 );

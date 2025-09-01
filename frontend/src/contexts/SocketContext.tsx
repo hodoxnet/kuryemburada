@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { getSocketService } from '@/lib/socket';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 
 interface SocketContextType {
   isConnected: boolean;
@@ -29,6 +30,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
   // Global kurye modal state
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [newOrderData, setNewOrderData] = useState<any>(null);
+  const addNotification = useNotificationStore((s) => s.addNotification);
 
   // Socket bağlantı durumunu takip et
   const checkConnection = useCallback(() => {
@@ -41,6 +43,37 @@ export function SocketProvider({ children }: SocketProviderProps) {
     const handleNotification = (event: CustomEvent) => {
       const data = event.detail;
       console.log('Socket bildirim alındı:', data);
+      // Bildirimi store'a ekle
+      try {
+        const orderId = data?.orderId || data?.data?.orderId || data?.data?.order?.id || data?.data?.id;
+        const notifType = ((): 'info' | 'success' | 'warning' | 'error' => {
+          const t = String(data?.type || '').toUpperCase();
+          if (t.includes('ACCEPT') || t.includes('ACCEPTED')) return 'success';
+          if (t.includes('CANCEL')) return 'warning';
+          if (t.includes('ERROR') || t.includes('FAILED')) return 'error';
+          return 'info';
+        })();
+
+        const title = data?.title || data?.data?.title || (data?.type ? String(data.type).replaceAll('_', ' ') : 'Bildirim');
+        const message = data?.message || data?.data?.message || '';
+
+        const u = userRef.current;
+        let actionUrl: string | undefined = undefined;
+        if (orderId && u) {
+          if (u.role === 'COURIER') actionUrl = `/courier/orders/${orderId}`;
+          if (u.role === 'COMPANY') actionUrl = `/company/orders/${orderId}`;
+        }
+        const ownerKey = u ? `${u.role}:${u.company?.id || u.courier?.id || u.id}` : 'UNKNOWN';
+        addNotification({
+          title: String(title),
+          message: typeof message === 'string' ? message : (() => { try { return JSON.stringify(message); } catch { return String(message); } })(),
+          type: notifType,
+          actionUrl,
+          ownerKey,
+        });
+      } catch (e) {
+        console.warn('Bildirim store\'a eklenemedi:', e);
+      }
       // Kurye için tüm sayfalarda yeni sipariş modalını aç
       const u = userRef.current;
       if (u?.role === 'COURIER' && data?.type === 'NEW_ORDER' && data?.data) {
@@ -104,20 +137,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
         console.log('Bağlantı durumu kontrol ediliyor:', connected);
         setIsConnected(connected);
       }, 1000);
-      
-      // User role'üne göre room'a katıl
-      setTimeout(() => {
-        const isConnected = socketService.isSocketConnected();
-        console.log('Room katılım zamanı - Bağlantı durumu:', isConnected);
-        
-        if (user.role === 'COURIER' && user.courier?.id) {
-          console.log('Courier room katılıyor:', user.courier.id);
-          socketService.joinCourierRoom(user.courier.id);
-        } else if (user.role === 'COMPANY' && user.company?.id) {
-          console.log('Company room katılıyor:', user.company.id);
-          socketService.joinCompanyRoom(user.company.id);
-        }
-      }, 3000); // 3 saniye bekle ki bağlantı kurulsun
 
       return () => {
         clearInterval(interval);
@@ -130,6 +149,29 @@ export function SocketProvider({ children }: SocketProviderProps) {
       });
     }
   }, [isAuthenticated, user, socketService]);
+
+  // Bağlantı kurulunca uygun odaya katıl; kullanıcı değişirse yeniden katıl
+  const lastJoinKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isConnected || !user || !socketService) return;
+    const key = user.role === 'COURIER' && user.courier?.id
+      ? `courier-${user.courier.id}`
+      : user.role === 'COMPANY' && user.company?.id
+      ? `company-${user.company.id}`
+      : null;
+    if (!key) return;
+
+    if (lastJoinKeyRef.current !== key) {
+      lastJoinKeyRef.current = key;
+      if (key.startsWith('courier-')) {
+        console.log('Courier room katılıyor (yeniden/ilk):', user.courier?.id);
+        socketService.joinCourierRoom(user.courier!.id as any);
+      } else if (key.startsWith('company-')) {
+        console.log('Company room katılıyor (yeniden/ilk):', user.company?.id);
+        socketService.joinCompanyRoom(user.company!.id as any);
+      }
+    }
+  }, [isConnected, user, socketService]);
 
   // Kullanıcı çıkış yaptığında bağlantıyı kes
   useEffect(() => {

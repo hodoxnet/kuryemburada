@@ -11,7 +11,7 @@ class SocketService {
 
   private init() {
     // API URL'sini environment variable'dan al
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4004';
     
     // Socket.IO client'ı initialize et
     this.socket = io(apiUrl, {
@@ -48,6 +48,13 @@ class SocketService {
 
     this.socket.on('connect_error', (error) => {
       console.error('🚫 WebSocket bağlantı hatası:', error);
+    });
+
+    // Debug: tüm eventleri logla (geliştirme için)
+    this.socket.onAny((event, ...args) => {
+      try {
+        console.log('📡 Socket event:', event, args?.[0] ?? '');
+      } catch {}
     });
 
     // Genel bildirim event'i

@@ -35,7 +35,7 @@ export default function SimpleGoogleMap({
     const loader = new Loader({
       apiKey,
       version: 'weekly',
-      libraries: ['places', 'geometry'],
+      libraries: ['places', 'geometry', 'geocoding'],
     });
 
     loader

@@ -38,6 +38,11 @@ const courierMenuItems = [
     icon: Clock,
   },
   {
+    title: "Bildirimler",
+    href: "/courier/notifications",
+    icon: Bell,
+  },
+  {
     title: "Kazançlarım",
     href: "/courier/earnings",
     icon: CreditCard,

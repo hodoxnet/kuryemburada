@@ -11,7 +11,8 @@ import {
   Package, 
   FileText, 
   BarChart3, 
-  User
+  User,
+  Bell
 } from "lucide-react";
 
 const companyMenuItems = [
@@ -29,6 +30,11 @@ const companyMenuItems = [
     title: "Raporlar",
     href: "/company/reports",
     icon: BarChart3,
+  },
+  {
+    title: "Bildirimler",
+    href: "/company/notifications",
+    icon: Bell,
   },
   {
     title: "Profilim",

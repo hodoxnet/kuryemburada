@@ -60,7 +60,7 @@ export default function GoogleMap({
     const loader = new Loader({
       apiKey,
       version: 'weekly',
-      libraries: ['places', 'geometry'],
+      libraries: ['places', 'geometry', 'geocoding'],
     });
 
     loader
