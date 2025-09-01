@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +28,12 @@ import {
   Building,
   FileText,
   TrendingUp,
+  MapPinned,
+  Banknote,
+  Timer,
+  Truck,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -183,190 +190,188 @@ export function OrderNotificationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">Yeni Sipariş Bildirimi!</DialogTitle>
-            <Badge variant="destructive" className="animate-pulse">
-              Yeni Sipariş
+      <DialogContent className="sm:max-w-2xl w-[95vw] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-0">
+        {/* Accessibility için gizli DialogTitle */}
+        <VisuallyHidden>
+          <DialogTitle>Yeni Sipariş Bildirimi</DialogTitle>
+        </VisuallyHidden>
+        
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-white">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 bg-white/20 rounded-full animate-pulse">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold">Yeni Sipariş!</h2>
+              </div>
+              <p className="text-sm sm:text-base text-white/90">
+                Hemen kabul edip teslimat yapabilirsiniz
+              </p>
+            </div>
+            <Badge className="bg-white/20 text-white border-white/30 animate-pulse shrink-0">
+              YENİ
             </Badge>
           </div>
-          <DialogDescription>
-            Yeni bir sipariş mevcut. Detayları inceleyip kabul edebilir veya reddedebilirsiniz.
-          </DialogDescription>
-        </DialogHeader>
+        </div>
 
-        <div className="space-y-4">
-          {/* Firma Bilgileri */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Building className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{orderData.company?.name || 'Firma'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Sipariş No: {orderData.orderNumber}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-green-600">
-                    ₺{(orderData.totalPrice ?? orderData.price)?.toFixed ? (orderData.totalPrice ?? orderData.price).toFixed(2) : (orderData.totalPrice ?? orderData.price)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Toplam Fiyat</p>
-                  {(() => {
-                    const earning = orderData.courierEarning;
-                    if (typeof earning === 'number') {
-                      return (
-                        <p className="text-[11px] text-muted-foreground mt-1">Kazanç: ₺{earning.toFixed(2)}</p>
-                      );
-                    }
-                    return null;
-                  })()}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 sm:space-y-4">
+          {/* Kazanç ve Firma Bilgileri - Mobilde üstte */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-green-600" />
+                <span className="text-sm font-medium text-gray-700">Kazancınız</span>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl sm:text-3xl font-bold text-green-600">
+                  ₺{orderData.courierEarning?.toFixed ? orderData.courierEarning.toFixed(2) : (orderData.price || 0)}
+                </p>
+              </div>
+            </div>
+            <Separator className="my-3" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium">{orderData.company?.name || 'Firma'}</p>
+                  <p className="text-xs text-muted-foreground">#{orderData.orderNumber}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <Badge variant="outline" className="text-xs">
+                ₺{(orderData.totalPrice ?? orderData.price)?.toFixed ? (orderData.totalPrice ?? orderData.price).toFixed(2) : (orderData.totalPrice ?? orderData.price)}
+              </Badge>
+            </div>
+          </div>
 
-          {/* Paket Detayları */}
-          <div className="grid grid-cols-3 gap-2">
-            <Badge variant={getSizeBadgeVariant(orderData.packageSize)}>
+          {/* Paket Detayları - Mobilde responsive */}
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={getSizeBadgeVariant(orderData.packageSize)} className="flex-1 sm:flex-initial justify-center py-1.5">
               <Package className="mr-1 h-3 w-3" />
               {orderData.packageSize === 'SMALL' && 'Küçük'}
               {orderData.packageSize === 'MEDIUM' && 'Orta'}
               {orderData.packageSize === 'LARGE' && 'Büyük'}
               {orderData.packageSize === 'EXTRA_LARGE' && 'Çok Büyük'}
             </Badge>
-            <Badge variant={getUrgencyBadgeVariant(orderData.urgency)}>
+            <Badge variant={getUrgencyBadgeVariant(orderData.urgency)} className="flex-1 sm:flex-initial justify-center py-1.5">
               <TrendingUp className="mr-1 h-3 w-3" />
               {orderData.urgency === 'NORMAL' && 'Normal'}
               {orderData.urgency === 'URGENT' && 'Acil'}
               {orderData.urgency === 'VERY_URGENT' && 'Çok Acil'}
             </Badge>
-            <Badge variant={getDeliveryTypeBadgeVariant(orderData.deliveryType)}>
+            <Badge variant={getDeliveryTypeBadgeVariant(orderData.deliveryType)} className="flex-1 sm:flex-initial justify-center py-1.5">
               <Clock className="mr-1 h-3 w-3" />
               {orderData.deliveryType === 'EXPRESS' ? 'Express' : 'Standart'}
             </Badge>
           </div>
 
-          <Separator />
 
-          {/* Alım Adresi */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-blue-100 rounded">
-                <MapPin className="h-4 w-4 text-blue-600" />
+          {/* Adresler - Mobilde daha kompakt */}
+          <div className="space-y-3">
+            {/* Alım Adresi */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-full shrink-0">
+                  <MapPinned className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-blue-900 mb-1">ALIM ADRESİ</p>
+                  <p className="text-sm text-gray-700 break-words">{orderData.pickupAddress?.address || 'Adres bilgisi yok'}</p>
+                  {orderData.company?.phone && (
+                    <a href={`tel:${orderData.company.phone}`} className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:text-blue-700">
+                      <Phone className="h-3 w-3" />
+                      <span>{orderData.company.phone}</span>
+                    </a>
+                  )}
+                </div>
               </div>
-              <span className="font-medium text-sm">Alım Adresi</span>
             </div>
-            <Card>
-              <CardContent className="pt-4 pb-4">
-                <p className="text-sm">{orderData.pickupAddress?.address || 'Adres bilgisi yok'}</p>
-                {orderData.company?.phone && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Phone className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{orderData.company.phone}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Teslimat Adresi */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-green-100 rounded">
-                <Navigation className="h-4 w-4 text-green-600" />
+            {/* Teslimat Adresi */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-green-100 rounded-full shrink-0">
+                  <Navigation className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-green-900 mb-1">TESLİMAT ADRESİ</p>
+                  <p className="text-sm text-gray-700 break-words">{orderData.deliveryAddress?.address || 'Adres bilgisi yok'}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <User className="h-3 w-3" />
+                      <span>{orderData.recipientName}</span>
+                    </div>
+                    <a href={`tel:${orderData.recipientPhone}`} className="inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-700">
+                      <Phone className="h-3 w-3" />
+                      <span>{orderData.recipientPhone}</span>
+                    </a>
+                  </div>
+                </div>
               </div>
-              <span className="font-medium text-sm">Teslimat Adresi</span>
             </div>
-            <Card>
-              <CardContent className="pt-4 pb-4">
-                <p className="text-sm">{orderData.deliveryAddress?.address || 'Adres bilgisi yok'}</p>
-                <div className="flex items-center gap-4 mt-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{orderData.recipientName}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{orderData.recipientPhone}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Mesafe ve Süre Bilgileri */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Navigation className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Mesafe</span>
-                  </div>
-                  <span className="font-semibold">{orderData.distance || 0} km</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Tahmini Süre</span>
-                  </div>
-                  <span className="font-semibold">{orderData.estimatedTime || 0} dk</span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Mesafe ve Süre - Mobilde yan yana */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
+                <Truck className="h-4 w-4" />
+                <span className="text-xs">Mesafe</span>
+              </div>
+              <p className="text-lg font-bold text-gray-900">{orderData.distance || 0} km</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
+                <Timer className="h-4 w-4" />
+                <span className="text-xs">Tahmini Süre</span>
+              </div>
+              <p className="text-lg font-bold text-gray-900">{orderData.estimatedTime || 0} dk</p>
+            </div>
           </div>
 
-          {/* Notlar */}
+          {/* Notlar - Mobilde daha belirgin */}
           {orderData.notes && (
-            <Card className="bg-yellow-50 border-yellow-200">
-              <CardContent className="pt-4 pb-4">
-                <div className="flex items-start gap-2">
-                  <FileText className="h-4 w-4 text-yellow-600 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-yellow-800 mb-1">Not</p>
-                    <p className="text-sm text-yellow-700">{orderData.notes}</p>
-                  </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4">
+              <div className="flex items-start gap-2">
+                <FileText className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-amber-800 mb-1">NOT</p>
+                  <p className="text-sm text-amber-700 break-words">{orderData.notes}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
-          {/* Uyarı */}
-          <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-            <p className="text-sm text-orange-800">
-              Lütfen siparişi <strong>kabul edin</strong> veya <strong>reddedin</strong>.
-            </p>
-          </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReject}
-            disabled={loading}
-          >
-            Reddet
-          </Button>
-          <Button
-            onClick={handleAccept}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <DollarSign className="mr-2 h-4 w-4" />
-            Siparişi Kabul Et (₺{orderData.courierEarning || orderData.price})
-          </Button>
-        </DialogFooter>
+        {/* Footer - Mobilde sticky ve daha büyük butonlar */}
+        <div className="border-t bg-gray-50 p-4 sm:p-6 space-y-3">
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <p>Siparişi kabul ederek teslimat sorumluluğunu alıyorsunuz.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={handleReject}
+              disabled={loading}
+              className="flex-1 h-12 sm:h-10 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Reddet
+            </Button>
+            <Button
+              onClick={handleAccept}
+              disabled={loading}
+              className="flex-1 h-12 sm:h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
+            >
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              <span className="font-semibold">Kabul Et • ₺{orderData.courierEarning?.toFixed ? orderData.courierEarning.toFixed(2) : (orderData.price || 0)}</span>
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
