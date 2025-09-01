@@ -1018,7 +1018,65 @@ export class OrdersService {
     return updatedOrder;
   }
 
-  // Sipariş detayı
+  // Sipariş detayı - Auth kontrolü ile
+  async getOrderByIdWithAuth(orderId: string, user: any) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        company: {
+          select: {
+            id: true,
+            userId: true,
+            name: true,
+            phone: true,
+            address: true,
+          },
+        },
+        courier: {
+          select: {
+            id: true,
+            userId: true,
+            fullName: true,
+            phone: true,
+            vehicleInfo: true,
+          },
+        },
+        serviceArea: true,
+        payments: true,
+        _count: {
+          select: {
+            payments: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Sipariş bulunamadı');
+    }
+
+    // Yetki kontrolü
+    if (user.role === 'SUPER_ADMIN') {
+      // Admin herşeyi görebilir
+      return order;
+    } else if (user.role === 'COMPANY') {
+      // Firma sadece kendi siparişlerini görebilir
+      if (order.company?.userId !== user.id) {
+        throw new ForbiddenException('Bu siparişi görüntüleme yetkiniz yok');
+      }
+      return order;
+    } else if (user.role === 'COURIER') {
+      // Kurye sadece kendine atanan siparişleri görebilir
+      if (order.courier?.userId !== user.id) {
+        throw new ForbiddenException('Bu siparişi görüntüleme yetkiniz yok');
+      }
+      return order;
+    } else {
+      throw new ForbiddenException('Bu siparişi görüntüleme yetkiniz yok');
+    }
+  }
+
+  // Sipariş detayı - Eski metod (geriye uyumluluk için)
   async getOrderById(orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

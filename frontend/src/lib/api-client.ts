@@ -74,9 +74,13 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // 403 Forbidden - Yetki hatası
+    // 403 Forbidden - Yetki hatası: gezinme taleplerinde yönlendir, işlem taleplerinde mesajı ilet
     if (error.response?.status === 403) {
-      window.location.href = '/unauthorized';
+      const method = (originalRequest.method || '').toUpperCase();
+      if (method === 'GET') {
+        window.location.href = '/unauthorized';
+      }
+      // POST/PATCH/DELETE gibi durumlarda yönlendirmeden hatayı çağırana ilet
     }
 
     return Promise.reject(error);

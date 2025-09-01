@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { getSocketService } from '@/lib/socket';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -23,6 +23,12 @@ export function SocketProvider({ children }: SocketProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const socketService = getSocketService();
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  // Global kurye modal state
+  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
+  const [newOrderData, setNewOrderData] = useState<any>(null);
 
   // Socket bağlantı durumunu takip et
   const checkConnection = useCallback(() => {
@@ -35,25 +41,41 @@ export function SocketProvider({ children }: SocketProviderProps) {
     const handleNotification = (event: CustomEvent) => {
       const data = event.detail;
       console.log('Socket bildirim alındı:', data);
-      
-      // Burada bildirim store'unu güncelleyebiliriz
-      // Şimdilik console'a yazdıralım
+      // Kurye için tüm sayfalarda yeni sipariş modalını aç
+      const u = userRef.current;
+      if (u?.role === 'COURIER' && data?.type === 'NEW_ORDER' && data?.data) {
+        setNewOrderData(data.data);
+        setShowNewOrderModal(true);
+      }
     };
 
     const handleToast = (event: CustomEvent) => {
       const { type, title, message, data } = event.detail;
-      
+
+      // Olası orderId kaynaklarını birleştir
+      const orderId = data?.orderId || data?.data?.orderId || data?.data?.order?.id || data?.id;
+      const u = userRef.current;
+      let viewAction: { label: string; onClick: () => void } | undefined = undefined;
+
+      if (orderId && u) {
+        if (u.role === 'COURIER') {
+          viewAction = {
+            label: 'Görüntüle',
+            onClick: () => { window.location.href = `/courier/orders/${orderId}`; },
+          };
+        } else if (u.role === 'COMPANY') {
+          viewAction = {
+            label: 'Görüntüle',
+            onClick: () => { window.location.href = `/company/orders/${orderId}`; },
+          };
+        }
+      }
+
       // Sonner toast göster
       toast(title, {
         description: message,
         duration: 5000,
-        action: data?.orderId ? {
-          label: 'Görüntüle',
-          onClick: () => {
-            // Sipariş detayına yönlendir
-            window.location.href = `/courier/orders/${data.orderId}`;
-          }
-        } : undefined,
+        action: viewAction,
       });
     };
 
@@ -163,6 +185,14 @@ export function SocketProvider({ children }: SocketProviderProps) {
   return (
     <SocketContext.Provider value={contextValue}>
       {children}
+      {/* Kurye için global yeni sipariş modalı */}
+      {showNewOrderModal && (
+        <GlobalOrderModal 
+          isOpen={showNewOrderModal}
+          orderData={newOrderData}
+          onClose={() => { setShowNewOrderModal(false); setNewOrderData(null); }}
+        />
+      )}
     </SocketContext.Provider>
   );
 }
@@ -173,4 +203,19 @@ export function useSocket() {
     throw new Error('useSocket must be used within a SocketProvider');
   }
   return context;
+}
+
+import { OrderNotificationModal } from '@/components/courier/OrderNotificationModal';
+
+function GlobalOrderModal({ isOpen, onClose, orderData }: { isOpen: boolean; onClose: () => void; orderData: any }) {
+  if (!isOpen || !orderData) return null;
+  return (
+    <OrderNotificationModal
+      isOpen={isOpen}
+      onClose={onClose}
+      orderData={orderData}
+      onAccept={() => {}}
+      onReject={() => {}}
+    />
+  );
 }

@@ -129,7 +129,12 @@ export class NotificationsGateway
       type: 'ORDER_STATUS_UPDATE',
       title: 'Sipariş Durumu Güncellendi',
       message: statusMessages[status] || `Sipariş durumu: ${status}`,
-      data: { order, status },
+      data: { 
+        order, 
+        status,
+        orderId: order.id  // Frontend'in beklediği orderId alanını ekledik
+      },
+      orderId: order.id,  // Üst seviyede de orderId ekleyelim
       timestamp: new Date(),
       sound: true,
     });

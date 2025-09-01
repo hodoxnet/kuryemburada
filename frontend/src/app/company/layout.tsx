@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { LoadingState } from "@/components/shared/LoadingState";
@@ -46,15 +46,21 @@ export default function CompanyLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Yetki kontrolü
+  useEffect(() => {
+    if (!loading && (!user || !hasRole(['COMPANY']))) {
+      router.push('/unauthorized');
+    }
+  }, [user, loading, hasRole, router]);
+
   // Loading durumu
   if (loading) {
     return <LoadingState text="Yükleniyor..." />;
   }
 
-  // Yetki kontrolü
+  // Yetki kontrolü - Yönlendirme yapılıyor
   if (!user || !hasRole(['COMPANY'])) {
-    router.push('/unauthorized');
-    return null;
+    return <LoadingState text="Yönlendiriliyor..." />;
   }
 
   return (

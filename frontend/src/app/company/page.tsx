@@ -63,17 +63,16 @@ export default function CompanyDashboard() {
         });
       } else if (data?.type === 'ORDER_STATUS_UPDATE') {
         // Sipariş durumu güncellemesi için özel toast
+        const orderId = data?.orderId || data?.data?.orderId || data?.data?.order?.id;
         toast.info(title, {
           description: message,
           duration: 6000,
-          action: {
+          action: orderId ? {
             label: 'Siparişi Gör',
             onClick: () => {
-              if (data?.orderId) {
-                router.push(`/company/orders/${data.orderId}`);
-              }
+              router.push(`/company/orders/${orderId}`);
             }
-          },
+          } : undefined,
         });
       } else {
         // Diğer bildirimler için normal toast

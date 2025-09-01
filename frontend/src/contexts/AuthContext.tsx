@@ -51,11 +51,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (response.ok) {
           const data = await response.json();
-          // Token geçerli, kullanıcı bilgilerini güncelle
-          setUser(data.user);
-          // AuthStore'a da kaydet
+          // Token geçerli, kullanıcı bilgilerini güncelle ve kalıcı hale getir
           if (data.user) {
+            setUser(data.user);
+            // hasRole kontrolleri localStorage'ı referans alıyor; senkron tutalım
+            try {
+              // Kalıcı olarak güncelle
+              AuthService.setUser(data.user);
+            } catch {}
+            // AuthStore'a da kaydet
             setAuthStore(data.user);
+          } else {
+            setUser(null);
+            clearAuthStore();
           }
         } else {
           // Token geçersiz, temizle ve login'e yönlendir

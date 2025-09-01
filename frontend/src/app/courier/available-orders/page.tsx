@@ -57,12 +57,8 @@ export default function AvailableOrders() {
       const data = event.detail;
       console.log('Available Orders - Socket bildirimi alındı:', data);
       
-      // Yeni sipariş bildirimi geldiğinde modal'ı göster
-      if (data.type === 'NEW_ORDER' && data.data) {
-        setNotificationOrderData(data.data);
-        setShowNotificationModal(true);
-        
-        // Listeyi de güncelle
+      // Yeni sipariş bildirimi geldiğinde listeyi güncelle (modal artık globalde)
+      if (data.type === 'NEW_ORDER') {
         loadAvailableOrders();
       }
       
@@ -437,23 +433,7 @@ export default function AvailableOrders() {
         </DialogContent>
       </Dialog>
 
-      {/* Sipariş Bildirim Modal'ı */}
-      <OrderNotificationModal
-        isOpen={showNotificationModal}
-        onClose={() => {
-          setShowNotificationModal(false);
-          setNotificationOrderData(null);
-        }}
-        orderData={notificationOrderData}
-        onAccept={() => {
-          // Modal içinde accept işlemi yapılıyor
-          loadAvailableOrders(); // Listeyi güncelle
-        }}
-        onReject={() => {
-          // Sipariş reddedildi
-          toast.info('Sipariş reddedildi');
-        }}
-      />
+  {/* Sipariş Bildirim Modal'ı globalde gösteriliyor (SocketContext) */}
     </div>
   );
 }

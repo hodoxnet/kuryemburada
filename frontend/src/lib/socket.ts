@@ -107,14 +107,28 @@ class SocketService {
         this.playNotificationSound();
       }
 
-      // Toast bildirimi göster (sonner kullanarak)
-      if (data.title && data.message) {
+      // Toast bildirimi göster (sonner kullanarak) - string güvenliği
+      const rawTitle = (data && (data.title ?? data.data?.title)) as any;
+      const rawMessage = (data && (data.message ?? data.data?.message)) as any;
+      const toText = (v: any): string | undefined => {
+        if (!v) return undefined;
+        if (typeof v === 'string') return v;
+        // Ortak alan isimleri
+        if (typeof v === 'object') {
+          const candidate = v.text || v.message || v.title || v.description;
+          if (typeof candidate === 'string') return candidate;
+        }
+        try { return JSON.stringify(v); } catch { return String(v); }
+      };
+      const safeTitle = toText(rawTitle);
+      const safeMessage = toText(rawMessage);
+      if (safeTitle || safeMessage) {
         const toastEvent = new CustomEvent('socket-toast', { 
           detail: {
-            type: 'info',
-            title: data.title,
-            message: data.message,
-            data: data.data,
+            type: data?.type || 'info',
+            title: safeTitle || 'Bildirim',
+            message: safeMessage || '',
+            data: data,
           }
         });
         window.dispatchEvent(toastEvent);

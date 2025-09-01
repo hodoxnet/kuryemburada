@@ -116,8 +116,12 @@ export class OrdersController {
   @ApiOperation({ summary: 'Sipariş detayını getir' })
   @ApiResponse({ status: 200, description: 'Sipariş detayı' })
   @ApiResponse({ status: 404, description: 'Sipariş bulunamadı' })
-  async getOrderById(@Param('id') id: string) {
-    return this.ordersService.getOrderById(id);
+  async getOrderById(@Request() req, @Param('id') id: string) {
+    // Sipariş detayına erişim kontrolü
+    // SUPER_ADMIN herşeyi görebilir
+    // COMPANY sadece kendi siparişlerini görebilir
+    // COURIER sadece kendine atanan siparişleri görebilir
+    return this.ordersService.getOrderByIdWithAuth(id, req.user);
   }
 
   @Post(':id/accept')
