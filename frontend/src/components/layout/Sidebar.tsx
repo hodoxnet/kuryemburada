@@ -31,6 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const defaultMenuItems = [
   {
@@ -190,6 +191,9 @@ export function Sidebar({
         }
       }}>
         <SheetContent side="left" className="w-64 p-0">
+          <VisuallyHidden>
+            <SheetTitle>Navigasyon Menüsü</SheetTitle>
+          </VisuallyHidden>
           <div className="flex h-full flex-col">
             <NavigationContent />
           </div>
