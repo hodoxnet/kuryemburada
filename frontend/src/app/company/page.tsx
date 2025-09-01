@@ -7,17 +7,49 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { orderService, Order } from '@/lib/api/order.service';
-import { Package, Clock, CheckCircle, XCircle, Plus, Eye, Wifi, WifiOff, Bell } from 'lucide-react';
+import { 
+  Package, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Plus, 
+  Eye, 
+  Wifi, 
+  WifiOff, 
+  MapPin,
+  Phone,
+  User,
+  Calendar,
+  AlertCircle,
+  Truck,
+  Timer,
+  ArrowRight,
+  Search,
+  MoreVertical,
+  ChevronRight,
+  Building
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useSocket } from '@/contexts/SocketContext';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CompanyDashboard() {
   const router = useRouter();
   const { isConnected } = useSocket();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] = useState('all');
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -144,18 +176,36 @@ export default function CompanyDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+        return 'warning';
       case 'ACCEPTED':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
+        return 'default';
       case 'IN_PROGRESS':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
+        return 'default';
       case 'DELIVERED':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+        return 'success';
       case 'CANCELLED':
       case 'REJECTED':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+        return 'destructive';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+        return 'secondary';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return <Clock className="h-3.5 w-3.5" />;
+      case 'ACCEPTED':
+        return <CheckCircle className="h-3.5 w-3.5" />;
+      case 'IN_PROGRESS':
+        return <Truck className="h-3.5 w-3.5" />;
+      case 'DELIVERED':
+        return <Package className="h-3.5 w-3.5" />;
+      case 'CANCELLED':
+      case 'REJECTED':
+        return <XCircle className="h-3.5 w-3.5" />;
+      default:
+        return <AlertCircle className="h-3.5 w-3.5" />;
     }
   };
 
@@ -181,267 +231,370 @@ export default function CompanyDashboard() {
   const filterOrdersByStatus = (status?: string) => {
     // orders'in array olduğundan emin ol
     if (!Array.isArray(orders)) return [];
-    if (!status) return orders;
-    if (status === 'IN_PROGRESS') {
-      return orders.filter(o => o.status === 'ACCEPTED' || o.status === 'IN_PROGRESS');
+    
+    let filtered = orders;
+    
+    // Status filter
+    if (status && status !== 'all') {
+      if (status === 'IN_PROGRESS') {
+        filtered = filtered.filter(o => o.status === 'ACCEPTED' || o.status === 'IN_PROGRESS');
+      } else if (status === 'CANCELLED') {
+        filtered = filtered.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED');
+      } else {
+        filtered = filtered.filter(o => o.status === status);
+      }
     }
-    return orders.filter(o => o.status === status);
+    
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(o => 
+        o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.recipientPhone.includes(searchQuery)
+      );
+    }
+    
+    return filtered;
   };
 
-  return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Firma Paneli</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
-            Siparişlerinizi yönetin ve takip edin
-          </p>
+  const StatCard = ({ 
+    icon: Icon, 
+    title, 
+    value, 
+    className
+  }: { 
+    icon: any, 
+    title: string, 
+    value: number, 
+    className?: string
+  }) => (
+    <Card className={cn("hover:shadow-md transition-all duration-200", className)}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-semibold">{value}</p>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <Icon className="h-5 w-5 text-muted-foreground" />
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge 
-            variant={isConnected ? "secondary" : "destructive"} 
-            className="py-2 px-4"
-          >
-            {isConnected ? (
-              <Wifi className="mr-2 h-3 w-3" />
-            ) : (
-              <WifiOff className="mr-2 h-3 w-3" />
-            )}
-            {isConnected ? "Anlık Bildirim Aktif" : "Bağlantı Yok"}
-          </Badge>
-          <Button onClick={() => router.push('/company/new-order')} size="lg">
-            <Plus className="w-5 h-5 mr-2" />
-            Kurye Çağır
-          </Button>
-        </div>
-      </div>
-
-      {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Package className="w-8 h-8 text-gray-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-gray-500">Toplam Sipariş</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Clock className="w-8 h-8 text-yellow-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.pending}</p>
-                <p className="text-sm text-gray-500">Bekleyen</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Package className="w-8 h-8 text-blue-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.inProgress}</p>
-                <p className="text-sm text-gray-500">Yolda</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <CheckCircle className="w-8 h-8 text-green-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.delivered}</p>
-                <p className="text-sm text-gray-500">Teslim Edildi</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <XCircle className="w-8 h-8 text-red-500" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.cancelled}</p>
-                <p className="text-sm text-gray-500">İptal</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sipariş Tablosu */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Siparişler</CardTitle>
-          <CardDescription>Tüm siparişlerinizi buradan takip edebilirsiniz</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="all">Tümü ({stats.total})</TabsTrigger>
-              <TabsTrigger value="pending">Bekleyen ({stats.pending})</TabsTrigger>
-              <TabsTrigger value="in_progress">Yolda ({stats.inProgress})</TabsTrigger>
-              <TabsTrigger value="delivered">Teslim ({stats.delivered})</TabsTrigger>
-              <TabsTrigger value="cancelled">İptal ({stats.cancelled})</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all" className="mt-6">
-              <OrderTable orders={filterOrdersByStatus()} />
-            </TabsContent>
-
-            <TabsContent value="pending" className="mt-6">
-              <OrderTable orders={filterOrdersByStatus('PENDING')} />
-            </TabsContent>
-
-            <TabsContent value="in_progress" className="mt-6">
-              <OrderTable orders={filterOrdersByStatus('IN_PROGRESS')} />
-            </TabsContent>
-
-            <TabsContent value="delivered" className="mt-6">
-              <OrderTable orders={filterOrdersByStatus('DELIVERED')} />
-            </TabsContent>
-
-            <TabsContent value="cancelled" className="mt-6">
-              <OrderTable orders={filterOrdersByStatus('CANCELLED')} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   );
-}
 
-// Sipariş Tablosu Komponenti
-function OrderTable({ orders }: { orders: Order[] }) {
-  const router = useRouter();
-  
-  // orders'in array olduğundan emin ol
-  const orderList = Array.isArray(orders) ? orders : [];
+  const OrderCard = ({ order }: { order: Order }) => (
+    <Card className="hover:shadow-md transition-all duration-200">
+      <CardContent className="p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold">#{order.orderNumber}</span>
+              <Badge variant={getStatusColor(order.status)}>
+                {getStatusIcon(order.status)}
+                <span className="ml-1">{getStatusText(order.status)}</span>
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(order.createdAt), 'dd MMM yyyy', { locale: tr })}
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {format(new Date(order.createdAt), 'HH:mm', { locale: tr })}
+              </div>
+            </div>
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => router.push(`/company/orders/${order.id}`)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Detayları Gör
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.open(`tel:${order.recipientPhone}`, '_self')}>
+                <Phone className="mr-2 h-4 w-4" />
+                Alıcıyı Ara
+              </DropdownMenuItem>
+              {order.courier && (
+                <DropdownMenuItem onClick={() => window.open(`tel:${order.courier?.phone}`, '_self')}>
+                  <Phone className="mr-2 h-4 w-4" />
+                  Kuryeyi Ara
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'ACCEPTED':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'IN_PROGRESS':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'DELIVERED':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'CANCELLED':
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
-    }
-  };
+        {/* Content */}
+        <div className="space-y-3">
+          {/* Alıcı ve Kurye */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{order.recipientName}</p>
+                <p className="text-xs text-muted-foreground">{order.recipientPhone}</p>
+              </div>
+            </div>
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'Bekliyor';
-      case 'ACCEPTED':
-        return 'Kabul Edildi';
-      case 'IN_PROGRESS':
-        return 'Yolda';
-      case 'DELIVERED':
-        return 'Teslim Edildi';
-      case 'CANCELLED':
-        return 'İptal Edildi';
-      case 'REJECTED':
-        return 'Reddedildi';
-      default:
-        return status;
-    }
-  };
+            {order.courier ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background">
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{order.courier.fullName}</p>
+                  <p className="text-xs text-muted-foreground">{order.courier.phone}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">Kurye bekleniyor</p>
+              </div>
+            )}
+          </div>
 
-  if (!orderList || orderList.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <Package className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-500">Henüz sipariş bulunmuyor</p>
-      </div>
-    );
-  }
+          {/* Adres */}
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground mb-1">Teslimat Adresi</p>
+              <p className="text-sm line-clamp-2">{order.deliveryAddress.address}</p>
+            </div>
+          </div>
+
+          {/* Alt Bilgiler */}
+          <div className="flex items-center justify-between pt-3 border-t">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  {order.packageType === 'DOCUMENT' ? 'Evrak' :
+                   order.packageType === 'PACKAGE' ? 'Paket' :
+                   order.packageType === 'FOOD' ? 'Yemek' : 'Diğer'}
+                </span>
+              </div>
+              {order.urgency === 'URGENT' && (
+                <Badge variant="destructive" className="text-xs">
+                  <Timer className="mr-1 h-3 w-3" />
+                  Acil
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-lg font-semibold">₺{(order.totalPrice ?? order.price).toFixed(2)}</p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => router.push(`/company/orders/${order.id}`)}
+                className="h-8 px-2"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left py-3 px-4">Sipariş No</th>
-            <th className="text-left py-3 px-4">Alıcı</th>
-            <th className="text-left py-3 px-4">Teslimat Adresi</th>
-            <th className="text-left py-3 px-4">Kurye</th>
-            <th className="text-left py-3 px-4">Durum</th>
-            <th className="text-left py-3 px-4">Fiyat</th>
-            <th className="text-left py-3 px-4">Tarih</th>
-            <th className="text-left py-3 px-4">İşlemler</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orderList.map((order) => (
-            <tr key={order.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
-              <td className="py-3 px-4">
-                <span className="font-mono text-sm">{order.orderNumber}</span>
-              </td>
-              <td className="py-3 px-4">
-                <div>
-                  <p className="font-medium">{order.recipientName}</p>
-                  <p className="text-sm text-gray-500">{order.recipientPhone}</p>
-                </div>
-              </td>
-              <td className="py-3 px-4">
-                <p className="text-sm line-clamp-2 max-w-xs">
-                  {order.deliveryAddress.address}
-                </p>
-              </td>
-              <td className="py-3 px-4">
-                {order.courier ? (
-                  <div>
-                    <p className="font-medium">{order.courier.fullName}</p>
-                    <p className="text-sm text-gray-500">{order.courier.phone}</p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Firma Paneli</h1>
+            <p className="text-muted-foreground">
+              Siparişlerinizi yönetin ve takip edin
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge 
+              variant={isConnected ? "secondary" : "destructive"} 
+              className="py-1.5 px-3"
+            >
+              {isConnected ? (
+                <>
+                  <Wifi className="mr-1.5 h-3 w-3" />
+                  <span className="hidden sm:inline">Bağlı</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="mr-1.5 h-3 w-3" />
+                  <span className="hidden sm:inline">Çevrimdışı</span>
+                </>
+              )}
+            </Badge>
+            <Button 
+              onClick={() => router.push('/company/new-order')} 
+              size="default"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Kurye Çağır</span>
+              <span className="sm:hidden">Yeni</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* İstatistik Kartları */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          {loading ? (
+            <>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </>
+          ) : (
+            <>
+              <StatCard
+                icon={Package}
+                title="Toplam Sipariş"
+                value={stats.total}
+              />
+              <StatCard
+                icon={Clock}
+                title="Bekleyen"
+                value={stats.pending}
+                className="border-yellow-200 dark:border-yellow-900"
+              />
+              <StatCard
+                icon={Truck}
+                title="Yolda"
+                value={stats.inProgress}
+                className="border-blue-200 dark:border-blue-900"
+              />
+              <StatCard
+                icon={CheckCircle}
+                title="Teslim Edildi"
+                value={stats.delivered}
+                className="border-green-200 dark:border-green-900"
+              />
+              <StatCard
+                icon={XCircle}
+                title="İptal"
+                value={stats.cancelled}
+                className="border-red-200 dark:border-red-900"
+              />
+            </>
+          )}
+        </div>
+
+        {/* Siparişler */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle>Siparişler</CardTitle>
+                <CardDescription>Tüm siparişlerinizi buradan takip edebilirsiniz</CardDescription>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Sipariş ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="w-full justify-start h-9 p-1">
+                <TabsTrigger value="all" className="text-xs">
+                  Tümü
+                  {stats.total > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      ({stats.total})
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="PENDING" className="text-xs">
+                  Bekleyen
+                  {stats.pending > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      ({stats.pending})
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="IN_PROGRESS" className="text-xs">
+                  Yolda
+                  {stats.inProgress > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      ({stats.inProgress})
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="DELIVERED" className="text-xs">
+                  Teslim
+                  {stats.delivered > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      ({stats.delivered})
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="CANCELLED" className="text-xs">
+                  İptal
+                  {stats.cancelled > 0 && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">
+                      ({stats.cancelled})
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={selectedTab} className="mt-4">
+                {loading ? (
+                  <div className="grid gap-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-48" />
+                    ))}
                   </div>
                 ) : (
-                  <span className="text-gray-400">-</span>
+                  <div className="grid gap-4">
+                    {filterOrdersByStatus(selectedTab).length > 0 ? (
+                      filterOrdersByStatus(selectedTab).map((order) => (
+                        <OrderCard key={order.id} order={order} />
+                      ))
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-muted mb-4">
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="font-medium text-muted-foreground">
+                          {searchQuery ? 'Arama sonucu bulunamadı' : 'Henüz sipariş bulunmuyor'}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {searchQuery ? 'Farklı bir arama terimi deneyin' : 'Yeni sipariş oluşturmak için "Kurye Çağır" butonunu kullanın'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </td>
-              <td className="py-3 px-4">
-                <Badge className={getStatusColor(order.status)}>
-                  {getStatusText(order.status)}
-                </Badge>
-              </td>
-              <td className="py-3 px-4">
-                <span className="font-medium">₺{(order.totalPrice ?? order.price).toFixed(2)}</span>
-              </td>
-              <td className="py-3 px-4">
-                <span className="text-sm">
-                  {format(new Date(order.createdAt), 'dd MMM yyyy HH:mm', { locale: tr })}
-                </span>
-              </td>
-              <td className="py-3 px-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push(`/company/orders/${order.id}`)}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
