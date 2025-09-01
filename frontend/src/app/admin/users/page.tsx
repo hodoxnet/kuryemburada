@@ -180,16 +180,15 @@ export default function UsersPage() {
     }
 
     try {
-      await apiClient.post(`/users/${selectedUser.id}/change-password`, {
-        oldPassword: 'admin-reset', // Admin tarafından resetleme
+      await apiClient.post(`/users/${selectedUser.id}/reset-password`, {
         newPassword: passwordForm.newPassword,
       });
-      toast.success('Şifre başarıyla değiştirildi');
+      toast.success('Şifre başarıyla sıfırlandı');
       setPasswordDialog(false);
       setPasswordForm({ newPassword: '', confirmPassword: '' });
     } catch (error: any) {
-      console.error('Şifre değiştirilemedi:', error);
-      toast.error(error.response?.data?.message || 'Şifre değiştirilemedi');
+      console.error('Şifre sıfırlanamadı:', error);
+      toast.error(error.response?.data?.message || 'Şifre sıfırlanamadı');
     }
   };
 
@@ -538,13 +537,13 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Şifre Değiştirme Dialog */}
+      {/* Şifre Sıfırlama Dialog */}
       <Dialog open={passwordDialog} onOpenChange={setPasswordDialog}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Şifre Değiştir</DialogTitle>
+            <DialogTitle>Şifre Sıfırla</DialogTitle>
             <DialogDescription>
-              {selectedUser && getUserDisplayName(selectedUser)} kullanıcısının şifresini değiştirin
+              {selectedUser && getUserDisplayName(selectedUser)} kullanıcısının şifresini sıfırlayın
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -580,7 +579,7 @@ export default function UsersPage() {
               İptal
             </Button>
             <Button onClick={handleChangePassword}>
-              Şifreyi Değiştir
+              Şifreyi Sıfırla
             </Button>
           </DialogFooter>
         </DialogContent>

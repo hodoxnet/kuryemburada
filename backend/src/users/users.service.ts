@@ -236,6 +236,30 @@ export class UsersService {
     return { message: 'Şifre başarıyla değiştirildi' };
   }
 
+  async resetPassword(id: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+
+    this.logger.info('Admin tarafından kullanıcı şifresi sıfırlandı', {
+      userId: id,
+      userEmail: user.email,
+    });
+
+    return { message: 'Şifre başarıyla sıfırlandı' };
+  }
+
   async toggleStatus(id: string) {
     const user = await this.findOne(id);
 

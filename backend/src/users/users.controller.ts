@@ -131,6 +131,27 @@ export class UsersController {
     return this.usersService.changePassword(id, oldPassword, newPassword);
   }
 
+  @Post(':id/reset-password')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin tarafından kullanıcı şifresini sıfırla' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        newPassword: { type: 'string', minLength: 8 },
+      },
+      required: ['newPassword'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Şifre sıfırlandı' })
+  @ApiResponse({ status: 404, description: 'Kullanıcı bulunamadı' })
+  async resetPassword(
+    @Param('id') id: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.usersService.resetPassword(id, newPassword);
+  }
+
   @Post(':id/toggle-status')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Kullanıcı durumunu değiştir (aktif/pasif)' })
