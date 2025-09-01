@@ -219,36 +219,38 @@ export default function CourierDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
       {/* Başlık */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             Hoş Geldiniz, {user?.courier?.fullName || 'Kurye'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {format(new Date(), "dd MMMM yyyy, EEEE", { locale: tr })}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className="py-2 px-4">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-            Aktif
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <Badge variant="outline" className="py-1 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-1 sm:mr-2 animate-pulse" />
+            <span className="hidden sm:inline">Aktif</span>
+            <span className="sm:hidden">A</span>
           </Badge>
           <Badge 
             variant={isConnected ? "secondary" : "destructive"} 
-            className="py-2 px-4"
+            className="py-1 px-2 sm:py-2 sm:px-4 text-xs sm:text-sm"
           >
             {isConnected ? (
-              <Wifi className="mr-2 h-3 w-3" />
+              <Wifi className="mr-1 sm:mr-2 h-3 w-3" />
             ) : (
-              <WifiOff className="mr-2 h-3 w-3" />
+              <WifiOff className="mr-1 sm:mr-2 h-3 w-3" />
             )}
-            {isConnected ? "Bağlı" : "Bağlantı Yok"}
+            <span className="hidden sm:inline">{isConnected ? "Bağlı" : "Bağlantı Yok"}</span>
+            <span className="sm:hidden">{isConnected ? "B" : "X"}</span>
           </Badge>
-          <Button>
-            <MapPin className="mr-2 h-4 w-4" />
-            Haritayı Aç
+          <Button size="sm" className="sm:size-default">
+            <MapPin className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Haritayı Aç</span>
           </Button>
         </div>
       </div>
@@ -256,14 +258,14 @@ export default function CourierDashboard() {
       {/* Önemli Bilgiler */}
       {stats.pendingDeliveries > 0 && (
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
-          <CardContent className="flex items-center justify-between pt-6">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
-              <p className="text-sm">
+          <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 sm:pt-6 gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <p className="text-xs sm:text-sm">
                 <span className="font-medium">{stats.pendingDeliveries} adet</span> bekleyen teslimatınız var.
               </p>
             </div>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto">
               Teslimatları Gör
             </Button>
           </CardContent>
@@ -271,21 +273,21 @@ export default function CourierDashboard() {
       )}
 
       {/* İstatistikler */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {statsCards.map((stat) => (
           <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">
                 {stat.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className={`p-1 sm:p-2 rounded-lg ${stat.bgColor}`}>
+                <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 ${stat.color}`} />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">{stat.value}</div>
               {stat.subtitle && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   {stat.subtitle}
                 </p>
               )}
@@ -296,58 +298,58 @@ export default function CourierDashboard() {
 
       {/* Günlük Performans */}
       <Card>
-        <CardHeader>
-          <CardTitle>Günlük Performans</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Günlük Performans</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Teslimat Hedefi</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm font-medium">Teslimat Hedefi</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {stats.completedDeliveries} / 10
               </span>
             </div>
-            <Progress value={(stats.completedDeliveries / 10) * 100} />
+            <Progress value={(stats.completedDeliveries / 10) * 100} className="h-2" />
           </div>
           
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Mesafe Hedefi</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm font-medium">Mesafe Hedefi</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {stats.totalDistance} / 60 km
               </span>
             </div>
-            <Progress value={(stats.totalDistance / 60) * 100} />
+            <Progress value={(stats.totalDistance / 60) * 100} className="h-2" />
           </div>
           
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Kazanç Hedefi</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm font-medium">Kazanç Hedefi</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 ₺{stats.todayEarnings} / ₺500
               </span>
             </div>
-            <Progress value={(stats.todayEarnings / 500) * 100} />
+            <Progress value={(stats.todayEarnings / 500) * 100} className="h-2" />
           </div>
         </CardContent>
       </Card>
 
       {/* Kazançlar */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Kazançlarım</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Kazançlarım</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           {earningsCards.map((stat) => (
             <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-medium">
                   {stat.title}
                 </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <div className={`p-1 sm:p-2 rounded-lg ${stat.bgColor}`}>
+                  <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 ${stat.color}`} />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold">{stat.value}</div>
                 {stat.change && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {stat.change} geçen döneme göre
@@ -361,31 +363,31 @@ export default function CourierDashboard() {
 
       {/* Aktif Teslimatlar */}
       <Card>
-        <CardHeader>
-          <CardTitle>Aktif Teslimatlar</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Aktif Teslimatlar</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
           {activeDeliveries.length > 0 ? (
             <>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {activeDeliveries.map((delivery) => (
-                  <div key={delivery.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${
+                  <div key={delivery.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg gap-3">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                      <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${
                         delivery.status === 'pickup' ? 'bg-blue-100' : 'bg-green-100'
                       }`}>
                         {delivery.status === 'pickup' ? (
-                          <MapPin className="h-4 w-4 text-blue-600" />
+                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                         ) : (
-                          <Navigation className="h-4 w-4 text-green-600" />
+                          <Navigation className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium">{delivery.id}</p>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm sm:text-base">{delivery.id}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
                           {delivery.pickup} → {delivery.delivery}
                         </p>
-                        <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-3 sm:gap-4 mt-1">
                           <span className="text-xs text-muted-foreground">
                             {delivery.distance}
                           </span>
@@ -395,9 +397,12 @@ export default function CourierDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">{delivery.price}</p>
-                      <Badge variant={delivery.status === 'pickup' ? 'default' : 'secondary'}>
+                    <div className="flex items-center justify-between sm:block sm:text-right mt-2 sm:mt-0">
+                      <p className="font-medium text-sm sm:text-base">{delivery.price}</p>
+                      <Badge 
+                        variant={delivery.status === 'pickup' ? 'default' : 'secondary'}
+                        className="text-xs sm:text-sm sm:mt-1"
+                      >
                         {delivery.status === 'pickup' ? 'Alınacak' : 'Teslimatta'}
                       </Badge>
                     </div>
@@ -405,14 +410,14 @@ export default function CourierDashboard() {
                 ))}
               </div>
 
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-3 sm:mt-4 text-xs sm:text-sm">
                 Tüm Teslimatları Görüntüle
               </Button>
             </>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Aktif teslimatınız bulunmamaktadır</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <Package className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-3 opacity-50" />
+              <p className="text-sm sm:text-base">Aktif teslimatınız bulunmamaktadır</p>
             </div>
           )}
         </CardContent>
