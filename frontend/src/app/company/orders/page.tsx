@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { orderService, Order } from '@/lib/api/order.service';
 import { toast } from 'sonner';
 import { 
@@ -77,6 +87,8 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -135,17 +147,26 @@ export default function OrdersPage() {
     setFilteredOrders(filtered);
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    if (!confirm('Siparişi iptal etmek istediğinizden emin misiniz?')) return;
+  const handleCancelOrder = async () => {
+    if (!orderToCancel) return;
 
     try {
-      await orderService.cancelOrder(orderId);
+      await orderService.cancelOrder(orderToCancel);
       toast.success('Sipariş iptal edildi');
       fetchOrders();
+      setCancelDialogOpen(false);
+      setOrderToCancel(null);
     } catch (error) {
       console.error('Sipariş iptal edilemedi:', error);
       toast.error('Sipariş iptal edilirken bir hata oluştu');
+      setCancelDialogOpen(false);
+      setOrderToCancel(null);
     }
+  };
+
+  const openCancelDialog = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setCancelDialogOpen(true);
   };
 
   const getOrderProgress = (status: string) => {
@@ -379,7 +400,7 @@ export default function OrdersPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleCancelOrder(order.id)}
+                            onClick={() => openCancelDialog(order.id)}
                           >
                             <X className="w-4 h-4 mr-1" />
                             İptal
@@ -394,6 +415,29 @@ export default function OrdersPage() {
           })}
         </div>
       )}
+
+      {/* İptal Onay Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Siparişi İptal Et</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu siparişi iptal etmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOrderToCancel(null)}>
+              Vazgeç
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelOrder}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Siparişi İptal Et
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
