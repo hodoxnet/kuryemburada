@@ -85,6 +85,19 @@ export function SocketProvider({ children }: SocketProviderProps) {
     const handleToast = (event: CustomEvent) => {
       const { type, title, message, data } = event.detail;
 
+      const toText = (v: any): string | undefined => {
+        if (!v) return undefined;
+        if (typeof v === 'string') return v;
+        if (typeof v === 'object') {
+          const candidate = (v as any).text || (v as any).message || (v as any).title || (v as any).description;
+          if (typeof candidate === 'string') return candidate;
+        }
+        try { return JSON.stringify(v); } catch { return String(v); }
+      };
+
+      const safeTitle = toText(title) || 'Bildirim';
+      const safeMessage = toText(message) || '';
+
       // Olası orderId kaynaklarını birleştir
       const orderId = data?.orderId || data?.data?.orderId || data?.data?.order?.id || data?.id;
       const u = userRef.current;
@@ -105,8 +118,8 @@ export function SocketProvider({ children }: SocketProviderProps) {
       }
 
       // Sonner toast göster
-      toast(title, {
-        description: message,
+      toast(safeTitle, {
+        description: safeMessage,
         duration: 5000,
         action: viewAction,
       });

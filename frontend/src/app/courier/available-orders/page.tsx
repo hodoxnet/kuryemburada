@@ -43,6 +43,7 @@ export default function AvailableOrders() {
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [notificationOrderData, setNotificationOrderData] = useState<any>(null);
+  const [blockedByActiveOrder, setBlockedByActiveOrder] = useState<null | { orderId: string }>(null);
 
   useEffect(() => {
     loadAvailableOrders();
@@ -113,9 +114,23 @@ export default function AvailableOrders() {
       } else {
         setOrders([]);
       }
+      setBlockedByActiveOrder(null);
     } catch (error) {
       console.error("Siparişler yüklenemedi:", error);
-      toast.error("Siparişler yüklenirken hata oluştu");
+      // Eğer aktif sipariş nedeniyle 403 ise kullanıcıya bilgi göster
+      const status = (error as any)?.response?.status;
+      if (status === 403) {
+        try {
+          const stats = await orderService.getCourierStatistics();
+          const activeId = stats?.activeOrder?.id || stats?.activeOrderId || stats?.currentOrderId;
+          if (activeId) {
+            setBlockedByActiveOrder({ orderId: activeId });
+            setOrders([]);
+            return;
+          }
+        } catch {}
+      }
+      toast.error("Siparişler yüklenirken bir hata oluştu");
     } finally {
       setLoading(false);
     }
@@ -191,7 +206,7 @@ export default function AvailableOrders() {
     return colors[urgency] || "default";
   };
 
-  if (loading && orders.length === 0) {
+  if (loading && orders.length === 0 && !blockedByActiveOrder) {
     return <LoadingState text="Siparişler yükleniyor..." />;
   }
 
@@ -206,7 +221,23 @@ export default function AvailableOrders() {
       </div>
 
       {/* Bilgi Kartı */}
-      {orders.length > 0 && (
+      {blockedByActiveOrder ? (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-900/20">
+          <CardContent className="flex flex-col md:flex-row md:items-center gap-3 pt-6">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <div className="text-sm flex-1">
+              <p className="font-medium">Üzerinizde aktif bir sipariş var.</p>
+              <p className="text-muted-foreground">Aktif siparişi tamamlayana kadar yeni siparişleri görüntüleyemezsiniz.</p>
+            </div>
+            <Button
+              onClick={() => router.push(`/courier/orders/${blockedByActiveOrder.orderId}`)}
+              className="whitespace-nowrap"
+            >
+              Aktif siparişi görüntüle
+            </Button>
+          </CardContent>
+        </Card>
+      ) : orders.length > 0 && (
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
           <CardContent className="flex items-center gap-3 pt-6">
             <AlertCircle className="h-5 w-5 text-blue-600" />
@@ -219,7 +250,7 @@ export default function AvailableOrders() {
       )}
 
       {/* Siparişler Listesi */}
-      {orders.length > 0 ? (
+      {!blockedByActiveOrder && orders.length > 0 ? (
         <div className="grid gap-4">
           {orders.map((order) => (
             <Card key={order.id} className="overflow-hidden">
