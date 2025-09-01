@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -47,31 +47,74 @@ export function OrderNotificationModal({
   onReject,
 }: OrderNotificationModalProps) {
   const [loading, setLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30); // 30 saniye süre
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const soundIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Geri sayım sayacı
+  // Bildirim sesini sürekli çal
   useEffect(() => {
     if (!isOpen) {
-      setTimeLeft(30);
+      // Modal kapandığında sesi durdur
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current);
+        soundIntervalRef.current = null;
+      }
       return;
     }
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleReject(); // Süre dolduğunda otomatik reddet
-          return 30;
+    // Modal açıldığında sesi başlat
+    const playNotificationSound = () => {
+      try {
+        if (!audioRef.current) {
+          audioRef.current = new Audio('/notification-sound.mp3');
+          audioRef.current.volume = 0.5;
         }
-        return prev - 1;
-      });
-    }, 1000);
+        audioRef.current.play().catch((error) => {
+          console.log('Ses çalma hatası:', error);
+        });
+      } catch (error) {
+        console.log('Ses oluşturma hatası:', error);
+      }
+    };
 
-    return () => clearInterval(timer);
+    // Hemen bir kez çal
+    playNotificationSound();
+
+    // Her 2 saniyede bir tekrar çal
+    soundIntervalRef.current = setInterval(() => {
+      playNotificationSound();
+    }, 2000);
+
+    return () => {
+      // Cleanup
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current);
+        soundIntervalRef.current = null;
+      }
+    };
   }, [isOpen]);
 
   const handleAccept = async () => {
     try {
       setLoading(true);
+      
+      // Sesi durdur
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (soundIntervalRef.current) {
+        clearInterval(soundIntervalRef.current);
+        soundIntervalRef.current = null;
+      }
+      
       await orderService.acceptOrder(orderData.id);
       toast.success('Sipariş başarıyla kabul edildi!');
       
@@ -93,12 +136,22 @@ export function OrderNotificationModal({
     }
   };
 
-  const handleReject = () => {
+  const handleReject = useCallback(() => {
+    // Sesi durdur
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (soundIntervalRef.current) {
+      clearInterval(soundIntervalRef.current);
+      soundIntervalRef.current = null;
+    }
+    
     if (onReject) {
       onReject();
     }
     onClose();
-  };
+  }, [onReject, onClose]);
 
   if (!orderData) return null;
 
@@ -135,7 +188,7 @@ export function OrderNotificationModal({
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">Yeni Sipariş Bildirimi!</DialogTitle>
             <Badge variant="destructive" className="animate-pulse">
-              {timeLeft} saniye
+              Yeni Sipariş
             </Badge>
           </div>
           <DialogDescription>
@@ -283,7 +336,7 @@ export function OrderNotificationModal({
           <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <p className="text-sm text-orange-800">
-              Bu siparişi kabul etmek için <strong>{timeLeft} saniye</strong> süreniz var.
+              Lütfen siparişi <strong>kabul edin</strong> veya <strong>reddedin</strong>.
             </p>
           </div>
         </div>
