@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Building2, MapPin, Phone, Mail, CreditCard, User, FileText, Info } from 'lucide-react';
+import { Building2, MapPin, Phone, Mail, CreditCard, User, FileText, Info, Lock } from 'lucide-react';
 import companyAPI, { CompanyProfile, UpdateCompanyData } from '@/lib/api/company';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { authService } from '@/services/auth.service';
 
 const addressSchema = z.object({
   city: z.string().min(1, 'Şehir zorunludur'),
@@ -56,12 +57,23 @@ const companyUpdateSchema = z.object({
   contactPerson: contactPersonSchema.optional(),
 });
 
+const passwordChangeSchema = z.object({
+  oldPassword: z.string().min(6, 'Mevcut şifre en az 6 karakter olmalıdır'),
+  newPassword: z.string().min(6, 'Yeni şifre en az 6 karakter olmalıdır'),
+  confirmPassword: z.string().min(6, 'Şifre tekrarı en az 6 karakter olmalıdır'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Şifreler eşleşmiyor",
+  path: ["confirmPassword"],
+});
+
 type CompanyUpdateForm = z.infer<typeof companyUpdateSchema>;
+type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;
 
 export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
 
   const {
@@ -73,6 +85,15 @@ export default function CompanyProfilePage() {
     watch,
   } = useForm<CompanyUpdateForm>({
     resolver: zodResolver(companyUpdateSchema),
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPassword,
+  } = useForm<PasswordChangeForm>({
+    resolver: zodResolver(passwordChangeSchema),
   });
 
   const fetchProfile = async () => {
@@ -116,6 +137,21 @@ export default function CompanyProfilePage() {
       toast.error('Profil güncellenemedi');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const onPasswordSubmit = async (data: PasswordChangeForm) => {
+    try {
+      setChangingPassword(true);
+      await authService.changePassword(data.oldPassword, data.newPassword);
+      toast.success('Şifreniz başarıyla değiştirildi');
+      resetPassword();
+    } catch (error: any) {
+      console.error('Şifre değiştirilirken hata:', error);
+      const errorMessage = error?.response?.data?.message || 'Şifre değiştirilemedi';
+      toast.error(errorMessage);
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -198,11 +234,12 @@ export default function CompanyProfilePage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
             <TabsTrigger value="address">Adres Bilgileri</TabsTrigger>
             <TabsTrigger value="bank">Banka Bilgileri</TabsTrigger>
             <TabsTrigger value="contact">İletişim Kişisi</TabsTrigger>
+            <TabsTrigger value="security">Güvenlik</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -508,13 +545,79 @@ export default function CompanyProfilePage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="security" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Şifre Değiştir
+                </CardTitle>
+                <CardDescription>
+                  Hesap güvenliğiniz için şifrenizi düzenli olarak değiştirin
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="oldPassword">Mevcut Şifre</Label>
+                    <Input
+                      id="oldPassword"
+                      type="password"
+                      {...registerPassword('oldPassword')}
+                      placeholder="Mevcut şifrenizi giriniz"
+                    />
+                    {passwordErrors.oldPassword && (
+                      <p className="text-sm text-red-500">{passwordErrors.oldPassword.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Yeni Şifre</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      {...registerPassword('newPassword')}
+                      placeholder="Yeni şifrenizi giriniz"
+                    />
+                    {passwordErrors.newPassword && (
+                      <p className="text-sm text-red-500">{passwordErrors.newPassword.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Yeni Şifre (Tekrar)</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      {...registerPassword('confirmPassword')}
+                      placeholder="Yeni şifrenizi tekrar giriniz"
+                    />
+                    {passwordErrors.confirmPassword && (
+                      <p className="text-sm text-red-500">{passwordErrors.confirmPassword.message}</p>
+                    )}
+                  </div>
+
+                  <Button 
+                    type="button" 
+                    onClick={handlePasswordSubmit(onPasswordSubmit)}
+                    disabled={changingPassword}
+                  >
+                    {changingPassword ? 'Şifre Değiştiriliyor...' : 'Şifreyi Değiştir'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end mt-6">
-          <Button type="submit" disabled={updating}>
-            {updating ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
-          </Button>
-        </div>
+        {activeTab !== 'security' && (
+          <div className="flex justify-end mt-6">
+            <Button type="submit" disabled={updating}>
+              {updating ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
+            </Button>
+          </div>
+        )}
       </form>
 
       {profile.documents && profile.documents.length > 0 && (

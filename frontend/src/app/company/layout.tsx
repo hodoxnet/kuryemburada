@@ -8,11 +8,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { 
   Home,
-  Building2, 
   Package, 
   FileText, 
   BarChart3, 
-  Settings
+  User
 } from "lucide-react";
 
 const companyMenuItems = [
@@ -27,19 +26,14 @@ const companyMenuItems = [
     icon: Package,
   },
   {
-    title: "Firma Bilgileri",
-    href: "/company/profile",
-    icon: Building2,
-  },
-  {
     title: "Raporlar",
     href: "/company/reports",
     icon: BarChart3,
   },
   {
-    title: "Ayarlar",
-    href: "/company/settings",
-    icon: Settings,
+    title: "Profilim",
+    href: "/company/profile",
+    icon: User,
   },
 ];
 
