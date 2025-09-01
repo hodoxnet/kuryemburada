@@ -30,14 +30,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OrderNotificationModal } from "@/components/courier/OrderNotificationModal";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function AvailableOrders() {
   const router = useRouter();
+  const { isConnected } = useSocket();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<any[]>([]);
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationOrderData, setNotificationOrderData] = useState<any>(null);
 
   useEffect(() => {
     loadAvailableOrders();
@@ -45,6 +50,60 @@ export default function AvailableOrders() {
     const interval = setInterval(loadAvailableOrders, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Socket bildirimleri için event listener
+  useEffect(() => {
+    const handleSocketNotification = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log('Available Orders - Socket bildirimi alındı:', data);
+      
+      // Yeni sipariş bildirimi geldiğinde modal'ı göster
+      if (data.type === 'NEW_ORDER' && data.data) {
+        setNotificationOrderData(data.data);
+        setShowNotificationModal(true);
+        
+        // Listeyi de güncelle
+        loadAvailableOrders();
+      }
+      
+      // Sipariş başka kurye tarafından alındıysa modal'ı kapat ve listeyi güncelle
+      if (data.type === 'ORDER_ACCEPTED_BY_ANOTHER') {
+        // Eğer aynı sipariş için modal açıksa kapat
+        if (notificationOrderData?.id === data.data?.orderId) {
+          setShowNotificationModal(false);
+          setNotificationOrderData(null);
+          toast.info('Sipariş başka bir kurye tarafından kabul edildi');
+        }
+        // Listeyi güncelle
+        loadAvailableOrders();
+      }
+    };
+
+    const handleSocketToast = (event: CustomEvent) => {
+      const { title, message, data } = event.detail;
+      
+      // Yeni sipariş bildirimi modal ile gösterildiği için toast gösterme
+      if (data?.type === 'NEW_ORDER') {
+        return; // Modal gösterilecek, toast'a gerek yok
+      } else {
+        // Diğer bildirimler için normal toast
+        toast(title, {
+          description: message,
+          duration: 5000,
+        });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('socket-notification', handleSocketNotification as EventListener);
+      window.addEventListener('socket-toast', handleSocketToast as EventListener);
+
+      return () => {
+        window.removeEventListener('socket-notification', handleSocketNotification as EventListener);
+        window.removeEventListener('socket-toast', handleSocketToast as EventListener);
+      };
+    }
+  }, [notificationOrderData]);
 
   const loadAvailableOrders = async () => {
     try {
@@ -377,6 +436,24 @@ export default function AvailableOrders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sipariş Bildirim Modal'ı */}
+      <OrderNotificationModal
+        isOpen={showNotificationModal}
+        onClose={() => {
+          setShowNotificationModal(false);
+          setNotificationOrderData(null);
+        }}
+        orderData={notificationOrderData}
+        onAccept={() => {
+          // Modal içinde accept işlemi yapılıyor
+          loadAvailableOrders(); // Listeyi güncelle
+        }}
+        onReject={() => {
+          // Sipariş reddedildi
+          toast.info('Sipariş reddedildi');
+        }}
+      />
     </div>
   );
 }

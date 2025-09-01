@@ -59,7 +59,6 @@ export class NotificationsGateway
   
   // Kurye'nin belirli bir room'a katılması (örneğin courier-{courierId})
   @SubscribeMessage('join-courier-room')
-  @UseGuards(JwtAuthGuard)
   async joinCourierRoom(
     @MessageBody() data: { courierId: string },
     @ConnectedSocket() client: Socket,
@@ -67,14 +66,16 @@ export class NotificationsGateway
     const roomName = `courier-${data.courierId}`;
     await client.join(roomName);
     
-    this.logger.log(`Client ${client.id} joined courier room: ${roomName}`);
+    // Ayrıca genel kurye room'una da kat
+    await client.join('couriers');
     
-    client.emit('joined-room', { room: roomName });
+    this.logger.log(`Client ${client.id} joined courier room: ${roomName} and couriers room`);
+    
+    client.emit('joined-room', { room: roomName, type: 'courier' });
   }
   
   // Firma'nın belirli bir room'a katılması (örneğin company-{companyId})
   @SubscribeMessage('join-company-room')
-  @UseGuards(JwtAuthGuard)
   async joinCompanyRoom(
     @MessageBody() data: { companyId: string },
     @ConnectedSocket() client: Socket,
@@ -84,7 +85,7 @@ export class NotificationsGateway
     
     this.logger.log(`Client ${client.id} joined company room: ${roomName}`);
     
-    client.emit('joined-room', { room: roomName });
+    client.emit('joined-room', { room: roomName, type: 'company' });
   }
   
   // Tüm kuryelere sipariş bildirimi gönderme

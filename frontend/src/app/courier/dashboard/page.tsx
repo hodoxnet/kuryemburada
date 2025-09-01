@@ -27,11 +27,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { orderService } from "@/lib/api/order.service";
 import { toast } from "sonner";
 import { useSocket } from "@/contexts/SocketContext";
+import { OrderNotificationModal } from "@/components/courier/OrderNotificationModal";
 
 export default function CourierDashboard() {
   const { user } = useAuth();
   const { isConnected } = useSocket();
   const [loading, setLoading] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationOrderData, setNotificationOrderData] = useState<any>(null);
   const [stats, setStats] = useState({
     todayDeliveries: 0,
     completedDeliveries: 0,
@@ -56,8 +59,26 @@ export default function CourierDashboard() {
       const data = event.detail;
       console.log('Dashboard - Socket bildirimi alındı:', data);
       
+      // Yeni sipariş bildirimi geldiğinde modal'ı göster
+      if (data.type === 'NEW_ORDER' && data.data) {
+        setNotificationOrderData(data.data);
+        setShowNotificationModal(true);
+        
+        // Bildirim sesi çal (socket service'de zaten çalıyor)
+      }
+      
+      // Sipariş başka kurye tarafından alındıysa modal'ı kapat
+      if (data.type === 'ORDER_ACCEPTED_BY_ANOTHER') {
+        // Eğer aynı sipariş için modal açıksa kapat
+        if (notificationOrderData?.id === data.data?.orderId) {
+          setShowNotificationModal(false);
+          setNotificationOrderData(null);
+          toast.info('Sipariş başka bir kurye tarafından kabul edildi');
+        }
+      }
+      
       // Sipariş ile ilgili bildirimler geldiğinde istatistikleri yeniden yükle
-      if (data.type === 'NEW_ORDER' || data.type === 'ORDER_ASSIGNED' || data.type === 'ORDER_STATUS_UPDATE') {
+      if (data.type === 'ORDER_ASSIGNED' || data.type === 'ORDER_STATUS_UPDATE') {
         setTimeout(() => {
           loadStats(); // İstatistikleri güncelle
         }, 1000);
@@ -67,18 +88,9 @@ export default function CourierDashboard() {
     const handleSocketToast = (event: CustomEvent) => {
       const { title, message, data } = event.detail;
       
-      // Yeni sipariş bildirimi için özel toast
+      // Yeni sipariş bildirimi modal ile gösterildiği için toast gösterme
       if (data?.type === 'NEW_ORDER') {
-        toast(title, {
-          description: message,
-          duration: 10000, // 10 saniye
-          action: {
-            label: 'Siparişleri Gör',
-            onClick: () => {
-              window.location.href = '/courier/available-orders';
-            }
-          },
-        });
+        return; // Modal gösterilecek, toast'a gerek yok
       } else {
         // Diğer bildirimler için normal toast
         toast(title, {
@@ -405,6 +417,24 @@ export default function CourierDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sipariş Bildirim Modal'ı */}
+      <OrderNotificationModal
+        isOpen={showNotificationModal}
+        onClose={() => {
+          setShowNotificationModal(false);
+          setNotificationOrderData(null);
+        }}
+        orderData={notificationOrderData}
+        onAccept={() => {
+          // Modal içinde accept işlemi yapılıyor
+          loadStats(); // İstatistikleri güncelle
+        }}
+        onReject={() => {
+          // Sipariş reddedildi
+          toast.info('Sipariş reddedildi');
+        }}
+      />
     </div>
   );
 }

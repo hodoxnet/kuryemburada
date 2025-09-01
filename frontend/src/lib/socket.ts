@@ -80,9 +80,18 @@ class SocketService {
       this.handleNotification(data);
     });
 
+    // Sipariş başka kurye tarafından kabul edildi bildirimi
+    this.socket.on('order-accepted-by-another', (data) => {
+      console.log('ℹ️ Sipariş başka kurye tarafından alındı:', data);
+      this.handleNotification(data);
+    });
+
     // Room katılım onayı
     this.socket.on('joined-room', (data) => {
       console.log('🏠 Room\'a katıldı:', data);
+      if (data.type === 'courier') {
+        console.log('✅ Kurye room\'a başarıyla katıldı, artık sipariş bildirimleri alabilir');
+      }
     });
   }
 

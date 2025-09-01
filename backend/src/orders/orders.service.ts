@@ -773,6 +773,34 @@ export class OrdersService {
       notificationData
     );
 
+    // Diğer kuryelere siparişin alındığı bilgisini gönder (modal'ı kapatmaları için)
+    const orderAcceptedNotification = {
+      type: 'ORDER_ACCEPTED_BY_ANOTHER',
+      title: 'Sipariş Başka Kurye Tarafından Alındı',
+      message: `${updatedOrder.orderNumber} numaralı sipariş başka bir kurye tarafından kabul edildi`,
+      data: {
+        orderId: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+      },
+      sound: false,
+    };
+
+    // Tüm müsait kuryelere bildirim gönder (kabul eden hariç)
+    const availableCouriers = await this.prisma.courier.findMany({
+      where: {
+        status: CourierStatus.APPROVED,
+        isAvailable: true,
+        id: { not: courierId }, // Kabul eden kurye hariç
+      },
+    });
+
+    for (const availableCourier of availableCouriers) {
+      this.notificationsGateway.sendNotificationToRoom(
+        `courier-${availableCourier.id}`,
+        orderAcceptedNotification
+      );
+    }
+
     this.logger.info('Sipariş kabul edildi', {
       orderId,
       courierId,
