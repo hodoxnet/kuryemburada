@@ -108,6 +108,7 @@ export const WebViewContainer: React.FC = () => {
     setCanGoBack(event.nativeEvent.canGoBack);
   }, []);
 
+
   // WebView yükleme tamamlandığında
   const onLoadEnd = useCallback((event: WebViewNavigationEvent) => {
     setIsLoading(false);
@@ -170,7 +171,7 @@ export const WebViewContainer: React.FC = () => {
     }
   }, [checkConnection, reload]);
 
-  // Should start load with request
+  // Should start load with request - Navigation kontrolü
   const onShouldStartLoadWithRequest = useCallback((request: any) => {
     const { url } = request;
     
@@ -190,6 +191,31 @@ export const WebViewContainer: React.FC = () => {
     if (url.startsWith('whatsapp:')) {
       // WhatsApp'ı aç
       return false;
+    }
+    
+    // Ana sayfa URL kontrolü - localhost:3000/ veya domain.com/ şeklinde
+    if (url === 'http://localhost:3000/' || 
+        url === 'http://127.0.0.1:3000/' ||
+        url === 'https://yourdomain.com/' ||
+        (url.includes('3000') && url.endsWith('/'))) {
+      // Ana sayfaya gitmeyi engelle, login'e yönlendir
+      if (webViewRef.current) {
+        webViewRef.current.stopLoading();
+        setTimeout(() => {
+          webViewRef.current?.loadUrl(WEB_URL);
+        }, 100);
+      }
+      return false;
+    }
+    
+    // Kurye ile ilgili sayfalar ve başvuru sayfalarına izin ver
+    if (url.includes('/courier') || url.includes('/apply/courier')) {
+      return true;
+    }
+    
+    // Auth sayfasına izin ver
+    if (url.includes('/auth')) {
+      return true;
     }
     
     return true;

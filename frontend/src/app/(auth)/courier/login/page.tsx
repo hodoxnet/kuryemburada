@@ -136,16 +136,19 @@ export default function CourierLoginPage() {
               </Button>
             </div>
             
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                onClick={() => router.push('/auth')}
-                className="text-sm hover:text-green-600"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Geri dön
-              </Button>
-            </div>
+            {/* WebView'da değilse Geri dön butonunu göster */}
+            {typeof window !== 'undefined' && !(window as any).isWebView && (
+              <div className="text-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push('/auth')}
+                  className="text-sm hover:text-green-600"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Geri dön
+                </Button>
+              </div>
+            )}
             
             <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-md">
               <p className="text-xs text-green-700 dark:text-green-300">

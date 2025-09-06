@@ -860,9 +860,14 @@ export default function CourierApplicationPage() {
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link 
+            href={typeof window !== 'undefined' && (window as any).isWebView ? "/courier/login" : "/"} 
+            className="flex items-center space-x-2"
+          >
             <ArrowLeft className="h-5 w-5" />
-            <span className="font-medium">Ana Sayfa</span>
+            <span className="font-medium">
+              {typeof window !== 'undefined' && (window as any).isWebView ? "Giriş" : "Ana Sayfa"}
+            </span>
           </Link>
           <div className="flex items-center space-x-2">
             <User className="h-5 w-5 text-primary" />
