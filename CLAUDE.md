@@ -396,3 +396,11 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 3. **Token Expired**: Refresh token mekanizması api-client.ts'de otomatik çalışır
 4. **File Upload Limiti**: MAX_FILE_SIZE env değişkeni ile ayarlanır (default: 10MB)
 5. **Test Database**: Test için ayrı veritabanı kullan, production veritabanını kullanma
+
+## Renk Paletimiz
+
+Güven ve Profesyonellik Odaklı                                                  │
+Ana renk: Lacivert (#1E3A8A) – güven ve kurumsallık                                                                  │
+İkincil renk: Turuncu (#F97316) – hız, dinamizm, enerji                                                              │
+Destek rengi: Beyaz (#FFFFFF) – sade ve temiz arayüz                                                                 │
+Ek vurgu: Açık gri (#F3F4F6) – modern dokunuş 
