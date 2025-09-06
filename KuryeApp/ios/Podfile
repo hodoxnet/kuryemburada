@@ -1,0 +1,71 @@
+source 'https://cdn.cocoapods.org/'
+
+# RN 0.73.0 boost.podspec URL/hash düzeltmesi (bz2->gz + doğru sha256)
+begin
+  boost_spec_path = File.expand_path('../node_modules/react-native/third-party-podspecs/boost.podspec', __FILE__)
+  if File.exist?(boost_spec_path)
+    content = File.read(boost_spec_path)
+    corrected = content
+      .gsub('https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.bz2',
+            'https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.gz')
+      .gsub(/:sha256\s*=>\s*'[^']+'/, ":sha256 => 'c0685b68dd44cc46574cce86c4e17c0f611b15e195be9848dfd0769a0a207628'")
+    if corrected != content
+      File.write(boost_spec_path, corrected)
+      puts 'Podfile: boost.podspec URL/sha256 yamalandı (.bz2 -> .gz)'
+    end
+  end
+rescue => e
+  puts "Podfile: boost.podspec yamalama başarısız: #{e}"
+end
+
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+platform :ios, '13.4'
+
+# If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
+# because `react-native-flipper` depends on (FlipperKit,...) that will be excluded
+#
+# To fix this you can also exclude `react-native-flipper` using a `react-native.config.js`
+# ```js
+# module.exports = {
+#   dependencies: {
+#     ...(process.env.NO_FLIPPER ? { 'react-native-flipper': { platforms: { ios: null } } } : {}),
+# ```
+flipper_config = ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}."
+  use_frameworks! :linkage => linkage.to_sym
+end
+
+target 'KuryeApp' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # Flipper Configuration
+    :flipper_configuration => flipper_config
+  )
+
+  # RN script'inin eklediği boost podspec kullanılacak; yukarıdaki yama ile URL/hash düzeltildi.
+
+  post_install do |installer|
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false
+    )
+    
+    # Fix for boost checksum issue
+    installer.pods_project.targets.each do |target|
+      if target.name == 'boost'
+        target.build_configurations.each do |config|
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+        end
+      end
+    end
+  end
+end
