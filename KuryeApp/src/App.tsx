@@ -2,22 +2,27 @@
  * Ana uygulama komponenti
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, StyleSheet, Platform } from 'react-native';
 import SplashScreen from 'react-native-splash-screen';
 import { WebViewContainer } from './components/WebViewContainer';
+import { AnimatedSplashScreen } from './components/SplashScreen';
 
 const App: React.FC = () => {
+  const [isShowingSplash, setIsShowingSplash] = useState(true);
+
   useEffect(() => {
-    // Splash screen'i gizle
-    if (Platform.OS === 'android') {
-      setTimeout(() => {
-        SplashScreen.hide();
-      }, 1000);
-    } else {
-      SplashScreen.hide();
-    }
+    // Native splash screen'i hemen gizle
+    SplashScreen.hide();
   }, []);
+
+  const handleSplashComplete = () => {
+    setIsShowingSplash(false);
+  };
+
+  if (isShowingSplash) {
+    return <AnimatedSplashScreen onAnimationComplete={handleSplashComplete} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
