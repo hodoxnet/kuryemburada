@@ -5,13 +5,17 @@ begin
   boost_spec_path = File.expand_path('../node_modules/react-native/third-party-podspecs/boost.podspec', __FILE__)
   if File.exist?(boost_spec_path)
     content = File.read(boost_spec_path)
+
+    # Kaynak URL'sini RN 0.73 için doğru arşive çevir (.bz2 -> .gz ve archives.boost.io)
     corrected = content
-      .gsub('https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.bz2',
-            'https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.gz')
-      .gsub(/:sha256\s*=>\s*'[^']+'/, ":sha256 => 'c0685b68dd44cc46574cce86c4e17c0f611b15e195be9848dfd0769a0a207628'")
+      .gsub(/spec\.source\s*=\s*\{[^}]+\}/, "spec.source = { :http => 'https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.gz', :sha256 => 'c0685b68dd44cc46574cce86c4e17c0f611b15e195be9848dfd0769a0a207628' }")
+
+    # Header'ların korunacağı yolu boost_1_83_0/boost olarak ayarla
+    corrected = corrected.gsub(/spec\.preserve_path\s*=\s*'boost'/, "spec.preserve_path = 'boost_1_83_0/boost'")
+
     if corrected != content
       File.write(boost_spec_path, corrected)
-      puts 'Podfile: boost.podspec URL/sha256 yamalandı (.bz2 -> .gz)'
+      puts 'Podfile: boost.podspec URL/sha256 ve preserve_path yamalandı'
     end
   end
 rescue => e
@@ -45,8 +49,9 @@ target 'KuryeApp' do
 
   use_react_native!(
     :path => config[:reactNativePath],
+    :hermes_enabled => false,
     # Flipper Configuration
-    :flipper_configuration => flipper_config
+    :flipper_configuration => FlipperConfiguration.disabled
   )
 
   # RN script'inin eklediği boost podspec kullanılacak; yukarıdaki yama ile URL/hash düzeltildi.
@@ -59,12 +64,40 @@ target 'KuryeApp' do
       :mac_catalyst_enabled => false
     )
     
-    # Fix for boost checksum issue
+    # Xcode 15 build hataları için düzeltmeler
     installer.pods_project.targets.each do |target|
-      if target.name == 'boost'
-        target.build_configurations.each do |config|
-          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+      target.build_configurations.each do |config|
+        # iOS deployment target ayarı
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+
+        # Xcode 15 ile uyumlu temel ayarlar
+        # Not: Apple Silicon simülatörleri ARM64 mimarisini kullanır. arm64'ü hariç
+        # tutmak kütüphanelerin yanlış mimaride derlenmesine ve link hatalarına yol açar.
+        # Bu nedenle EXCLUDED_ARCHS satırını kaldırıyoruz.
+        config.build_settings['ENABLE_BITCODE'] = 'NO'
+
+        # React-Core ve ilgili modüller için özel ayarlar
+        if target.name.start_with?('React')
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+          config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1'
         end
+
+        # RN 0.73 boost 1.83.0 başlık yolu düzeltmesi
+        header_search = config.build_settings['HEADER_SEARCH_PATHS'] || '$(inherited)'
+        config.build_settings['HEADER_SEARCH_PATHS'] = [
+          '$(inherited)',
+          '${PODS_ROOT}/boost',
+          '${PODS_ROOT}/boost/boost_1_83_0',
+          # Vendor edilen boost (başlıkları manuel ekledik)
+          '${PODS_ROOT}/../third_party'
+        ]
+      end
+    end
+    
+    # Flipper devre dışı olduğunu garanti et
+    installer.pods_project.targets.each do |target|
+      if target.name == 'Flipper' || target.name.start_with?('Flipper')
+        target.remove_from_project
       end
     end
   end

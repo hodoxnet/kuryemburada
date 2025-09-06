@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,12 +11,11 @@
 		13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB11A68108700A75B9A /* LaunchScreen.xib */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		434BF626C6490D795258426D /* libPods-KuryeApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D2E1469362DC2D5F9EEBD9B5 /* libPods-KuryeApp.a */; };
+		2F18B32A8D977E7F0B288327 /* libPods-KuryeApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D1A6AAC2D7F42D402ACF69B /* libPods-KuryeApp.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		008F07F21AC5B25A0029DE68 /* main.jsbundle */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = main.jsbundle; sourceTree = "<group>"; };
-		0992679322402D33E34C7AE6 /* Pods-KuryeApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KuryeApp.debug.xcconfig"; path = "Target Support Files/Pods-KuryeApp/Pods-KuryeApp.debug.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* KuryeApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KuryeApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = KuryeApp/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AppDelegate.m; path = KuryeApp/AppDelegate.m; sourceTree = "<group>"; };
@@ -24,8 +23,9 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = KuryeApp/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = KuryeApp/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = KuryeApp/main.m; sourceTree = "<group>"; };
-		D2E1469362DC2D5F9EEBD9B5 /* libPods-KuryeApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-KuryeApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		E092EAECA4252D3AA4141C86 /* Pods-KuryeApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KuryeApp.release.xcconfig"; path = "Target Support Files/Pods-KuryeApp/Pods-KuryeApp.release.xcconfig"; sourceTree = "<group>"; };
+		1970F9FE6546D5735CA746C4 /* Pods-KuryeApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KuryeApp.debug.xcconfig"; path = "Target Support Files/Pods-KuryeApp/Pods-KuryeApp.debug.xcconfig"; sourceTree = "<group>"; };
+		1D1A6AAC2D7F42D402ACF69B /* libPods-KuryeApp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-KuryeApp.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E130DD925C7FBE70571179FC /* Pods-KuryeApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KuryeApp.release.xcconfig"; path = "Target Support Files/Pods-KuryeApp/Pods-KuryeApp.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -34,7 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				434BF626C6490D795258426D /* libPods-KuryeApp.a in Frameworks */,
+				2F18B32A8D977E7F0B288327 /* libPods-KuryeApp.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,10 +58,9 @@
 		14C91FCC24483773DD6E5A15 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				0992679322402D33E34C7AE6 /* Pods-KuryeApp.debug.xcconfig */,
-				E092EAECA4252D3AA4141C86 /* Pods-KuryeApp.release.xcconfig */,
+				1970F9FE6546D5735CA746C4 /* Pods-KuryeApp.debug.xcconfig */,
+				E130DD925C7FBE70571179FC /* Pods-KuryeApp.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -69,7 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				D2E1469362DC2D5F9EEBD9B5 /* libPods-KuryeApp.a */,
+				1D1A6AAC2D7F42D402ACF69B /* libPods-KuryeApp.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -101,14 +100,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "KuryeApp" */;
 			buildPhases = (
-				346275F84EEF538AE7E93F09 /* [CP] Check Pods Manifest.lock */,
+				21439F51FDA99C1E8B70BB35 /* [CP] Check Pods Manifest.lock */,
 				FD10A7F022414F080027D42C /* Start Packager */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				79F5B69FBEA802D8CD141957 /* [CP] Embed Pods Frameworks */,
-				E377BD54C498E61859FD632F /* [CP] Copy Pods Resources */,
+				BCE558C6A8E5D7129ABB3739 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -177,7 +175,7 @@
 			shellPath = /bin/sh;
 			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh";
 		};
-		346275F84EEF538AE7E93F09 /* [CP] Check Pods Manifest.lock */ = {
+		21439F51FDA99C1E8B70BB35 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -199,24 +197,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		79F5B69FBEA802D8CD141957 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-KuryeApp/Pods-KuryeApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-KuryeApp/Pods-KuryeApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-KuryeApp/Pods-KuryeApp-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E377BD54C498E61859FD632F /* [CP] Copy Pods Resources */ = {
+		BCE558C6A8E5D7129ABB3739 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -280,16 +261,26 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0992679322402D33E34C7AE6 /* Pods-KuryeApp.debug.xcconfig */;
+			baseConfigurationReference = 1970F9FE6546D5735CA746C4 /* Pods-KuryeApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9QX7V5WQ27;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = KuryeApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/DoubleConversion\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/React-Core\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/glog\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/fmt\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/boost\"",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -306,15 +297,25 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E092EAECA4252D3AA4141C86 /* Pods-KuryeApp.release.xcconfig */;
+			baseConfigurationReference = E130DD925C7FBE70571179FC /* Pods-KuryeApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9QX7V5WQ27;
 				INFOPLIST_FILE = KuryeApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/DoubleConversion\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/RCT-Folly\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/React-Core\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/glog\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/fmt\"\n",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/boost\"",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -398,7 +399,7 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				USE_HERMES = true;
+				USE_HERMES = false;
 			};
 			name = Debug;
 		};
@@ -464,7 +465,7 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				USE_HERMES = true;
+				USE_HERMES = false;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

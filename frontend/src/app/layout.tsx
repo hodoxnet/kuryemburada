@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SocketProvider } from "@/contexts/SocketContext";
+import { WebViewInit } from "@/components/WebViewInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,6 +19,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Kurye Operasyon Yönetimi",
   description: "Kurye operasyon yönetim sistemi",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +43,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <WebViewInit />
         <AuthProvider>
           <SocketProvider>
             {children}

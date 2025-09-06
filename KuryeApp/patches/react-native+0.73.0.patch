@@ -10,7 +10,6 @@ index 7f9d3ab..b000000 100644
 -                  :sha256 => '6478edfe2f3305127cffe8caf73ea0176c53769f4bf1585be237eb30798c3b8e' }
 +  spec.source = { :http => 'https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.gz',
 +                  :sha256 => '6478edfe2f3305127cffe8caf73ea0176c53769f4bf1585be237eb30798c3b8e' }
-
+ 
    # Pinning to the same version as React.podspec.
    spec.platforms = min_supported_versions
-   spec.requires_arc = false

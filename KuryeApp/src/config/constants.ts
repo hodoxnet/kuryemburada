@@ -2,6 +2,8 @@
  * Uygulama sabitleri
  */
 
+import { Platform } from 'react-native';
+
 export const APP_CONFIG = {
   // Uygulama bilgileri
   APP_NAME: 'Kurye',
@@ -11,6 +13,7 @@ export const APP_CONFIG = {
   // URL'ler - production'da değiştirilecek
   WEB_URL_DEV: 'http://localhost:3000/courier',
   WEB_URL_PROD: 'https://yourdomain.com/courier',
+  WEB_URL_IOS_DEV: 'http://127.0.0.1:3000/courier',
 
   // Timeout değerleri (milisaniye)
   NETWORK_TIMEOUT: 10000,
@@ -32,7 +35,5 @@ export const IS_IOS = Platform.OS === 'ios';
 
 // Web URL
 export const WEB_URL = IS_DEV 
-  ? APP_CONFIG.WEB_URL_DEV 
+  ? (IS_IOS ? APP_CONFIG.WEB_URL_IOS_DEV : APP_CONFIG.WEB_URL_DEV)
   : APP_CONFIG.WEB_URL_PROD;
-
-import { Platform } from 'react-native';

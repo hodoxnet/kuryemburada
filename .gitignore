@@ -122,6 +122,65 @@ docs/.vitepress/dist/
 .vercel
 .netlify
 
+# React Native / Mobile App
+KuryeApp/ios/Pods/
+KuryeApp/ios/Podfile.lock
+KuryeApp/ios/build/
+KuryeApp/ios/*.xcworkspace/
+KuryeApp/ios/*.xcodeproj/xcuserdata/
+KuryeApp/ios/*.xcodeproj/project.xcworkspace/
+KuryeApp/android/build/
+KuryeApp/android/app/build/
+KuryeApp/android/.gradle/
+KuryeApp/android/local.properties
+KuryeApp/android/*.iml
+KuryeApp/android/app/*.iml
+KuryeApp/.bundle/
+KuryeApp/vendor/
+*.jsbundle
+KuryeApp/ios/Index/
+KuryeApp/**/*.pbxuser
+KuryeApp/**/*.perspectivev3
+KuryeApp/**/*.mode1v3
+KuryeApp/**/*.mode2v3
+KuryeApp/**/*.xccheckout
+KuryeApp/**/*.moved-aside
+KuryeApp/**/DerivedData/
+KuryeApp/**/*.hmap
+KuryeApp/**/*.ipa
+KuryeApp/**/*.dSYM.zip
+KuryeApp/**/*.dSYM
+KuryeApp/ios/.xcode.env.local
+
+# CocoaPods
+KuryeApp/ios/Pods/
+KuryeApp/ios/Podfile.lock
+
+# Android
+KuryeApp/android/.gradle/
+KuryeApp/android/build/
+KuryeApp/android/app/build/
+KuryeApp/android/app/release/
+KuryeApp/android/gradle-app.setting
+KuryeApp/android/.gradletasknamecache
+KuryeApp/android/.project
+KuryeApp/android/.settings/
+KuryeApp/android/app/.settings/
+KuryeApp/android/app/.classpath
+KuryeApp/android/app/.project
+
+# Buck
+KuryeApp/buck-out/
+KuryeApp/.buckconfig.local
+KuryeApp/.buckd/
+KuryeApp/*.keystore
+
+# Fastlane
+KuryeApp/fastlane/report.xml
+KuryeApp/fastlane/Preview.html
+KuryeApp/fastlane/screenshots/
+KuryeApp/fastlane/test_output/
+
 # MacOS
 **/.DS_Store
 .AppleDouble

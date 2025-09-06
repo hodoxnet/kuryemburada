@@ -5,7 +5,7 @@
 import React, { useEffect } from 'react';
 import { SafeAreaView, StyleSheet, Platform } from 'react-native';
 import SplashScreen from 'react-native-splash-screen';
-import { WebViewContainer } from '@components/WebViewContainer';
+import { WebViewContainer } from './components/WebViewContainer';
 
 const App: React.FC = () => {
   useEffect(() => {

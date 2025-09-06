@@ -21,18 +21,18 @@ import {
 } from 'react-native-webview/lib/WebViewTypes';
 import { LoadingScreen } from './LoadingScreen';
 import { NoConnection } from './NoConnection';
-import { useWebViewBridge } from '@hooks/useWebViewBridge';
-import { useNetworkStatus } from '@hooks/useNetworkStatus';
+import { useWebViewBridge } from '../hooks/useWebViewBridge';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { 
   WEB_URL, 
   APP_CONFIG, 
   IS_ANDROID 
-} from '@config/constants';
+} from '../config/constants';
 import { 
   webViewConfig, 
   injectedJavaScript,
   injectedCSS 
-} from '@config/webview.config';
+} from '../config/webview.config';
 
 export const WebViewContainer: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
