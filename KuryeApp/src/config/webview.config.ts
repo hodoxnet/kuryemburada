@@ -58,6 +58,10 @@ export const injectedJavaScript = `
     window.isWebView = true;
     window.platform = '${IS_IOS ? 'ios' : 'android'}';
     
+    // LocalStorage'dan token kontrol et
+    const token = localStorage.getItem('token');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
     // Console log'ları native'e gönder (debug için)
     if (${__DEV__}) {
       const originalLog = console.log;
@@ -71,10 +75,11 @@ export const injectedJavaScript = `
       };
     }
     
-    // Native hazır mesajı
+    // Native hazır mesajı ve auth durumu
     window.ReactNativeWebView.postMessage(JSON.stringify({
       type: 'webview_ready',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      hasAuth: !!(token && refreshToken)
     }));
     
     true;
