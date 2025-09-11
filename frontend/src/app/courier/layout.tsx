@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { CourierMobileLayout } from "@/components/courier/mobile/CourierMobileLayout";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { 
   Home,
   Package, 
@@ -67,6 +69,7 @@ export default function CourierLayout({
   const { user, loading, hasRole } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Yetki kontrolü
   useEffect(() => {
@@ -85,9 +88,19 @@ export default function CourierLayout({
     return <LoadingState text="Yönlendiriliyor..." />;
   }
 
+  // Mobile layout
+  if (isMobile) {
+    return (
+      <CourierMobileLayout menuItems={courierMenuItems}>
+        {children}
+      </CourierMobileLayout>
+    );
+  }
+
+  // Desktop layout
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar */}
+      {/* Sidebar - Sadece desktop'ta görünür */}
       <Sidebar
         title="Kurye Paneli"
         menuItems={courierMenuItems}
@@ -97,7 +110,7 @@ export default function CourierLayout({
 
       {/* Main Content */}
       <div className="lg:pl-64">
-        {/* Header */}
+        {/* Header - Sadece desktop'ta görünür */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Page Content */}
