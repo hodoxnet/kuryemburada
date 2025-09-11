@@ -8,6 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ import {
   Truck,
   CheckCircle2,
   XCircle,
+  X,
 } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -189,30 +191,39 @@ export function OrderNotificationModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl w-[95vw] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-0">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleReject()}>
+      <DialogContent className="sm:max-w-2xl w-[95vw] sm:w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-0" showCloseButton={false}>
         {/* Accessibility için gizli DialogTitle */}
         <VisuallyHidden>
           <DialogTitle>Yeni Sipariş Bildirimi</DialogTitle>
         </VisuallyHidden>
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 sm:p-6 text-white">
-          <div className="flex items-start justify-between gap-2">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 p-4 sm:p-6 text-white relative">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 bg-white/20 rounded-full animate-pulse">
-                  <Truck className="h-5 w-5" />
+                  <Truck className="h-5 w-5 text-white" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-bold">Yeni Sipariş!</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Yeni Sipariş!</h2>
               </div>
               <p className="text-sm sm:text-base text-white/90">
                 Hemen kabul edip teslimat yapabilirsiniz
               </p>
             </div>
-            <Badge className="bg-white/20 text-white border-white/30 animate-pulse shrink-0">
-              YENİ
-            </Badge>
+            <div className="flex items-start gap-2">
+              <Badge className="bg-white text-red-600 border-0 animate-pulse shrink-0 font-bold px-3 py-1">
+                YENİ
+              </Badge>
+              <DialogClose 
+                onClick={handleReject}
+                className="rounded-full bg-white/20 hover:bg-white/30 p-1.5 transition-colors"
+                aria-label="Modalı kapat"
+              >
+                <X className="h-4 w-4 text-white" />
+              </DialogClose>
+            </div>
           </div>
         </div>
 
