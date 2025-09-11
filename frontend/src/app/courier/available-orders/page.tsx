@@ -434,52 +434,56 @@ export default function AvailableOrders() {
 
       {/* Kabul Onay Dialog */}
       <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[425px] p-4 sm:p-6">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-base sm:text-lg">Siparişi Kabul Et</DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              Bu siparişi kabul etmek istediğinizden emin misiniz?
-              Sipariş kabul edildikten sonra teslimat sürecini başlatmanız gerekecektir.
+        <DialogContent className="w-[90vw] max-w-[425px] p-0 sm:p-6">
+          <DialogHeader className="p-4 pb-0 sm:p-0 space-y-3">
+            <DialogTitle className="text-lg sm:text-xl">Siparişi Kabul Et</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base text-muted-foreground">
+              Bu siparişi kabul etmek istediğinizden emin misiniz? Sipariş kabul edildikten sonra teslimat sürecini başlatmanız gerekecektir.
             </DialogDescription>
           </DialogHeader>
           {selectedOrder && (
-            <div className="space-y-2 py-3 sm:py-4">
-              <p className="text-xs sm:text-sm">
-                <span className="font-medium">Sipariş No:</span> #{selectedOrder.orderNumber}
-              </p>
-              <p className="text-xs sm:text-sm">
-                <span className="font-medium">Kazanç:</span> ₺{selectedOrder.courierEarning || selectedOrder.price}
-              </p>
-              <p className="text-xs sm:text-sm">
-                <span className="font-medium">Mesafe:</span> {selectedOrder.distance || "?"} km
-              </p>
+            <div className="px-4 sm:px-0 py-4 space-y-3 bg-gray-50 dark:bg-gray-800 sm:bg-transparent sm:rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Sipariş No:</span>
+                <span className="text-sm font-medium">#{selectedOrder.orderNumber}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Kazanç:</span>
+                <span className="text-lg font-bold text-green-600">
+                  ₺{(selectedOrder.courierEarning || selectedOrder.price)?.toFixed ? 
+                     (selectedOrder.courierEarning || selectedOrder.price).toFixed(2) : 
+                     (selectedOrder.courierEarning || selectedOrder.price)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Mesafe:</span>
+                <span className="text-sm font-medium">{selectedOrder.distance || "0"} km</span>
+              </div>
             </div>
           )}
-          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+          <DialogFooter className="p-4 pt-0 sm:p-0 flex-col-reverse sm:flex-row gap-2 sm:gap-3">
             <Button
               variant="outline"
               onClick={() => setShowAcceptDialog(false)}
               disabled={acceptingOrderId !== null}
-              className="w-full sm:w-auto"
-              size="sm"
+              className="w-full sm:w-auto h-10 sm:h-9"
             >
-              <span className="text-xs sm:text-sm">İptal</span>
+              İptal
             </Button>
             <Button
               onClick={confirmAcceptOrder}
               disabled={acceptingOrderId !== null}
-              className="w-full sm:w-auto"
-              size="sm"
+              className="w-full sm:w-auto h-10 sm:h-9 bg-green-600 hover:bg-green-700"
             >
               {acceptingOrderId !== null ? (
                 <>
-                  <Clock className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                  <span className="text-xs sm:text-sm">Kabul ediliyor...</span>
+                  <Clock className="mr-2 h-4 w-4 animate-spin" />
+                  Kabul ediliyor...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="text-xs sm:text-sm">Siparişi Kabul Et</span>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Siparişi Kabul Et
                 </>
               )}
             </Button>
