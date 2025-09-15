@@ -75,22 +75,22 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-black">
+    <div className="min-h-screen bg-gradient-to-b from-white to-lightGray-200 dark:from-gray-900 dark:to-black">
       {/* Header */}
       <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-50 border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Bike className="h-8 w-8 text-primary" />
+            <Bike className="h-8 w-8 text-navy-500" />
             <span className="text-xl font-bold">KuryemBurada</span>
           </div>
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="#features" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link href="#features" className="text-sm font-medium hover:text-orange-500 transition-colors">
               Özellikler
             </Link>
-            <Link href="#how-it-works" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link href="#how-it-works" className="text-sm font-medium hover:text-orange-500 transition-colors">
               Nasıl Çalışır?
             </Link>
-            <Link href="#contact" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link href="#contact" className="text-sm font-medium hover:text-orange-500 transition-colors">
               İletişim
             </Link>
             <Link href="/auth">
@@ -112,7 +112,7 @@ export default function HomePage() {
             className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6"
           >
             Türkiye'nin En Hızlı<br />
-            <span className="text-primary">Kurye Platformu</span>
+            <span className="text-orange-500">Kurye Platformu</span>
           </motion.h1>
           
           <motion.p 
@@ -138,11 +138,11 @@ export default function HomePage() {
               <Card className={`relative overflow-hidden transition-all duration-300 ${
                 hoveredCard === "courier" ? "shadow-2xl scale-105" : "shadow-lg"
               }`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-navy-500/10 to-orange-500/10" />
                 <div className="relative p-8">
                   <div className="flex justify-center mb-4">
-                    <div className="p-4 bg-primary/10 rounded-full">
-                      <Bike className="h-12 w-12 text-primary" />
+                    <div className="p-4 bg-navy-500/10 rounded-full">
+                      <Bike className="h-12 w-12 text-navy-500" />
                     </div>
                   </div>
                   <h2 className="text-2xl font-bold mb-4">Kurye Ol</h2>
@@ -153,7 +153,7 @@ export default function HomePage() {
                   <div className="space-y-2 text-left mb-6">
                     {benefits.courier.slice(0, 3).map((benefit, index) => (
                       <div key={index} className="flex items-center space-x-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-orange-500" />
                         <span className="text-sm">{benefit}</span>
                       </div>
                     ))}
@@ -179,11 +179,11 @@ export default function HomePage() {
               <Card className={`relative overflow-hidden transition-all duration-300 ${
                 hoveredCard === "company" ? "shadow-2xl scale-105" : "shadow-lg"
               }`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-blue-500/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-navy-500/10" />
                 <div className="relative p-8">
                   <div className="flex justify-center mb-4">
-                    <div className="p-4 bg-primary/10 rounded-full">
-                      <Building2 className="h-12 w-12 text-primary" />
+                    <div className="p-4 bg-navy-500/10 rounded-full">
+                      <Building2 className="h-12 w-12 text-navy-500" />
                     </div>
                   </div>
                   <h2 className="text-2xl font-bold mb-4">İş Ortağı Ol</h2>
@@ -194,13 +194,13 @@ export default function HomePage() {
                   <div className="space-y-2 text-left mb-6">
                     {benefits.company.slice(0, 3).map((benefit, index) => (
                       <div key={index} className="flex items-center space-x-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-orange-500" />
                         <span className="text-sm">{benefit}</span>
                       </div>
                     ))}
                   </div>
                   <Link href="/apply/company">
-                    <Button className="w-full group" variant="secondary">
+                    <Button className="w-full group bg-orange-500 hover:bg-orange-600 text-white">
                       Firma Başvurusu
                       <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
@@ -220,7 +220,7 @@ export default function HomePage() {
                 transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
                 className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md"
               >
-                <div className="text-2xl font-bold text-primary">{stat.value}</div>
+                <div className="text-2xl font-bold text-navy-500">{stat.value}</div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
               </motion.div>
             ))}
@@ -245,8 +245,8 @@ export default function HomePage() {
                   className="text-center"
                 >
                   <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-primary/10 rounded-full">
-                      <Icon className="h-8 w-8 text-primary" />
+                    <div className="p-3 bg-navy-500/10 rounded-full">
+                      <Icon className="h-8 w-8 text-navy-500" />
                     </div>
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
@@ -259,12 +259,12 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-16 px-4 bg-gray-50 dark:bg-black">
+      <section id="how-it-works" className="py-16 px-4 bg-lightGray-200 dark:bg-black">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Nasıl Çalışır?</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold">
+              <div className="w-12 h-12 bg-navy-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold">
                 1
               </div>
               <h3 className="font-semibold mb-2">Başvur</h3>
@@ -273,7 +273,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold">
+              <div className="w-12 h-12 bg-navy-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold">
                 2
               </div>
               <h3 className="font-semibold mb-2">Onay Al</h3>
@@ -282,7 +282,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold">
+              <div className="w-12 h-12 bg-navy-500 text-white rounded-full flex items-center justify-center mx-auto mb-4 font-bold">
                 3
               </div>
               <h3 className="font-semibold mb-2">Başla</h3>
@@ -300,17 +300,17 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold text-center mb-12">İletişim</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <Phone className="h-8 w-8 text-primary mx-auto mb-3" />
+              <Phone className="h-8 w-8 text-navy-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-1">Telefon</h3>
               <p className="text-gray-600 dark:text-gray-400">0850 XXX XX XX</p>
             </div>
             <div className="text-center">
-              <Mail className="h-8 w-8 text-primary mx-auto mb-3" />
+              <Mail className="h-8 w-8 text-navy-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-1">E-posta</h3>
               <p className="text-gray-600 dark:text-gray-400">destek@kuryemburada.com</p>
             </div>
             <div className="text-center">
-              <MapPin className="h-8 w-8 text-primary mx-auto mb-3" />
+              <MapPin className="h-8 w-8 text-navy-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-1">Adres</h3>
               <p className="text-gray-600 dark:text-gray-400">İstanbul, Türkiye</p>
             </div>
@@ -319,9 +319,9 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 px-4">
+      <footer className="bg-navy-500 text-white py-8 px-4">
         <div className="container mx-auto text-center">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-lightGray-300">
             © 2025 KuryemBurada. Tüm hakları saklıdır.
           </p>
         </div>

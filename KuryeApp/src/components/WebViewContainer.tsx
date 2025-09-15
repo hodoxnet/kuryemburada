@@ -86,6 +86,34 @@ export const WebViewContainer: React.FC = () => {
 
   // WebView'dan gelen mesajları işle
   const handleWebViewMessage = (message: any) => {
+    // Debug mesajlarını konsola yazdır
+    if (__DEV__) {
+      switch (message.type) {
+        case 'console':
+          console.log(`[WebView ${message.level}]:`, message.message);
+          break;
+        case 'api_response':
+        case 'fetch_response':
+          console.log(`[WebView API] ${message.method} ${message.url} - Status: ${message.status}`);
+          if (message.response) {
+            console.log(`[WebView API Response]:`, message.response);
+          }
+          break;
+        case 'api_error':
+        case 'fetch_error':
+          console.error(`[WebView API Error] ${message.url}:`, message.error);
+          break;
+        case 'webview_ready':
+          console.log('[WebView Ready]', {
+            hasAuth: message.hasAuth,
+            localStorage: message.localStorage,
+            cookies: message.cookies
+          });
+          break;
+      }
+    }
+    
+    // Normal mesaj işleme
     switch (message.type) {
       case 'navigation':
         // Navigasyon mesajları

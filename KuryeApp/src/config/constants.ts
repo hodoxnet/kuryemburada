@@ -11,7 +11,7 @@ export const APP_CONFIG = {
   APP_BUILD: 1,
 
   // URL'ler - production'da değiştirilecek
-  WEB_URL_DEV: 'http://localhost:3000/courier/login',
+  WEB_URL_DEV: 'http://10.0.2.2:3000/courier/login',
   WEB_URL_PROD: 'https://yourdomain.com/courier/login',
   WEB_URL_IOS_DEV: 'http://127.0.0.1:3000/courier/login',
 
