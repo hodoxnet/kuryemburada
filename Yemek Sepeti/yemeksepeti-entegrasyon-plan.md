@@ -1,9 +1,99 @@
 # Yemeksepeti Entegrasyon Plani
 
+## Genel Bakış
+Bu doküman, mevcut kurye operasyon sistemine Yemeksepeti entegrasyonunu eklemek için hazırlanmış kapsamlı bir yol haritasıdır. Proje 3 ana fazda gerçekleştirilecektir.
+
 ## 1. Arka Plan ve Hedef
-- Firmalar kendi Yemeksepeti API anahtarlarini sisteme tanimlayarak siparislerini anlik izlemek ve mevcut kurye operasyon akislarina baglamak istiyor.
-- Mevcut NestJS + Next.js tabanli sistemde dis uygulamalardan gelen siparislerin otomatik olarak islenmesi, kurye atama ve faturalama surecleriyle uyumlu hale getirilmeli.
-- Hedef: Dis siparis akisinin (Yemeksepeti) firmalar panelinde anlik goruntulenmesi, kurye cagir akisinin bilgileri otomatik doldurmasi ve tum raporlama/odeme sureclerine entegrasyonu.
+- Firmalar kendi Yemeksepeti API anahtarlarını sisteme tanımlayarak siparişlerini anlık izlemek ve mevcut kurye operasyon akışlarına bağlamak istiyor.
+- Mevcut NestJS + Next.js tabanlı sistemde dış uygulamalardan gelen siparişlerin otomatik olarak işlenmesi, kurye atama ve faturalama süreçleriyle uyumlu hale getirilmeli.
+- Hedef: Dış sipariş akışının (Yemeksepeti) firmalar panelinde anlık görüntülenmesi, kurye çağır akışının bilgileri otomatik doldurması ve tüm raporlama/ödeme süreçlerine entegrasyonu.
+
+## FAZLAR
+
+### FAZ 1: Altyapı ve Temel Entegrasyon (10 gün)
+**Hedef:** Eksik altyapı kurulumu ve Yemeksepeti API entegrasyonunun temel yapısı
+
+#### Yapılacaklar:
+1. **Eksik Altyapı Bileşenleri Kurulumu (3 gün)**
+   - @nestjs/schedule kurulumu ve konfigürasyonu
+   - @nestjs/bull ve BullMQ kurulumu
+   - @nestjs/event-emitter kurulumu
+   - @nestjs/axios ve HTTP Client Service
+   - CryptoService implementasyonu
+
+2. **Database ve Model Yapısı (2 gün)**
+   - CompanyIntegration tablosu migration
+   - ExternalOrder tablosu migration
+   - Order tablosuna external field'lar eklenmesi
+   - Seed data hazırlanması
+
+3. **Yemeksepeti Modülü Temel Yapısı (3 gün)**
+   - yemeksepeti.module.ts oluşturulması
+   - YemeksepetiApiService implementasyonu
+   - DTO'ların hazırlanması
+   - API authentication mekanizması
+
+4. **API Key Yönetimi (2 gün)**
+   - CompanyIntegrationService oluşturulması
+   - API key şifreleme/şifre çözme
+   - Connection test endpoint'i
+   - Security middleware'leri
+
+### FAZ 2: Sipariş Senkronizasyonu ve İş Akışları (10 gün)
+**Hedef:** Siparişlerin otomatik alınması, dönüştürülmesi ve sistemle entegrasyonu
+
+#### Yapılacaklar:
+1. **Polling/Scheduler Mekanizması (3 gün)**
+   - Cron job konfigürasyonu
+   - Queue processor implementasyonu
+   - Retry ve error handling mekanizmaları
+   - Circuit breaker pattern
+
+2. **Order Mapping ve Transformation (3 gün)**
+   - Yemeksepeti -> Internal order mapper
+   - Status mapping tablosu
+   - Data validation ve normalization
+   - External data storage strategy
+
+3. **WebSocket Entegrasyonu (2 gün)**
+   - NotificationsGateway'e entegrasyon
+   - Yeni event type'ları (EXTERNAL_ORDER_RECEIVED)
+   - Real-time bildirim akışı
+   - Frontend socket listener'lar
+
+4. **Kurye Atama Akışı (2 gün)**
+   - CreateExternalOrder metodu
+   - Auto-fill mekanizması
+   - Kurye-sipariş eşleştirme güncelleme
+   - Status senkronizasyonu
+
+### FAZ 3: Frontend ve Kullanıcı Deneyimi (10 gün)
+**Hedef:** Kullanıcı arayüzlerinin geliştirilmesi ve test/stabilizasyon
+
+#### Yapılacaklar:
+1. **Firma Ayarlar Sayfası (3 gün)**
+   - API key management formu
+   - Connection test UI
+   - Integration status dashboard
+   - Error handling ve feedback
+
+2. **Sipariş Yönetimi Güncellemeleri (3 gün)**
+   - External source badge'leri
+   - Filtreleme ve sorting özellikleri
+   - Yemeksepeti ikon/renk kodları
+   - Detail modal güncellemeleri
+
+3. **Kurye Çağır Modal Güncellemeleri (2 gün)**
+   - External order dropdown
+   - Auto-fill form logic
+   - Validation ve UX iyileştirmeleri
+   - Loading states ve error handling
+
+4. **Test ve Stabilizasyon (2 gün)**
+   - Unit test coverage
+   - Integration testleri
+   - E2E senaryoları
+   - Bug fixing ve optimization
 
 ## 1.1 Mevcut Sistem Altyapisi Analizi
 

@@ -8,12 +8,20 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  // Kurye uygulaması için background modes
+  [[UIApplication sharedApplication] setMinimumBackgroundFetchInterval:UIApplicationBackgroundFetchIntervalMinimum];
+  
+  // WebView cache optimization
+  [[NSURLCache sharedURLCache] setMemoryCapacity:20 * 1024 * 1024]; // 20MB
+  [[NSURLCache sharedURLCache] setDiskCapacity:100 * 1024 * 1024]; // 100MB
+  
   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
                                                    moduleName:@"KuryeApp"
                                             initialProperties:nil];
 
-  rootView.backgroundColor = [[UIColor alloc] initWithRed:1.0f green:1.0f blue:1.0f alpha:1];
+  // Kurye uygulaması için uygun background color (loading sırasında)
+  rootView.backgroundColor = [[UIColor alloc] initWithRed:0.95f green:0.95f blue:0.95f alpha:1];
 
   self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
   UIViewController *rootViewController = [UIViewController new];
