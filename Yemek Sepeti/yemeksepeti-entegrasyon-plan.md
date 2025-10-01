@@ -1,329 +1,41 @@
-# Yemeksepeti Entegrasyon Plani
+# Yemeksepeti Entegrasyon Planı - Güncellenmiş ve Eksiksiz Versiyon
 
 ## Genel Bakış
-Bu doküman, mevcut kurye operasyon sistemine Yemeksepeti entegrasyonunu eklemek için hazırlanmış kapsamlı bir yol haritasıdır. Proje 3 ana fazda gerçekleştirilecektir.
+Bu doküman, mevcut kurye operasyon sistemine Yemeksepeti entegrasyonunu eklemek için hazırlanmış kapsamlı ve güncellenmiş yol haritasıdır. Mevcut sistem yapısıyla tam uyumlu hale getirilmiştir.
 
 ## 1. Arka Plan ve Hedef
 - Firmalar kendi Yemeksepeti API anahtarlarını sisteme tanımlayarak siparişlerini anlık izlemek ve mevcut kurye operasyon akışlarına bağlamak istiyor.
 - Mevcut NestJS + Next.js tabanlı sistemde dış uygulamalardan gelen siparişlerin otomatik olarak işlenmesi, kurye atama ve faturalama süreçleriyle uyumlu hale getirilmeli.
 - Hedef: Dış sipariş akışının (Yemeksepeti) firmalar panelinde anlık görüntülenmesi, kurye çağır akışının bilgileri otomatik doldurması ve tüm raporlama/ödeme süreçlerine entegrasyonu.
 
-## FAZLAR
+## 2. Mevcut Sistem Analizi ve Eksiklikler
 
-### FAZ 1: Altyapı ve Temel Entegrasyon (10 gün)
-**Hedef:** Eksik altyapı kurulumu ve Yemeksepeti API entegrasyonunun temel yapısı
-
-#### Yapılacaklar:
-1. **Eksik Altyapı Bileşenleri Kurulumu (3 gün)**
-   - @nestjs/schedule kurulumu ve konfigürasyonu
-   - @nestjs/bull ve BullMQ kurulumu
-   - @nestjs/event-emitter kurulumu
-   - @nestjs/axios ve HTTP Client Service
-   - CryptoService implementasyonu
-
-2. **Database ve Model Yapısı (2 gün)**
-   - CompanyIntegration tablosu migration
-   - ExternalOrder tablosu migration
-   - Order tablosuna external field'lar eklenmesi
-   - Seed data hazırlanması
-
-3. **Yemeksepeti Modülü Temel Yapısı (3 gün)**
-   - yemeksepeti.module.ts oluşturulması
-   - YemeksepetiApiService implementasyonu
-   - DTO'ların hazırlanması
-   - API authentication mekanizması
-
-4. **API Key Yönetimi (2 gün)**
-   - CompanyIntegrationService oluşturulması
-   - API key şifreleme/şifre çözme
-   - Connection test endpoint'i
-   - Security middleware'leri
-
-### FAZ 2: Sipariş Senkronizasyonu ve İş Akışları (10 gün)
-**Hedef:** Siparişlerin otomatik alınması, dönüştürülmesi ve sistemle entegrasyonu
-
-#### Yapılacaklar:
-1. **Polling/Scheduler Mekanizması (3 gün)**
-   - Cron job konfigürasyonu
-   - Queue processor implementasyonu
-   - Retry ve error handling mekanizmaları
-   - Circuit breaker pattern
-
-2. **Order Mapping ve Transformation (3 gün)**
-   - Yemeksepeti -> Internal order mapper
-   - Status mapping tablosu
-   - Data validation ve normalization
-   - External data storage strategy
-
-3. **WebSocket Entegrasyonu (2 gün)**
-   - NotificationsGateway'e entegrasyon
-   - Yeni event type'ları (EXTERNAL_ORDER_RECEIVED)
-   - Real-time bildirim akışı
-   - Frontend socket listener'lar
-
-4. **Kurye Atama Akışı (2 gün)**
-   - CreateExternalOrder metodu
-   - Auto-fill mekanizması
-   - Kurye-sipariş eşleştirme güncelleme
-   - Status senkronizasyonu
-
-### FAZ 3: Frontend ve Kullanıcı Deneyimi (10 gün)
-**Hedef:** Kullanıcı arayüzlerinin geliştirilmesi ve test/stabilizasyon
-
-#### Yapılacaklar:
-1. **Firma Ayarlar Sayfası (3 gün)**
-   - API key management formu
-   - Connection test UI
-   - Integration status dashboard
-   - Error handling ve feedback
-
-2. **Sipariş Yönetimi Güncellemeleri (3 gün)**
-   - External source badge'leri
-   - Filtreleme ve sorting özellikleri
-   - Yemeksepeti ikon/renk kodları
-   - Detail modal güncellemeleri
-
-3. **Kurye Çağır Modal Güncellemeleri (2 gün)**
-   - External order dropdown
-   - Auto-fill form logic
-   - Validation ve UX iyileştirmeleri
-   - Loading states ve error handling
-
-4. **Test ve Stabilizasyon (2 gün)**
-   - Unit test coverage
-   - Integration testleri
-   - E2E senaryoları
-   - Bug fixing ve optimization
-
-## 1.1 Mevcut Sistem Altyapisi Analizi
-
-### ✅ Sistemde Mevcut Olan Ozellikler
-- **WebSocket/Real-time Altyapi**: Socket.io entegrasyonu, NotificationsGateway ve NotificationsService mevcut
+### 2.1 ✅ Sistemde Mevcut Olan Özellikler
+- **WebSocket/Real-time Altyapı**: Socket.io entegrasyonu, NotificationsGateway ve NotificationsService mevcut
 - **Bildirim Sistemi**: Database ve real-time notification sistemi aktif
-- **Room-based Yonetim**: courier-{id}, company-{id} room yapisi kullaniliyor
-- **Frontend Socket Entegrasyonu**: SocketContext ve socket service hazirlaniyor
-- **Authentication**: JWT token tabanli kimlik dogrulama sistemi
+- **Room-based Yönetim**: courier-{id}, company-{id} room yapısı kullanılıyor
+- **Frontend Socket Entegrasyonu**: SocketContext ve socket service hazırlanıyor
+- **Authentication**: JWT token tabanlı kimlik doğrulama sistemi
 - **Role-based Access Control**: Guards ve decoratorlar ile yetkilendirme
 - **Redis Cache**: cache-manager v7 ile entegre
-- **File Upload**: Multer ile dokuman yukleme sistemi
+- **File Upload**: Multer ile doküman yükleme sistemi
 - **Logging**: Winston logger entegrasyonu
-- **Prisma ORM**: Veritabani islemleri icin Prisma v6
+- **Prisma ORM**: Veritabanı işlemleri için Prisma v6
 
-### ❌ Sistemde Eksik Olan ve Eklenmesi Gereken Altyapi
-- **Scheduler/Cron Job**: Periyodik gorevler icin @nestjs/schedule modulu yok
+### 2.2 ❌ Sistemde Eksik Olan ve Eklenmesi Gereken Altyapı
+- **Scheduler/Cron Job**: Periyodik görevler için @nestjs/schedule modülü yok
 - **Queue System**: BullMQ veya benzeri kuyruk sistemi yok
 - **Event-Driven Architecture**: @nestjs/event-emitter veya EventEmitter2 yok
-- **HTTP Client Service**: Harici API cagrilari icin merkezi HttpService yok (@nestjs/axios)
-- **Crypto/Encryption Service**: API key sifreleme icin ozel servis yok (sadece bcrypt var)
-- **Circuit Breaker Pattern**: Harici servis cagrilari icin circuit breaker yok
-- **Rate Limiter**: API cagrilari icin rate limiting mekanizmasi yok
+- **HTTP Client Service**: Harici API çağrıları için merkezi HttpService yok (@nestjs/axios)
+- **Crypto/Encryption Service**: API key şifreleme için özel servis yok (sadece bcrypt var)
+- **Circuit Breaker Pattern**: Harici servis çağrıları için circuit breaker yok
+- **Rate Limiter**: API çağrıları için rate limiting mekanizması yok
 
-## 2. Gereksinimler
+### 2.3 🔄 Veritabanı Şeması Değişiklikleri
 
-### 2.1 Fonksiyonel Gereksinimler
-- Firma profili altinda Yemeksepeti API kimlik bilgileri (API key, secret vb.) tanimlama ve guncelleme ekrani.
-- API kimlik bilgilerinin gecerligini test eden "baglantiyi dogrula" fonksiyonu.
-- Yemeksepeti siparislerinin anlik veya kisa araliklarla sisteme aktarilmasi (polling veya webhook).
-- Aktarilan siparislerin firma panelindeki listelerde kaynak etiketleriyle gorunmesi ve filtrelenmesi.
-- Firma panelinde "Kurye cagir" akisi icinde Yemeksepeti siparisini secip form alanlarini otomatik doldurma.
-- Siparis durum guncelleme senkronizasyonu (Yemeksepeti -> Biz, gerekirse Biz -> Yemeksepeti).
-- Yemeksepeti siparisleri icin ozel raporlama ve filtreleme.
+#### 2.3.1 Yeni Tablolar Eklenmesi
 
-### 2.2 Teknik Gereksinimler
-- NestJS tarafinda yeni bir `yemeksepeti` modulu (service + controller + scheduler + DTO) olusturma.
-- Prisma semasinda firma bazli entegrasyon ayarlari ve Yemeksepeti siparis kayitlari icin yeni tablolar.
-- API key gibi gizli bilgileri sifreleyerek saklamak; loglarda maskelemek.
-- Scheduler/polling icin NestJS Scheduler veya kuyruya gecis gerekiyorsa BullMQ kullanimi.
-- Hata toleransi icin retry, rate-limit, circuit breaker ve gozlemlenebilirlik bilesenleri.
-
-### 2.3 Eksik Altyapi Bilesenleri Kurulum Plani
-
-#### 2.3.1 Scheduler Modulu Kurulumu
-```bash
-npm install --save @nestjs/schedule
-npm install --save-dev @types/cron
-```
-```typescript
-// app.module.ts'e eklenecek
-import { ScheduleModule } from '@nestjs/schedule';
-@Module({
-  imports: [ScheduleModule.forRoot(), ...]
-})
-```
-
-#### 2.3.2 Queue System (BullMQ) Kurulumu
-```bash
-npm install --save @nestjs/bull bull
-npm install --save-dev @types/bull
-```
-```typescript
-// app.module.ts'e eklenecek
-import { BullModule } from '@nestjs/bull';
-@Module({
-  imports: [
-    BullModule.forRoot({
-      redis: {
-        host: process.env.REDIS_HOST,
-        port: +process.env.REDIS_PORT,
-      },
-    }),
-  ]
-})
-```
-
-#### 2.3.3 Event-Driven Architecture Kurulumu
-```bash
-npm install --save @nestjs/event-emitter
-```
-```typescript
-// app.module.ts'e eklenecek
-import { EventEmitterModule } from '@nestjs/event-emitter';
-@Module({
-  imports: [EventEmitterModule.forRoot(), ...]
-})
-```
-
-#### 2.3.4 HTTP Client Service Kurulumu
-```bash
-npm install --save @nestjs/axios axios
-```
-```typescript
-// common/services/http-client.service.ts
-import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
-import { AxiosRequestConfig } from 'axios';
-import { firstValueFrom } from 'rxjs';
-
-@Injectable()
-export class HttpClientService {
-  constructor(private readonly httpService: HttpService) {}
-
-  async request<T>(config: AxiosRequestConfig): Promise<T> {
-    const response = await firstValueFrom(
-      this.httpService.request<T>(config)
-    );
-    return response.data;
-  }
-}
-```
-
-#### 2.3.5 Crypto Service Implementasyonu
-```typescript
-// common/services/crypto.service.ts
-import { Injectable } from '@nestjs/common';
-import * as crypto from 'crypto';
-
-@Injectable()
-export class CryptoService {
-  private readonly algorithm = 'aes-256-gcm';
-  private readonly key: Buffer;
-
-  constructor() {
-    this.key = Buffer.from(process.env.INTEGRATION_ENCRYPTION_KEY, 'hex');
-  }
-
-  encrypt(text: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
-
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    const authTag = cipher.getAuthTag();
-
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
-  }
-
-  decrypt(encryptedData: string): string {
-    const parts = encryptedData.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
-
-    const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
-    decipher.setAuthTag(authTag);
-
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    return decrypted;
-  }
-}
-```
-
-### 2.3 Guvenlik ve Uyumluluk
-- API anahtarlarini saklarken AES tabanli sifreleme anahtari kullanmak (ConfigModule uzerinden okuyarak).
-- Yetkilendirme: Sadece ilgili firmanin kullanicilari entegrasyon bilgilerini gorsun/dunyasinda degistirebilsin.
-- Loglarda PII ve gizli alanlari maskelemek.
-- Yemeksepeti tarafinda varsa IP allowlist gereksinimleri icin devops ile koordine olmak.
-
-## 3. Yemeksepeti API Arastirmasi ve Varsayimlar
-- Context 7 MCP araciligiyla Yemeksepeti entegrasyon dokumantasyonunu (auth, siparis endpointleri, webhook destegi) incelemek.
-- Webhook destege gore: yoksa polling periyodu 30-60 sn arasi belirlenecek; varsa webhook icin public endpoint ve imza dogrulama planlanacak.
-- Siparis veri modeli (adres, odeme, kampanya, durum kodlari) netlestirilecek.
-- Rate limit ve hata kodlari dokumante edilerek retry stratejisi cikarilacak.
-
-## 4. Mimari Yaklasim
-
-### 4.1 Veri Akisi
-1. Firma paneli API anahtarini kaydeder -> backend `CompanyIntegrationService` sifreleyerek saklar.
-2. Scheduler veya webhook Yemeksepeti siparisini alir -> `ExternalOrderIngestionService` uzerinden Prisma kaydi ve event publish.
-3. Publish edilen event mevcut `OrdersService` araciligiyla dahili siparise donusturulup `status=PENDING_EXTERNAL` gibi yeni bir durumla tutulur.
-4. Firma paneli siparis listesi Yemeksepeti etiketli kayitlari gosterir.
-5. Kurye panelinde "Kurye cagir" modalinde Yemeksepeti siparisi secilerek order create DTO otomatik doldurulur ve kurye atama akisi calisir.
-
-### 4.1.1 Mevcut WebSocket Sistemi ile Entegrasyon
-```typescript
-// Yemeksepeti siparisi geldiginde mevcut NotificationsGateway kullanimi
-async handleYemeksepetiOrder(order: YemeksepetiOrderDto) {
-  // Dahili order'a donustur
-  const internalOrder = await this.convertToInternalOrder(order);
-
-  // Mevcut bildirim sistemini kullan
-  this.notificationsGateway.sendNewOrderToCouriers({
-    ...internalOrder,
-    externalSource: 'YEMEKSEPETI',
-    externalOrderId: order.id
-  });
-
-  // Firmaya da bildirim gonder
-  this.notificationsGateway.sendNotificationToRoom(
-    `company-${internalOrder.companyId}`,
-    {
-      type: 'EXTERNAL_ORDER_RECEIVED',
-      title: 'Yemeksepeti Siparisi',
-      message: `Yeni Yemeksepeti siparisi alindi: ${order.orderNumber}`,
-      data: internalOrder
-    }
-  );
-}
-```
-
-### 4.2 Backend Degisiklikleri
-- Yeni modul: `backend/src/yemeksepeti/`
-  - `yemeksepeti.module.ts`: HttpModule, Scheduler ve Config bagimliliklarini toplamak.
-  - `yemeksepeti.service.ts`: API client, auth header olusturma, request/response mapleme.
-  - `yemeksepeti.controller.ts`: Webhook endpointleri (varsa) ve firma bazli health check.
-  - `yemeksepeti.scheduler.ts`: Polling job mantigi.
-  - `dto/` altinda istek-cevap semalari.
-  - `mappers/` ile Yemeksepeti JSON -> dahili DTO donusumleri.
-  - Gerekirse `guards` veya `interceptors` ile rate limit ve hata yakalama.
-- `company` modulune `CompanyIntegrationSettingsService` eklenerek API key CRUD isleri ayrilacak.
-- `orders` modulune `externalSource`, `externalOrderId`, `externalPayloadSnapshot`, `sourceStatus` gibi alanlar eklenecek.
-- `common` katmaninda HTTP client wrapper (timeout, retry, circuit breaker) paylasilacak.
-
-### 4.3 Frontend Degisiklikleri
-- `frontend/src/app/company/settings/integrations/yemeksepeti` altında yeni ayar sayfasi.
-- API key formu (React Hook Form + Zod) -> `frontend/src/lib/api/company-integrations.ts` servisi.
-- Firma siparis listesi: TanStack Table'a `externalSource` etiketi, filtre ve ikon eklemek.
-- Kurye panelindeki "Kurye cagir" modali: Harici siparis secimi dropdown ve otomatik form doldurma.
-- Entegrasyon durumu (baglandi, hata, beklemede) icin durum rozeti ve toaster bildirimleri.
-
-## 5. Veri Modeli ve Migration Plani
-
-### 5.1 Yeni Tablolar
-
-#### CompanyIntegration Tablosu
+**CompanyIntegration Tablosu (YENİ)**
 ```prisma
 model CompanyIntegration {
   id                String   @id @default(uuid())
@@ -332,24 +44,29 @@ model CompanyIntegration {
   apiKeyEncrypted   String
   apiSecretEncrypted String?
   webhookSecret     String?
+  webhookUrl       String?  // Webhook callback URL
   metadata          Json?    // Ek ayarlar
   isActive          Boolean  @default(true)
   lastSyncedAt      DateTime?
   syncStatus        String?  // "SUCCESS", "FAILED", "IN_PROGRESS"
   errorMessage      String?
   errorCount        Int      @default(0)
+  consecutiveErrors Int      @default(0) // Ardışık hata sayısı
+  lastErrorAt       DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   externalOrders ExternalOrder[]
+  syncLogs IntegrationSyncLog[]
 
   @@unique([companyId, provider])
   @@index([provider, isActive])
+  @@index([syncStatus])
 }
 ```
 
-#### ExternalOrder Tablosu
+**ExternalOrder Tablosu (YENİ)**
 ```prisma
 model ExternalOrder {
   id                String   @id @default(uuid())
@@ -357,12 +74,14 @@ model ExternalOrder {
   companyId         String
   provider          String   // "YEMEKSEPETI"
   externalOrderId   String
+  externalOrderNumber String? // Yemeksepeti sipariş numarası
   status            String   // Harici platform durumu
   payload           Json     // Ham veri
-  mappedOrderId     String?  // Dahili Order.id referansi
-  lastSyncStatus    String?  // "PENDING", "SYNCED", "FAILED"
+  mappedOrderId     String?  // Dahili Order.id referansı
+  lastSyncStatus    String?  // "PENDING", "SYNCED", "FAILED", "IGNORED"
   lastSyncAt        DateTime?
   syncError         String?
+  syncAttempts      Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -373,10 +92,60 @@ model ExternalOrder {
   @@unique([provider, externalOrderId])
   @@index([companyId, status])
   @@index([mappedOrderId])
+  @@index([lastSyncStatus])
+  @@index([createdAt])
 }
 ```
 
-### 5.2 Mevcut Order Tablosuna Eklenecek Alanlar
+**IntegrationSyncLog Tablosu (YENİ)**
+```prisma
+model IntegrationSyncLog {
+  id            String   @id @default(uuid())
+  integrationId String
+  syncType      String   // "ORDERS", "STATUS_UPDATE", "CATALOG"
+  status        String   // "STARTED", "SUCCESS", "FAILED"
+  recordsFound  Int      @default(0)
+  recordsSynced Int      @default(0)
+  recordsFailed Int      @default(0)
+  startedAt     DateTime
+  completedAt   DateTime?
+  duration      Int?     // milliseconds
+  errorMessage  String?
+  errorDetails  Json?
+  createdAt     DateTime @default(now())
+
+  integration CompanyIntegration @relation(fields: [integrationId], references: [id])
+
+  @@index([integrationId, syncType])
+  @@index([status])
+  @@index([createdAt])
+}
+```
+
+**WebhookLog Tablosu (YENİ)**
+```prisma
+model WebhookLog {
+  id           String   @id @default(uuid())
+  provider     String   // "YEMEKSEPETI"
+  eventType    String   // "order.created", "order.updated", etc.
+  payload      Json
+  signature    String?
+  isValid      Boolean  @default(false)
+  processedAt  DateTime?
+  status       String   // "PENDING", "PROCESSED", "FAILED"
+  errorMessage String?
+  retryCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([provider, eventType])
+  @@index([status])
+  @@index([createdAt])
+}
+```
+
+#### 2.3.2 Mevcut Tablolara Eklenecek Alanlar
+
+**Order Tablosuna Eklemeler**
 ```prisma
 model Order {
   // Mevcut alanlar korunacak...
@@ -384,266 +153,702 @@ model Order {
   // Yeni eklenecek alanlar
   externalSource      String?      // "YEMEKSEPETI", "GETIR" vb.
   externalOrderId     String?      @unique
-  externalData        Json?        // Harici platform ozel verileri
+  externalOrderNumber String?      // Harici sipariş numarası
+  externalData        Json?        // Harici platform özel verileri
   externalStatus      String?      // Harici platform durumu
   isExternal          Boolean      @default(false)
   lastExternalSyncAt  DateTime?
   syncError           String?
+  customerInfo        Json?        // Harici platform müşteri bilgileri
+  itemDetails         Json?        // Harici platform ürün detayları
 
   // Yeni relation
   externalOrders      ExternalOrder[]
 
   @@index([externalSource, externalOrderId])
   @@index([companyId, isExternal])
+  @@index([externalSource, status])
 }
 ```
 
-### 5.3 Migration Plani
-```bash
-# 1. Migration olustur
-npx prisma migrate dev --name add_yemeksepeti_integration
+**Company Tablosuna Eklemeler**
+```prisma
+model Company {
+  // Mevcut alanlar korunacak...
 
-# 2. Seed dosyasini guncelle
-# prisma/seed.ts dosyasina demo entegrasyon verileri ekle
+  // Yeni relations
+  integrations      CompanyIntegration[]
+  externalOrders    ExternalOrder[]
+}
 ```
 
-## 6. Servisler ve Is Akislari
+#### 2.3.3 Enum Güncellemeleri
 
-### 6.1 API Key Yonetimi
-- Endpointler:
-  - `POST /companies/:id/integrations/yemeksepeti` -> API key kaydet.
-  - `PUT /companies/:id/integrations/yemeksepeti` -> guncelle.
-  - `POST /companies/:id/integrations/yemeksepeti/test` -> baglanti testi.
-- DTO + class-validator kullanarak validasyon, hassas alanlar response icinde maskelenecek.
-- API key saklama: AES-256-GCM ile sifreleme; anahtar `.env` uzerinden `INTEGRATION_ENCRYPTION_KEY`.
+**OrderStatus Enum Genişletme**
+```prisma
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING        // YENİ - Yemeksepeti uyumu
+  READY           // YENİ - Teslimata hazır
+  PICKED_UP       // YENİ - Kurye aldı
+  IN_PROGRESS     // Mevcut (ON_THE_WAY ile aynı)
+  DELIVERED
+  CANCELLED
+  REJECTED
+}
+```
 
-### 6.2 Siparis Alma Mekanizmasi
-- Polling job: Aktif API key olan firmalar icin scheduler queue calisir.
-- Incremental sync: `lastSyncedAt` alanina gore delta cekme.
-- Retry politikasi: Exponential backoff, maksimum deneme sayisi ve hatalarda alert uretmek.
-- Webhook varsa: `X-Yemeksepeti-Signature` gibi header ile HMAC imza dogrulama, tekrar eden istekleri engelleme.
+**PaymentMethod Enum Genişletme**
+```prisma
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  BANK_TRANSFER
+  ONLINE          // YENİ - Genel online ödeme
+  MEAL_CARD       // YENİ - Yemek kartı
+}
+```
 
-### 6.3 Siparis Haritalama
-- Yemeksepeti -> dahili DTO mapleme tablosu olusturulacak:
-  - Musteri bilgileri -> `Order.customer` veya yeni bir JSON alani.
-  - Teslimat adresi -> `Order.address` JSON.
-  - Siparis kalemleri -> `OrderItem` yapisi varsa oraya, yoksa `externalData` icinde tutulacak.
-  - Odeme tipi -> `PaymentMethod` enumuna esleme.
-- Harici durumlar -> dahili enum mapleme (ornegin `PREPARING` -> `PENDING`, `OUT_FOR_DELIVERY` -> `IN_PROGRESS`).
-- Tuhaf durumlarda debug icin tum ham payload `ExternalOrder.payload` alaninda saklanacak.
+**NotificationType Enum Genişletme**
+```prisma
+enum NotificationType {
+  // Mevcut tipler...
 
-### 6.4 Kurye Cagir Akisi
-- Firma panelindeki siparis kartina "Kurye cagir" butonu eklemek.
-- Modal acildiginda Yemeksepeti siparisleri listeleyip secilecek siparisin bilgileri `OrderCreateDto` icine otomatik doldurulacak.
-- `OrdersService.createExternalOrder` metodu ile yeni order olusacak, `ExternalOrder.mappedOrderId` guncellenecek.
-- Kurye atama ve statu degisimleri mevcut servisler uzerinden yurutulecek.
-- Gerekiyorsa Yemeksepeti tarafina statu guncellemesi gondermek icin `YemeksepetiStatusService` yazilacak.
+  // Yeni tipler
+  EXTERNAL_ORDER_RECEIVED    // YENİ
+  EXTERNAL_ORDER_UPDATED     // YENİ
+  INTEGRATION_CONNECTED      // YENİ
+  INTEGRATION_DISCONNECTED   // YENİ
+  INTEGRATION_ERROR          // YENİ
+  SYNC_COMPLETED            // YENİ
+  SYNC_FAILED               // YENİ
+  WEBHOOK_RECEIVED          // YENİ
+}
+```
 
-## 7. Konfigurasyon ve Guvenlik
-- Yeni environment degiskenleri: `YESEPETI_BASE_URL`, `YESEPETI_TIMEOUT_MS`, `INTEGRATION_ENCRYPTION_KEY`.
-- `ConfigModule` u guncelleyerek bu degiskenleri type-safe sekilde enjekte etmek.
-- Production ortaminda secret yonetimi icin Vault veya AWS SSM kullanimi planlamak.
-- Rate limit icin global veya modul bazli interceptor eklemek.
-- Monitoring: harici cagri metrikleri (Prometheus) ve Winston loglarinda provider etiketi.
+**IntegrationProvider Enum (YENİ)**
+```prisma
+enum IntegrationProvider {
+  YEMEKSEPETI
+  GETIR
+  TRENDYOL_YEMEK
+  MIGROS_YEMEK
+}
+```
 
-## 8. Izleme, Loglama ve Alerting
-- Sync job basarisi/basarizligi icin metrikler: `yemeksepeti_sync_total`, `yemeksepeti_sync_fail_total`.
-- Winston loglarinda `externalOrderId` iceren correlation id kullanmak.
-- Ardisik hatalarda (ornegin 3 hata) Notification modulunu kullanarak Slack/email uyarisi gondermek.
-- Prisma `ExternalOrder` tablosuna `lastSyncStatus` ve `lastErrorAt` alanlari ekleyip backlog izlemek.
+**SyncStatus Enum (YENİ)**
+```prisma
+enum SyncStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  PARTIAL_SUCCESS
+}
+```
 
-## 9. Test ve Dogrulama Stratejisi
-- Unit test: `YemeksepetiService` icin HTTP client mock, mapping fonksiyonlarinin birim testleri.
-- Integration test: Testcontainers (Postgres + Redis) ile API key CRUD ve sync pipeline testleri.
-- E2E test: Mock Yemeksepeti API (Wiremock veya Nest mock controller) kullanarak end-to-end senaryolar.
-- Frontend test: Playwright veya Cypress ile kurye cagir modalinin otomatik doldurma davranisini test etmek.
-- Yuk testi: Polling job concurrency icin k6 senaryosu calistirmak.
-- QA checklist: API key maskelenmesi, hatali kimlik bilgisi, rate limit cevaplari, kurye atama akisi.
+## 3. FAZLAR - Detaylı ve Güncellenmiş
 
-## 10. Yol Haritasi (Iterasyon Bazli)
+### FAZ 1: Altyapı ve Temel Entegrasyon (12 gün)
 
-### Faz 1: Eksik Altyapi Kurulumu (5 gun)
-1. **Gun 1-2**: Scheduler, Queue System (BullMQ) ve Event-Driven Architecture kurulumu
-   - @nestjs/schedule, @nestjs/bull, @nestjs/event-emitter paketlerinin kurulumu
-   - app.module.ts guncellemeleri
-   - Temel konfigurasyonlar
+#### Sprint 1.1: Altyapı Kurulumu (4 gün)
 
-2. **Gun 3-4**: HTTP Client ve Crypto Service implementasyonu
-   - @nestjs/axios kurulumu
-   - HttpClientService olusturma (retry, timeout, circuit breaker)
-   - CryptoService implementasyonu (AES-256-GCM sifreleme)
+**TASK-001: NPM Paketlerinin Kurulumu ve Konfigürasyonu**
+- **Süre:** 3 saat
+- **Öncelik:** P1
+- **Detay:**
+  ```bash
+  cd backend
+  npm install --save @nestjs/schedule @nestjs/bull bull
+  npm install --save @nestjs/event-emitter @nestjs/axios axios
+  npm install --save @nestjs/throttler  # Rate limiting için
+  npm install --save ioredis  # Bull için Redis client
+  npm install --save-dev @types/cron @types/bull
+  ```
 
-3. **Gun 5**: Common module organizasyonu ve test
-   - Servislerin module'e eklenmesi
-   - Birim testler
-   - Entegrasyon testleri
+**TASK-002: Database Migration Hazırlığı**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Yeni tabloların Prisma schema'ya eklenmesi
+  - [ ] Enum güncellemeleri
+  - [ ] İndex optimizasyonları
+  - [ ] Migration strategy dokümantasyonu
+  - [ ] Rollback planı hazırlama
 
-### Faz 2: Yemeksepeti Modulu Gelistirme (7 gun)
-1. **Gun 6-7**: Veritabani ve temel modul yapisi
-   - Prisma migration (CompanyIntegration, ExternalOrder tablolari)
-   - yemeksepeti.module.ts kurulumu
-   - DTO'larin olusturulmasi
+**TASK-003: Migration Execution ve Seed Data**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Staging ortamında migration test
+  - [ ] `npx prisma migrate dev --name add_yemeksepeti_integration`
+  - [ ] Prisma client regeneration
+  - [ ] Test data seed hazırlama
+  - [ ] Migration rollback testi
 
-2. **Gun 8-10**: API Client ve Authentication
-   - YemeksepetiApiService implementasyonu
-   - Token yonetimi
-   - API method'larinin yazilmasi
+**TASK-004: Common Services Implementasyonu**
+- **Süre:** 8 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] CryptoService (AES-256-GCM)
+  - [ ] HttpClientService (retry, timeout, circuit breaker)
+  - [ ] CircuitBreakerService
+  - [ ] RateLimiterService
+  - [ ] Unit testler
 
-3. **Gun 11-12**: Scheduler ve Queue implementasyonu
-   - Polling job setup (@Cron decorators)
-   - BullMQ processor implementasyonu
-   - Error handling ve retry logic
+#### Sprint 1.2: Yemeksepeti Module Temel Yapısı (4 gün)
 
-### Faz 3: Siparis Senkronizasyon (5 gun)
-1. **Gun 13-14**: Order mapping ve donusum logic
-   - Yemeksepeti -> Internal order donusumu
-   - Validation ve error handling
-   - ExternalOrder kayit yonetimi
+**TASK-005: Yemeksepeti Module Scaffold**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Module yapısı oluşturma
+  - [ ] Controller, Service, Repository pattern
+  - [ ] Constants ve Interfaces
+  - [ ] Error handling yapısı
+  - [ ] Module dependencies
 
-2. **Gun 15-16**: WebSocket entegrasyonu
-   - Mevcut NotificationsGateway'e entegrasyon
-   - Yeni event type'lari ekleme
-   - Real-time bildirimler
+**TASK-006: DTO ve Validation Katmanı**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] YemeksepetiOrderDto
+  - [ ] CreateIntegrationDto
+  - [ ] UpdateIntegrationDto
+  - [ ] OrderStatusUpdateDto
+  - [ ] WebhookPayloadDto
+  - [ ] Custom validators
 
-3. **Gun 17**: Status senkronizasyonu
-   - Bidirectional status update (opsiyonel)
-   - Webhook endpoint'leri (varsa)
+**TASK-007: CompanyIntegrationService**
+- **Süre:** 8 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] CRUD operasyonları
+  - [ ] API key encryption/decryption
+  - [ ] Connection test implementation
+  - [ ] Integration health check
+  - [ ] Error recovery logic
 
-### Faz 4: Frontend Entegrasyonu (6 gun)
-1. **Gun 18-19**: Firma ayarlar sayfasi
-   - API key yonetim formu
-   - Baglanti test butonu
-   - Entegrasyon durumu gosterimi
+**TASK-008: YemeksepetiAuthService**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Token generation
+  - [ ] Token refresh logic
+  - [ ] PGP signature handling
+  - [ ] Auth header builder
+  - [ ] Token caching strategy
 
-2. **Gun 20-21**: Siparis listesi guncellemeleri
-   - External source badge'leri
-   - Filtreleme opsiyonlari
-   - Yemeksepeti ikonu/renk kodlari
+#### Sprint 1.3: API Client ve Security (4 gün)
 
-3. **Gun 22-23**: Kurye cagir modal guncellemeleri
-   - Harici siparis secim dropdown
-   - Otomatik form doldurma
-   - Validation ve UX iyilestirmeleri
+**TASK-009: YemeksepetiApiClient**
+- **Süre:** 10 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Base API client setup
+  - [ ] Request/response interceptors
+  - [ ] Error handling ve retry logic
+  - [ ] Rate limiting implementation
+  - [ ] Circuit breaker integration
+  - [ ] Mock mode for testing
 
-### Faz 5: Test ve Stabilizasyon (4 gun)
-1. **Gun 24-25**: Test coverage
-   - Unit testler (%80 coverage hedefi)
-   - Integration testler
-   - E2E senaryolar
+**TASK-010: Security Layer Implementation**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] HMAC signature validation
+  - [ ] IP whitelist check
+  - [ ] Request signing
+  - [ ] API key rotation support
+  - [ ] Security audit logging
 
-2. **Gun 26-27**: Load testing ve optimizasyon
-   - k6 veya Artillery ile yuk testi
-   - Database query optimizasyonu
-   - Caching strategy implementasyonu
+**TASK-011: Monitoring ve Logging Setup**
+- **Süre:** 4 saat
+- **Öncelik:** P2
+- **Checklist:**
+  - [ ] Winston logger configuration
+  - [ ] Prometheus metrics setup
+  - [ ] Health check endpoints
+  - [ ] Performance tracking
+  - [ ] Alert configurations
 
-### Faz 6: Deployment ve Monitoring (3 gun)
-1. **Gun 28**: Production deployment hazirlik
-   - Environment variable setup
-   - Secret management (Vault/AWS SSM)
-   - Deployment scripti hazirlama
+### FAZ 2: Sipariş Senkronizasyonu ve İş Akışları (12 gün)
 
-2. **Gun 29-30**: Monitoring ve alerting
-   - Prometheus metrikleri setup
-   - Grafana dashboard'lari
-   - Alert kurallari
+#### Sprint 2.1: Scheduler ve Queue System (4 gün)
 
-**Toplam: 30 is gunu**
+**TASK-012: BullMQ Queue Configuration**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Queue definitions (order-sync, status-update, webhook-process)
+  - [ ] Worker processes setup
+  - [ ] Job retry policies
+  - [ ] Dead letter queue
+  - [ ] Queue monitoring dashboard
 
-### Haftalik Kontrol Noktalari
-- **Hafta 1**: Altyapi kurulumu tamamlanmis olmali
-- **Hafta 2**: Yemeksepeti modulu ve API client hazir
-- **Hafta 3**: Senkronizasyon pipeline calisir durumda
-- **Hafta 4**: Frontend entegrasyonu tamamlanmis
-- **Hafta 5**: Test ve stabilizasyon
-- **Hafta 6**: Production-ready ve monitoring aktif
+**TASK-013: Scheduler Service Implementation**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Cron job definitions
+  - [ ] Dynamic scheduling based on integration status
+  - [ ] Batch processing logic
+  - [ ] Performance optimization
+  - [ ] Error recovery
 
-## 11. Riskler ve Mitigasyonlar
-- Yemeksepeti API belirsizligi: Dokumantasyon eksigi icin erken POC ve destek ekibi ile iletisim.
-- Rate limit/perf: Polling surelerini ayarlamak, incremental sync ve backoff desteklemek.
-- Veri tutarsizligi: Tum harici payload `ExternalOrder.payload` alaninda saklanacak, yeniden isleme scripti hazirlanacak.
-- Guvenlik: API key sizintisi riskine karsi sifreleme, secret rotation hatirlatmalari.
-- Operasyonel karma: Farkli siparis akislari icin UI/UX testleri ve kurye-operasyon-uzmani ile akis simulasyonlari.
+**TASK-014: Event-Driven Architecture Setup**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] EventEmitter configuration
+  - [ ] Event definitions
+  - [ ] Event handlers
+  - [ ] Event replay mechanism
+  - [ ] Event sourcing pattern
 
-## 12. Acik Sorular
-- Yemeksepeti webhook destegi var mi? Polling periyodu icin resmi limit nedir?
-- API kimlik bilgileri firma bazli mi yoksa sube bazli mi? Birden fazla key desteklemek gerekiyor mu?
-- Siparis statu guncellemesini Yemeksepeti tarafina geri yazmak zorunda miyiz? Hangi endpoint kullanilacak?
-- Siparis odemeleri (komisyon, kampanya) nasil raporlanacak? Finans modulune entegrasyon kapsaminda mi?
-- Canli yayina cikis icin hangi firmalar pilot olacak ve hangi metrikleri takip edecegiz?
+#### Sprint 2.2: Order Mapping ve Transformation (4 gün)
 
-## 13. Sonraki Adimlar
+**TASK-015: OrderMapperService**
+- **Süre:** 8 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Yemeksepeti to Internal mapping
+  - [ ] Status mapping matrix
+  - [ ] Address normalization
+  - [ ] Customer data mapping
+  - [ ] Payment method conversion
+  - [ ] Item details transformation
 
-### Hemen Baslanacak Isler (Oncelik Sirasi)
-1. **Eksik NPM paketlerinin kurulumu**:
-   ```bash
-   cd backend
-   npm install --save @nestjs/schedule @nestjs/bull bull @nestjs/event-emitter @nestjs/axios axios
-   npm install --save-dev @types/cron @types/bull
-   ```
+**TASK-016: DataValidationService**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Order data validation
+  - [ ] Address validation
+  - [ ] Phone number normalization
+  - [ ] Price calculation verification
+  - [ ] Duplicate order detection
 
-2. **Common module olusturma ve servisleri ekleme**:
-   - `/backend/src/common/services/` dizini olustur
-   - HttpClientService.ts
-   - CryptoService.ts
-   - CommonModule.ts
+**TASK-017: ExternalOrderService**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] External order CRUD
+  - [ ] Sync status management
+  - [ ] Batch processing
+  - [ ] Conflict resolution
+  - [ ] Audit trail
 
-3. **Yemeksepeti API dokumantasyonu arastirmasi**:
-   - Context 7 MCP kullanarak guncel dokumanlari bul
-   - Auth mekanizmasi (OAuth2, API Key, vb.)
-   - Endpoint listesi ve response formatlari
-   - Rate limit ve webhook destegi
+#### Sprint 2.3: WebSocket ve Real-time Updates (4 gün)
 
-4. **POC (Proof of Concept) hazirligi**:
-   - Mock Yemeksepeti API servisi olustur
-   - Test verileri hazirla
-   - Entegrasyon akisini simule et
+**TASK-018: WebSocket Integration**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] NotificationsGateway updates
+  - [ ] New event types
+  - [ ] Room management for external orders
+  - [ ] Real-time sync status
+  - [ ] Client event handlers
 
-### Takip Eden Adimlar
-5. **Teknik tasarim dokumani hazirlama**:
-   - Detayli API mapping tablosu
-   - Sequence diagram'lar
-   - Error handling stratejisi
+**TASK-019: Webhook Implementation**
+- **Süre:** 8 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Webhook controller
+  - [ ] Signature validation
+  - [ ] Idempotency handling
+  - [ ] Webhook retry logic
+  - [ ] Webhook log persistence
 
-6. **Sprint planlama**:
-   - JIRA/Azure DevOps'ta epic ve task'lari olustur
-   - Story point tahminleri
-   - Sprint kapasitesi belirleme
+**TASK-020: Status Synchronization Service**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Bidirectional sync
+  - [ ] Status update queue
+  - [ ] Conflict resolution
+  - [ ] Retry mechanism
+  - [ ] Status history tracking
 
-7. **Development ortami hazirligi**:
-   - Feature branch stratejisi
-   - CI/CD pipeline guncellemeleri
-   - Test ortami kurulumu
+### FAZ 3: Frontend ve Kullanıcı Deneyimi (10 gün)
 
-## 14. Basari Kriterleri
+#### Sprint 3.1: Company Integration Management UI (4 gün)
 
-### Teknik Basari Kriterleri
-- ✅ Yemeksepeti API'den siparislerin %99.9 basari oraniyla cekilmesi
-- ✅ 30 saniye icerisinde yeni siparislerin sisteme yansimasi
-- ✅ API key'lerin guvenli saklanmasi (AES-256-GCM)
-- ✅ Gunluk 10.000+ siparis isleyebilme kapasitesi
-- ✅ WebSocket uzerinden anlik bildirimler
-- ✅ %80+ unit test coverage
-- ✅ Zero-downtime deployment
+**TASK-021: Integration Settings Page**
+- **Süre:** 8 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Settings page layout
+  - [ ] API key management form
+  - [ ] Connection test UI
+  - [ ] Integration status dashboard
+  - [ ] Error log viewer
 
-### Is Basari Kriterleri
-- ✅ Firma basina ortalama entegrasyon suresi < 5 dakika
-- ✅ Manuel siparis girisi %90 azalmasi
-- ✅ Kurye atama suresi %50 iyilesmesi
-- ✅ Musteri memnuniyeti skoru artisi
-- ✅ Siparis takip hassasiyeti %100
+**TASK-022: Integration Store (Zustand)**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Store structure
+  - [ ] Actions implementation
+  - [ ] API integration
+  - [ ] State persistence
+  - [ ] Real-time updates
 
-## 15. Ozet
+**TASK-023: API Service Layer**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Integration API service
+  - [ ] Error handling
+  - [ ] Request interceptors
+  - [ ] Response transformation
+  - [ ] Caching strategy
 
-Bu plan, mevcut kurye operasyon sistemine Yemeksepeti entegrasyonunu eklemek icin kapsamli bir yol haritasi sunmaktadir.
+#### Sprint 3.2: Order Management Updates (3 gün)
 
-**Ana odak noktalari:**
-1. Eksik altyapi bilesenlerinin kurulumu (Scheduler, Queue, Event-Driven, HTTP Client, Crypto)
-2. Mevcut WebSocket ve bildirim sisteminin kullanilmasi
-3. Guvenli API key yonetimi ve sifreleme
-4. Verimli siparis senkronizasyonu ve mapping
-5. Kullanici dostu frontend entegrasyonu
+**TASK-024: Order List Enhancements**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] External source badges
+  - [ ] Yemeksepeti branding
+  - [ ] Advanced filtering
+  - [ ] Bulk operations
+  - [ ] Export functionality
 
-**Toplam sure:** 30 is gunu (6 hafta)
-**Kritik bagimliliklar:** Yemeksepeti API dokumantasyonu ve erisim bilgileri
+**TASK-025: Order Detail Modal Updates**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] External order info display
+  - [ ] Status sync indicator
+  - [ ] Customer info from Yemeksepeti
+  - [ ] Original vs mapped data view
+  - [ ] Sync history
 
-Plan, sistemin mevcut guclü yanlarindan faydalanarak minimum yapisal degisiklikle maksimum deger uretmeyi hedeflemektedir.
+**TASK-026: Kurye Çağır Modal Integration**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] External order selection
+  - [ ] Auto-fill implementation
+  - [ ] Validation updates
+  - [ ] Loading states
+  - [ ] Error handling
+
+#### Sprint 3.3: Dashboard ve Reporting (3 gün)
+
+**TASK-027: Integration Dashboard**
+- **Süre:** 6 saat
+- **Öncelik:** P2
+- **Checklist:**
+  - [ ] Sync metrics widgets
+  - [ ] Performance charts
+  - [ ] Error rate visualization
+  - [ ] Order volume trends
+  - [ ] Revenue analytics
+
+**TASK-028: Reports Module Updates**
+- **Süre:** 4 saat
+- **Öncelik:** P2
+- **Checklist:**
+  - [ ] External order reports
+  - [ ] Integration performance report
+  - [ ] Reconciliation report
+  - [ ] Export formats
+  - [ ] Scheduled reports
+
+**TASK-029: Mobile Responsiveness**
+- **Süre:** 4 saat
+- **Öncelik:** P2
+- **Checklist:**
+  - [ ] Responsive layouts
+  - [ ] Touch interactions
+  - [ ] Mobile-specific features
+  - [ ] Performance optimization
+  - [ ] PWA considerations
+
+### FAZ 4: Test, Optimizasyon ve Deployment (6 gün)
+
+#### Sprint 4.1: Testing ve Quality Assurance (3 gün)
+
+**TASK-030: Unit Test Coverage**
+- **Süre:** 8 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Backend services tests (>80% coverage)
+  - [ ] Mapper tests
+  - [ ] Queue processor tests
+  - [ ] API client tests
+  - [ ] Frontend component tests
+
+**TASK-031: Integration Testing**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] End-to-end flow tests
+  - [ ] API integration tests
+  - [ ] WebSocket tests
+  - [ ] Database transaction tests
+  - [ ] Performance tests
+
+**TASK-032: User Acceptance Testing**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] UAT scenarios
+  - [ ] Pilot company testing
+  - [ ] Feedback collection
+  - [ ] Bug tracking
+  - [ ] Performance metrics
+
+#### Sprint 4.2: Deployment ve Monitoring (3 gün)
+
+**TASK-033: Deployment Preparation**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Environment configurations
+  - [ ] Secret management (Vault/AWS SSM)
+  - [ ] CI/CD pipeline updates
+  - [ ] Database backup strategy
+  - [ ] Rollback procedures
+
+**TASK-034: Production Deployment**
+- **Süre:** 4 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Staged rollout plan
+  - [ ] Database migrations
+  - [ ] Service deployment
+  - [ ] Health checks
+  - [ ] Smoke tests
+
+**TASK-035: Post-Deployment Monitoring**
+- **Süre:** 6 saat
+- **Öncelik:** P1
+- **Checklist:**
+  - [ ] Performance monitoring
+  - [ ] Error tracking (Sentry)
+  - [ ] Log aggregation
+  - [ ] Alert configuration
+  - [ ] Dashboard setup
+
+## 4. Kritik Başarı Faktörleri
+
+### 4.1 Teknik Başarı Kriterleri
+- ✅ %99.9 uptime SLA
+- ✅ <30 saniye sipariş senkronizasyon süresi
+- ✅ 10,000+ günlük sipariş kapasitesi
+- ✅ %80+ test coverage
+- ✅ Zero security vulnerabilities
+- ✅ <2 saniye API response time
+
+### 4.2 İş Başarı Kriterleri
+- ✅ Pilot firma memnuniyeti %90+
+- ✅ Manuel sipariş girişinde %90 azalma
+- ✅ Kurye atama süresinde %50 iyileşme
+- ✅ Entegrasyon kurulum süresi <5 dakika
+- ✅ Hata oranı <%1
+
+## 5. Risk Yönetimi ve Mitigasyon
+
+### 5.1 Teknik Riskler
+
+| Risk | Olasılık | Etki | Mitigasyon Stratejisi |
+|------|----------|------|----------------------|
+| Yemeksepeti API değişikliği | Orta | Yüksek | API versioning, monitoring, quick adaptation plan |
+| Database migration hatası | Düşük | Çok Yüksek | Staged migration, rollback plan, backup strategy |
+| Performance degradation | Orta | Yüksek | Load testing, caching, database optimization |
+| Security breach | Düşük | Çok Yüksek | Encryption, security audit, penetration testing |
+| Rate limit aşımı | Yüksek | Orta | Intelligent polling, backoff strategy, caching |
+
+### 5.2 İş Riskleri
+
+| Risk | Olasılık | Etki | Mitigasyon Stratejisi |
+|------|----------|------|----------------------|
+| Yemeksepeti dokümantasyon eksikliği | Yüksek | Orta | Early POC, direct communication, reverse engineering |
+| Kullanıcı adaptasyon sorunu | Düşük | Orta | Training, documentation, gradual rollout |
+| Pilot firma başarısızlığı | Düşük | Yüksek | Close monitoring, quick support, fallback plan |
+
+## 6. Rollback Planı
+
+### 6.1 Database Rollback Strategy
+```sql
+-- Rollback script hazır tutulacak
+-- 1. Foreign key constraints kaldırma
+-- 2. Yeni tabloları DROP etme
+-- 3. Değiştirilen enum'ları eski haline getirme
+-- 4. Index'leri kaldırma
+```
+
+### 6.2 Application Rollback
+1. Feature flag ile yeni özellikleri kapatma
+2. Previous deployment'a geri dönüş
+3. Database rollback (gerekirse)
+4. Cache temizleme
+5. Health check ve verification
+
+## 7. Monitoring ve Alert Stratejisi
+
+### 7.1 Metrikler
+- **System Metrics**: CPU, Memory, Disk, Network
+- **Application Metrics**: Request rate, Error rate, Response time
+- **Business Metrics**: Order sync rate, Success rate, Revenue impact
+- **Integration Metrics**: API call count, Rate limit usage, Error patterns
+
+### 7.2 Alert Kuralları
+- Sync failure rate >5% → Warning
+- Sync failure rate >10% → Critical
+- API response time >5s → Warning
+- Consecutive errors >3 → Auto-disable integration
+- Database connection pool >80% → Warning
+
+## 8. Dokümantasyon Gereksinimleri
+
+### 8.1 Teknik Dokümantasyon
+- API documentation (Swagger)
+- Integration guide
+- Troubleshooting guide
+- Database schema documentation
+- Architecture diagrams
+
+### 8.2 Kullanıcı Dokümantasyonu
+- User manual
+- Admin guide
+- Video tutorials
+- FAQ
+- Quick start guide
+
+## 9. Eğitim Planı
+
+### 9.1 Firma Kullanıcıları
+- 2 saatlik online eğitim
+- Hands-on practice session
+- Q&A session
+- Eğitim materyalleri
+
+### 9.2 Kurye Kullanıcıları
+- 30 dakikalık bilgilendirme
+- Yeni özellikler tanıtımı
+- Mobile app güncellemeleri
+
+### 9.3 Admin Kullanıcıları
+- 4 saatlik detaylı eğitim
+- Troubleshooting workshop
+- Monitoring ve reporting
+- Advanced features
+
+## 10. Go-Live Stratejisi
+
+### 10.1 Soft Launch (1 hafta)
+- 1 pilot firma ile başlangıç
+- Günlük monitoring
+- Quick fix deployment
+- Feedback collection
+
+### 10.2 Limited Rollout (2 hafta)
+- 5 firma ile genişletme
+- Performance monitoring
+- Optimization
+- Documentation updates
+
+### 10.3 Full Rollout (2 hafta)
+- Tüm firmalara açılış
+- Marketing announcement
+- Support team ready
+- Success metrics tracking
+
+## 11. Maintenance ve Support Planı
+
+### 11.1 Daily Operations
+- Health check monitoring
+- Sync status review
+- Error log analysis
+- Performance optimization
+
+### 11.2 Weekly Tasks
+- Metrics review
+- Capacity planning
+- Security updates
+- Documentation updates
+
+### 11.3 Monthly Tasks
+- Performance review
+- Cost analysis
+- Feature roadmap review
+- Customer feedback analysis
+
+## 12. Sonraki Adımlar ve Öncelikler
+
+### Hemen Başlanacak İşler (Kritik)
+1. NPM paketlerinin kurulumu
+2. Database migration hazırlığı
+3. Yemeksepeti API dokümantasyon analizi
+4. Security assessment
+5. POC development
+
+### İlk Hafta Hedefleri
+1. Altyapı kurulumu tamamlanmış
+2. Database migrations hazır
+3. Basic API client çalışıyor
+4. Security layer implemented
+5. Test environment ready
+
+### İlk Ay Hedefleri
+1. Core functionality complete
+2. Pilot company onboarded
+3. Initial testing complete
+4. Documentation ready
+5. Monitoring active
+
+## 13. Başarı Metrikleri ve KPI'lar
+
+### Technical KPIs
+- API uptime: >99.9%
+- Sync latency: <30 seconds
+- Error rate: <1%
+- Test coverage: >80%
+- Security score: A+
+
+### Business KPIs
+- Integration setup time: <5 minutes
+- Order processing time: -50%
+- Manual entry reduction: >90%
+- Customer satisfaction: >4.5/5
+- Revenue impact: +20%
+
+## 14. Bütçe ve Kaynak Planlaması
+
+### İnsan Kaynakları
+- 1 Backend Developer (Full-time, 40 gün)
+- 1 Frontend Developer (Full-time, 40 gün)
+- 1 Full-stack Developer (Full-time, 40 gün)
+- 1 DevOps Engineer (Part-time, 10 gün)
+- 1 QA Engineer (Part-time, 15 gün)
+- 1 Product Owner (Part-time, 40 gün)
+
+### Altyapı Maliyetleri
+- Redis cluster upgrade
+- Additional monitoring tools
+- Security audit tools
+- Load testing services
+- Backup storage
+
+### Toplam Süre: 40 iş günü (8 hafta)
+### Toplam Maliyet: [Proje bütçesine göre hesaplanacak]
+
+## 15. Özet
+
+Bu güncellenmiş plan, Yemeksepeti entegrasyonunu mevcut sisteme başarıyla entegre etmek için gereken tüm adımları içermektedir. Plan, mevcut sistem yapısıyla tam uyumlu hale getirilmiş, eksik olan tüm bileşenler eklenmiş ve detaylı bir rollback stratejisi dahil edilmiştir.
+
+**Kritik Başarı Faktörleri:**
+1. Database migration'ların dikkatli planlanması
+2. Security layer'ın doğru implementasyonu
+3. Performance optimization
+4. Comprehensive testing
+5. Gradual rollout strategy
+
+Plan, sistemin mevcut güçlü yanlarından faydalanarak minimum yapısal değişiklikle maksimum değer üretmeyi hedeflemektedir.
