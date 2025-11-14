@@ -10,10 +10,10 @@ export const APP_CONFIG = {
   APP_VERSION: '1.0.0',
   APP_BUILD: 1,
 
-  // URL'ler - production'da değiştirilecek
-  WEB_URL_DEV: 'http://10.0.2.2:3000/courier/login',
-  WEB_URL_PROD: 'https://yourdomain.com/courier/login',
-  WEB_URL_IOS_DEV: 'http://127.0.0.1:3000/courier/login',
+  // URL'ler - Sunucu API'si
+  WEB_URL_DEV: 'https://kurye.kuryemburada.com',
+  WEB_URL_PROD: 'https://kurye.kuryemburada.com',
+  WEB_URL_IOS_DEV: 'https://kurye.kuryemburada.com',
 
   // Timeout değerleri (milisaniye)
   NETWORK_TIMEOUT: 10000,

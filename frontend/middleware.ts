@@ -5,8 +5,40 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get('accessToken')?.value;
 
-  // Ana sayfayı her durumda göster (yönlendirme yok)
-  if (pathname === '/') {
+  // Subdomain detection
+  const subdomain = request.headers.get('x-subdomain');
+  const hostname = request.headers.get('host') || '';
+
+  // Subdomain'e göre otomatik yönlendirme - login sayfasına yönlendir
+  if (subdomain === 'admin' && pathname === '/') {
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+  if (subdomain === 'company' && pathname === '/') {
+    return NextResponse.redirect(new URL('/company/login', request.url));
+  }
+  if (subdomain === 'courier' && pathname === '/') {
+    return NextResponse.redirect(new URL('/courier/login', request.url));
+  }
+
+  // Subdomain varsa, ilgili path dışındaki erişimleri engelle
+  if (subdomain === 'admin' && !pathname.startsWith('/admin')) {
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+  if (subdomain === 'company' && !pathname.startsWith('/company')) {
+    return NextResponse.redirect(new URL('/company/login', request.url));
+  }
+  if (subdomain === 'courier' && !pathname.startsWith('/courier')) {
+    return NextResponse.redirect(new URL('/courier/login', request.url));
+  }
+
+  // Ana domain için admin/company/courier path'lerini engelle
+  if (!subdomain && hostname.includes('kuryemburada.com') && !hostname.includes('admin.') && !hostname.includes('firma.') && !hostname.includes('kurye.')) {
+    // Ana sayfayı her durumda göster (yönlendirme yok)
+    if (pathname === '/') {
+      return NextResponse.next();
+    }
+  } else if (pathname === '/') {
+    // Subdomain'de ana sayfa olmamalı, ilgili path'e yönlendir
     return NextResponse.next();
   }
 

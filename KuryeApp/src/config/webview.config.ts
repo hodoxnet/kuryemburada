@@ -67,42 +67,15 @@ export const injectedJavaScript = `
     window.platform = '${IS_IOS ? 'ios' : 'android'}';
     window.isAndroidEmulator = ${IS_ANDROID};
     
-    // Android emülatörde API URL'sini değiştir
-    if (${IS_ANDROID}) {
-      // Frontend'in API URL'sini Android emülatör için güncelle
-      window.__ANDROID_API_URL__ = 'http://10.0.2.2:4004';
-      
-      // Axios interceptor'larını override et
-      if (window.axios) {
-        window.axios.defaults.baseURL = 'http://10.0.2.2:4004';
-      }
-      
-      // Fetch API'yi intercept et ve localhost'u 10.0.2.2 ile değiştir
-      const originalFetch = window.fetch;
-      window.fetch = function(...args) {
-        let [url, options] = args;
-        // URL string veya URL objesi olabilir
-        if (typeof url === 'string' && url.includes && url.includes('localhost:4004')) {
-          url = url.replace('localhost:4004', '10.0.2.2:4004');
-          console.log('Android: API URL değiştirildi:', url);
-        } else if (url && typeof url === 'object' && url.href && url.href.includes('localhost:4004')) {
-          // URL objesi ise
-          url = new URL(url.href.replace('localhost:4004', '10.0.2.2:4004'));
-          console.log('Android: URL objesi değiştirildi:', url.href);
-        }
-        return originalFetch.apply(window, [url, options]);
-      };
-      
-      // XMLHttpRequest'i intercept et
-      const originalXHROpen = XMLHttpRequest.prototype.open;
-      XMLHttpRequest.prototype.open = function(method, url, ...args) {
-        if (typeof url === 'string' && url.includes('localhost:4004')) {
-          url = url.replace('localhost:4004', '10.0.2.2:4004');
-          console.log('Android: XHR URL değiştirildi:', url);
-        }
-        return originalXHROpen.apply(this, [method, url, ...args]);
-      };
+    // API URL konfigürasyonu - artık sunucu kullanıyoruz
+    window.__API_URL__ = 'https://api.kuryemburada.com';
+
+    // Axios için baseURL ayarla
+    if (window.axios) {
+      window.axios.defaults.baseURL = 'https://api.kuryemburada.com';
     }
+
+    console.log('KuryeApp: API URL set to https://api.kuryemburada.com');
     
     // LocalStorage'dan token kontrol et
     const token = localStorage.getItem('token');

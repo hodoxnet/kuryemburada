@@ -213,4 +213,4 @@ $RECYCLE.BIN/
 *.msix
 *.msm
 *.msp
-*.lnk
+*.lnk.htaccess.backup
