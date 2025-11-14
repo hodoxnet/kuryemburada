@@ -61,22 +61,23 @@ const documentsAPI = {
   },
 
   // Belgeyi indir
-  downloadDocument(id: string, fileName: string): void {
-    const token = AuthService.getAccessToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
+  async downloadDocument(id: string, fileName: string): Promise<void> {
+    const response = await apiClient.get(`/documents/${id}/download`, {
+      responseType: 'blob',
+    });
 
-    // İndirme linkini oluştur
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/documents/${id}/download`;
-    
-    // Gizli bir link oluşturup tıkla
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'] || 'application/octet-stream',
+    });
+
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = `${url}?token=${encodeURIComponent(token)}`;
+    link.href = url;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   // Belgeyi sil (admin için)

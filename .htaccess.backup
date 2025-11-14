@@ -1,0 +1,18 @@
+# Main Domain Frontend Proxy Configuration for LiteSpeed
+RewriteEngine On
+
+# Force HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# Exclude backend and frontend directories from rewrite
+RewriteCond %{REQUEST_URI} !^/backend/
+RewriteCond %{REQUEST_URI} !^/frontend/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Proxy to Next.js on port 4005
+RewriteRule ^(.*)$ http://127.0.0.1:4005/$1 [P,L]
+
+# Disable directory listing
+Options -Indexes

@@ -1,8 +1,26 @@
+import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+
+const extractTokenFromQuery = (req?: Request): string | null => {
+  if (!req?.query) {
+    return null;
+  }
+
+  const token = req.query.token;
+  if (!token) {
+    return null;
+  }
+
+  if (Array.isArray(token)) {
+    return typeof token[0] === 'string' ? token[0] : null;
+  }
+
+  return typeof token === 'string' ? token : null;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -16,7 +34,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req) => extractTokenFromQuery(req as Request),
+      ]),
       ignoreExpiration: false,
       secretOrKey: jwtSecret,
     });

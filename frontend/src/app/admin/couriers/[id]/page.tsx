@@ -30,6 +30,7 @@ import {
   Trash2
 } from "lucide-react";
 import { courierService, Courier } from "@/lib/api/courier.service";
+import documentsAPI from "@/lib/api/documents";
 import { handleApiError, api } from "@/lib/api-client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -155,6 +156,14 @@ export default function CourierDetailPage() {
       loadCourier();
     } catch (error) {
       toast.error(handleApiError(error));
+    }
+  };
+
+  const handleDownloadDocument = async (documentId: string, fileName: string) => {
+    try {
+      await documentsAPI.downloadDocument(documentId, fileName || "document");
+    } catch (error) {
+      toast.error("Belge indirilirken hata oluştu");
     }
   };
 
@@ -476,7 +485,7 @@ export default function CourierDetailPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL}/documents/${doc.id}/download`, '_blank')}
+                          onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
                         >
                           İndir
                         </Button>

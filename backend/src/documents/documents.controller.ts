@@ -119,17 +119,15 @@ export class DocumentsController {
   }
 
   @Get(':id/view')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'View document file (inline)' })
   async viewDocument(
-    @Param('id') id: string, 
-    @Query('token') token: string,
+    @Param('id') id: string,
+    @Request() req,
     @Res() res: Response
   ) {
     try {
-      // Token ile kullanıcıyı doğrula
-      const user = await this.documentsService.validateTokenAndGetUser(token);
-      
-      const fileData = await this.documentsService.getDocumentFile(id, user.id);
+      const fileData = await this.documentsService.getDocumentFile(id, req.user.id);
       
       if (!fileData?.buffer || fileData.buffer.length === 0) {
         return res.status(HttpStatus.NOT_FOUND).json({
@@ -173,17 +171,15 @@ export class DocumentsController {
   }
 
   @Get(':id/download')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Download document file' })
   async downloadDocument(
-    @Param('id') id: string, 
-    @Query('token') token: string,
+    @Param('id') id: string,
+    @Request() req,
     @Res() res: Response
   ) {
     try {
-      // Token ile kullanıcıyı doğrula
-      const user = await this.documentsService.validateTokenAndGetUser(token);
-      
-      const fileData = await this.documentsService.getDocumentFile(id, user.id);
+      const fileData = await this.documentsService.getDocumentFile(id, req.user.id);
       
       if (!fileData?.buffer || fileData.buffer.length === 0) {
         return res.status(HttpStatus.NOT_FOUND).json({
@@ -341,4 +337,5 @@ export class DocumentsController {
       userId,
     );
   }
+
 }

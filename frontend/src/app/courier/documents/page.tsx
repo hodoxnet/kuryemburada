@@ -155,6 +155,18 @@ export default function CourierDocuments() {
     }
   };
 
+  const handleViewDocument = (documentId: string) => {
+    documentsAPI.viewDocument(documentId);
+  };
+
+  const handleDownloadDocument = async (documentId: string, fileName: string) => {
+    try {
+      await documentsAPI.downloadDocument(documentId, fileName || "belge");
+    } catch (error) {
+      toast.error("Belge indirilirken hata oluştu");
+    }
+  };
+
   // Belge süre kontrollerini kaldırdık çünkü backend'den expiryDate gelmiyor
 
   if (loading) {
@@ -297,7 +309,7 @@ export default function CourierDocuments() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => documentsAPI.viewDocument(doc.id)}
+                          onClick={() => handleViewDocument(doc.id)}
                           className="flex-1 sm:flex-initial text-xs sm:text-sm h-8 sm:h-9"
                         >
                           <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -306,7 +318,7 @@ export default function CourierDocuments() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => documentsAPI.downloadDocument(doc.id, doc.fileName)}
+                          onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
                           className="flex-1 sm:flex-initial text-xs sm:text-sm h-8 sm:h-9"
                         >
                           <Download className="h-3 w-3 sm:h-4 sm:w-4" />
