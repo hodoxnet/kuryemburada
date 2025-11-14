@@ -1,3 +1,22 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -88,6 +107,7 @@ npm run lint               # ESLint kontrolü
 - **Validation**: class-validator ve class-transformer
 - **Testing**: Jest v30 (unit ve e2e testler)
 - **File Upload**: Multer - Doküman ve görsel yükleme
+- **Real-time Communication**: Socket.IO - WebSocket tabanlı bildirimler
 
 #### Frontend
 - **Framework**: Next.js 15 (App Router)
@@ -101,6 +121,7 @@ npm run lint               # ESLint kontrolü
 - **Notifications**: Sonner toast library
 - **Tables**: TanStack Table v8
 - **Animations**: Framer Motion v12
+- **Real-time Communication**: Socket.IO Client - WebSocket tabanlı bildirimler
 
 ### Veritabanı Mimarisi
 
@@ -116,6 +137,11 @@ PostgreSQL veritabanı Prisma ORM ile yönetilir. Ana varlıklar ve ilişkileri:
 - **Notification**: Kullanıcı bildirimleri
 - **PricingRule**: Esnek fiyatlandırma kuralları
 - **ServiceArea**: Hizmet bölgeleri tanımları
+- **CompanyBalance**: Firma bakiye ve borç takibi
+- **DailyReconciliation**: Günlük mutabakat kayıtları
+- **CompanyPayment**: Firma ödeme işlemleri
+- **RefreshToken**: JWT refresh token yönetimi ve rotasyon
+- **AuditLog**: Sistem işlem logları
 
 #### Enum Değerleri
 - **UserRole**: SUPER_ADMIN, COMPANY, COURIER
@@ -129,7 +155,11 @@ PostgreSQL veritabanı Prisma ORM ile yönetilir. Ana varlıklar ve ilişkileri:
 - **PackageSize**: SMALL, MEDIUM, LARGE, EXTRA_LARGE
 - **Urgency**: NORMAL, URGENT, VERY_URGENT
 - **DeliveryType**: STANDARD, EXPRESS
-- **DocumentType**: TRADE_LICENSE, TAX_CERTIFICATE, KEP_ADDRESS, IDENTITY_CARD, DRIVER_LICENSE, VEHICLE_REGISTRATION, INSURANCE
+- **DocumentType**: TRADE_LICENSE, TAX_CERTIFICATE, KEP_ADDRESS, IDENTITY_CARD, DRIVER_LICENSE, VEHICLE_REGISTRATION, INSURANCE, ADDRESS_PROOF, CRIMINAL_RECORD, HEALTH_REPORT, TAX_PLATE, OTHER
+- **DocumentStatus**: PENDING, APPROVED, REJECTED
+- **NotificationType**: ORDER_CREATED, ORDER_ACCEPTED, ORDER_REJECTED, ORDER_DELIVERED, ORDER_CANCELLED, PAYMENT_RECEIVED, PAYMENT_FAILED, ACCOUNT_APPROVED, ACCOUNT_REJECTED, SYSTEM
+- **ReconciliationStatus**: PENDING, PAID, PARTIALLY_PAID, OVERDUE
+- **CompanyPaymentType**: DAILY_RECONCILIATION, MANUAL_PAYMENT, REFUND, ADJUSTMENT
 
 ### Modül Yapısı
 
@@ -152,6 +182,9 @@ backend/src/
 ├── service-area/          # Hizmet bölgeleri modülü
 ├── documents/             # Belge yükleme ve yönetimi
 ├── users/                 # Kullanıcı CRUD işlemleri
+├── reconciliation/        # Günlük mutabakat işlemleri
+├── company-payments/      # Firma ödeme işlemleri modülü
+├── notifications/         # Bildirim servisi (WebSocket desteği)
 ├── prisma/                # Veritabanı servisi
 │   └── prisma.service.ts  # Prisma client wrapper
 ├── cache/                 # Redis cache modülü
@@ -254,7 +287,7 @@ DATABASE_URL="postgresql://username:password@localhost:5432/kuryemburadav1?schem
 # JWT
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=7d
-JWT_REFRESH_EXPIRES_IN=30d
+JWT_REFRESH_EXPIRES_IN=30d  # Refresh token süresi
 
 # Redis Cache
 REDIS_HOST=localhost
@@ -380,22 +413,28 @@ Frontend için henüz test konfigürasyonu yapılmamış durumda.
 
 ## Kritik Konular ve Dikkat Edilmesi Gerekenler
 
-1. **Port Konfigürasyonu**: Backend varsayılan olarak 3001 portunda çalışır
+1. **Port Konfigürasyonu**: Backend varsayılan olarak 3001 portunda çalışır (main.ts'de default 3000 ama .env'de 3001 önerilir)
 2. **Database Adı**: PostgreSQL veritabanı adı `kuryemburadav1` olmalı
-3. **Token Yönetimi**: Access token cookie'de saklanır, refresh token rotation uygulanır
-4. **Route Korumaları**: Frontend middleware.ts dosyası tüm route korumaları için kritik
-5. **Dosya Yükleme**: Belgeler `backend/uploads/` dizinine kaydedilir
+3. **Token Yönetimi**: Access token cookie'de saklanır, refresh token rotation uygulanır (RefreshToken tablosunda family tracking)
+4. **Route Korumaları**: Frontend middleware.ts dosyası tüm route korumaları için kritik - JWT decode ile role bazlı yönlendirme
+5. **Dosya Yükleme**: Belgeler `backend/uploads/` dizinine kaydedilir, static files olarak servis edilir
 6. **Role Hiyerarşisi**: SUPER_ADMIN > COMPANY = COURIER
 7. **Status Yönetimi**: User, Company ve Courier için ayrı status enum'ları mevcut
 8. **Cache Strategy**: Redis ile cache-manager v7 kullanılıyor (TTL ve max items konfigürasyonu)
+9. **WebSocket Bağlantısı**: Notifications modülü Socket.IO kullanır, real-time bildirimler için
+10. **Mutabakat Sistemi**: DailyReconciliation ve CompanyPayment modülleri firma borç takibi için kritik
+11. **Global Validation**: ValidationPipe whitelist ve forbidNonWhitelisted aktif - güvenlik için önemli
 
 ## Common Pitfalls ve Çözümleri
 
 1. **Prisma Client Hatası**: Migration sonrası `npm run prisma:generate` komutunu çalıştırmayı unutma
-2. **CORS Hatası**: Frontend farklı portta çalışıyorsa backend CORS ayarlarını kontrol et
-3. **Token Expired**: Refresh token mekanizması api-client.ts'de otomatik çalışır
+2. **CORS Hatası**: Frontend farklı portta çalışıyorsa backend CORS ayarlarını kontrol et (main.ts'de credentials: true)
+3. **Token Expired**: Refresh token mekanizması api-client.ts'de otomatik çalışır, family tracking ile güvenli
 4. **File Upload Limiti**: MAX_FILE_SIZE env değişkeni ile ayarlanır (default: 10MB)
 5. **Test Database**: Test için ayrı veritabanı kullan, production veritabanını kullanma
+6. **Middleware Route Matching**: Frontend middleware'de matcher config'i güncellemeyi unutma
+7. **WebSocket Connection**: Socket.IO client bağlantısı için credentials gerekli
+8. **Enum Validation**: Yeni enum değerleri eklerken hem Prisma schema hem DTO'ları güncelle
 
 ## Renk Paletimiz
 
