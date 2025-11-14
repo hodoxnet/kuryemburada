@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,12 +11,12 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { 
-  Building2, 
-  Phone, 
-  Mail, 
-  FileText, 
-  Upload, 
+import {
+  Building2,
+  Phone,
+  Mail,
+  FileText,
+  Upload,
   CheckCircle,
   ArrowLeft,
   ArrowRight,
@@ -28,6 +28,7 @@ import {
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiClient } from "@/lib/api-client";
+import { getAllProvinces, getDistrictsByProvinceId, Province, District } from "@/lib/api/geography";
 
 interface CompanyFormData {
   // Adım 1: Firma & Login
@@ -96,12 +97,74 @@ export default function CompanyApplicationPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<CompanyFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>("");
+
+  // İlleri yükle
+  useEffect(() => {
+    const loadProvinces = async () => {
+      try {
+        setLoadingProvinces(true);
+        const data = await getAllProvinces();
+        setProvinces(data);
+      } catch (error) {
+        console.error('İller yüklenirken hata oluştu:', error);
+        toast.error('İller yüklenirken hata oluştu');
+      } finally {
+        setLoadingProvinces(false);
+      }
+    };
+
+    loadProvinces();
+  }, []);
+
+  // İl değiştiğinde ilçeleri yükle
+  useEffect(() => {
+    const loadDistricts = async () => {
+      if (!selectedProvinceId) {
+        setDistricts([]);
+        return;
+      }
+
+      try {
+        setLoadingDistricts(true);
+        const data = await getDistrictsByProvinceId(selectedProvinceId);
+        setDistricts(data);
+      } catch (error) {
+        console.error('İlçeler yüklenirken hata oluştu:', error);
+        toast.error('İlçeler yüklenirken hata oluştu');
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
+
+    loadDistricts();
+  }, [selectedProvinceId]);
 
   const handleInputChange = (field: keyof CompanyFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleProvinceChange = (provinceId: string) => {
+    const province = provinces.find(p => p.id === provinceId);
+    if (province) {
+      setSelectedProvinceId(provinceId);
+      handleInputChange('city', province.name);
+      handleInputChange('district', ''); // İlçeyi sıfırla
+    }
+  };
+
+  const handleDistrictChange = (districtId: string) => {
+    const district = districts.find(d => d.id === districtId);
+    if (district) {
+      handleInputChange('district', district.name);
+    }
   };
 
   const handleFileChange = (field: keyof CompanyFormData, file: File | null) => {
@@ -416,37 +479,44 @@ export default function CompanyApplicationPage() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">İl *</Label>
-                  <Select value={formData.city} onValueChange={(value) => {
-                    handleInputChange('city', value);
-                    handleInputChange('district', ''); // Reset district when city changes
-                  }}>
+                  <Select
+                    value={selectedProvinceId}
+                    onValueChange={handleProvinceChange}
+                    disabled={loadingProvinces}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="İl seçin" />
+                      <SelectValue placeholder={loadingProvinces ? "Yükleniyor..." : "İl seçin"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {cities.map((city) => (
-                        <SelectItem key={city} value={city}>
-                          {city}
+                      {provinces.map((province) => (
+                        <SelectItem key={province.id} value={province.id}>
+                          {province.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="district">İlçe *</Label>
-                  <Select 
-                    value={formData.district} 
-                    onValueChange={(value) => handleInputChange('district', value)}
-                    disabled={!formData.city}
+                  <Select
+                    value={districts.find(d => d.name === formData.district)?.id || ""}
+                    onValueChange={handleDistrictChange}
+                    disabled={!selectedProvinceId || loadingDistricts}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="İlçe seçin" />
+                      <SelectValue placeholder={
+                        !selectedProvinceId
+                          ? "Önce il seçin"
+                          : loadingDistricts
+                          ? "Yükleniyor..."
+                          : "İlçe seçin"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {(districts[formData.city as keyof typeof districts] || districts.default).map((district) => (
-                        <SelectItem key={district} value={district}>
-                          {district}
+                      {districts.map((district) => (
+                        <SelectItem key={district.id} value={district.id}>
+                          {district.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
