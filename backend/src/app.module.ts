@@ -22,6 +22,7 @@ import { ServiceAreaModule } from './service-area/service-area.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CompanyPaymentsModule } from './company-payments/company-payments.module';
+import { GeographyModule } from './geography/geography.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { CompanyPaymentsModule } from './company-payments/company-payments.modul
     ReconciliationModule,
     NotificationsModule,
     CompanyPaymentsModule,
+    GeographyModule,
   ],
   controllers: [AppController],
   providers: [
