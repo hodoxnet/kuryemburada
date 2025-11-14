@@ -92,6 +92,368 @@ npm run start              # Production server başlat
 npm run lint               # ESLint kontrolü
 ```
 
+## Production Server Konfigürasyonu
+
+### Sunucu Bilgileri
+- **Sunucu Tipi**: LiteSpeed Web Server + Apache (Plesk kontrol panelli)
+- **İşletim Sistemi**: Linux 4.18.0-477.27.2.lve.el8.x86_64
+- **Sunucu Path**: `/var/www/vhosts/kuryemburada.com/httpdocs/`
+- **Process Manager**: PM2
+
+### Production URL'leri
+- **Ana Domain**: https://kuryemburada.com (Frontend - port 4005)
+- **API Subdomain**: https://api.kuryemburada.com (Backend - port 4004)
+- **Admin Subdomain**: https://admin.kuryemburada.com → /admin/login
+- **Firma Subdomain**: https://firma.kuryemburada.com → /company/login
+- **Kurye Subdomain**: https://kurye.kuryemburada.com → /courier/login
+
+### PM2 Process Yönetimi
+
+Production'da tüm uygulamalar PM2 ile çalıştırılır:
+
+```bash
+# Process listesini görüntüle
+pm2 list
+
+# Backend process (port 4004)
+cd /var/www/vhosts/kuryemburada.com/httpdocs/backend
+pm2 start npm --name "kuryemburada-backend" -- run start:prod
+pm2 save
+
+# Frontend process (port 4005)
+cd /var/www/vhosts/kuryemburada.com/httpdocs/frontend
+pm2 start npm --name "kuryemburada-frontend" -- run start
+pm2 save
+
+# Process yönetimi
+pm2 restart kuryemburada-backend
+pm2 restart kuryemburada-frontend
+pm2 stop kuryemburada-backend
+pm2 stop kuryemburada-frontend
+pm2 logs kuryemburada-backend
+pm2 logs kuryemburada-frontend
+pm2 logs --lines 100
+
+# PM2 auto-startup (sistem başlangıcında çalışması için)
+pm2 startup
+pm2 save
+```
+
+### Production Database Bilgileri
+```bash
+# PostgreSQL Credentials (hassas bilgiler - güvenli sakla)
+Veritabanı Host: localhost
+Veritabanı Adı: admin_kuryembrd
+Kullanıcı Adı: admin_kuryembrdx1
+Port: 5432 (default PostgreSQL)
+
+# Database URL formatı:
+DATABASE_URL="postgresql://admin_kuryembrdx1:PASSWORD@localhost:5432/admin_kuryembrd?schema=public"
+```
+
+**ÖNEMLİ NOT**: Şifre bilgisi güvenlik nedeniyle burada saklanmıyor. Backend `.env` dosyasından kontrol edilebilir.
+
+### Apache/LiteSpeed Proxy Konfigürasyonu
+
+Her subdomain için Plesk üzerinden Apache Directives ayarlanmıştır:
+
+#### Admin Subdomain (admin.kuryemburada.com)
+```apache
+ProxyPreserveHost On
+ProxyPass / http://127.0.0.1:4005/
+ProxyPassReverse / http://127.0.0.1:4005/
+
+# Subdomain header'ı Next.js middleware için
+RequestHeader set X-Forwarded-Proto "https"
+RequestHeader set X-Forwarded-Host "admin.kuryemburada.com"
+RequestHeader set X-Forwarded-Port "443"
+RequestHeader set X-Real-IP %{REMOTE_ADDR}s
+RequestHeader set X-Subdomain "admin"
+
+# WebSocket desteği
+RewriteEngine On
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^/?(.*) "ws://127.0.0.1:4005/$1" [P,L]
+
+ProxyErrorOverride Off
+ProxyTimeout 300
+ProxyBadHeader Ignore
+```
+
+#### Firma Subdomain (firma.kuryemburada.com)
+```apache
+ProxyPreserveHost On
+ProxyPass / http://127.0.0.1:4005/
+ProxyPassReverse / http://127.0.0.1:4005/
+
+RequestHeader set X-Forwarded-Proto "https"
+RequestHeader set X-Forwarded-Host "firma.kuryemburada.com"
+RequestHeader set X-Forwarded-Port "443"
+RequestHeader set X-Real-IP %{REMOTE_ADDR}s
+RequestHeader set X-Subdomain "company"
+
+# WebSocket desteği
+RewriteEngine On
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^/?(.*) "ws://127.0.0.1:4005/$1" [P,L]
+
+ProxyErrorOverride Off
+ProxyTimeout 300
+ProxyBadHeader Ignore
+```
+
+#### Kurye Subdomain (kurye.kuryemburada.com)
+```apache
+ProxyPreserveHost On
+ProxyPass / http://127.0.0.1:4005/
+ProxyPassReverse / http://127.0.0.1:4005/
+
+RequestHeader set X-Forwarded-Proto "https"
+RequestHeader set X-Forwarded-Host "kurye.kuryemburada.com"
+RequestHeader set X-Forwarded-Port "443"
+RequestHeader set X-Real-IP %{REMOTE_ADDR}s
+RequestHeader set X-Subdomain "courier"
+
+# WebSocket desteği
+RewriteEngine On
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^/?(.*) "ws://127.0.0.1:4005/$1" [P,L]
+
+ProxyErrorOverride Off
+ProxyTimeout 300
+ProxyBadHeader Ignore
+```
+
+#### API Subdomain (api.kuryemburada.com)
+```apache
+ProxyPreserveHost On
+ProxyPass / http://127.0.0.1:4004/
+ProxyPassReverse / http://127.0.0.1:4004/
+
+# CORS Headers
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+RequestHeader set X-Forwarded-Proto "https"
+RequestHeader set X-Forwarded-Host "api.kuryemburada.com"
+RequestHeader set X-Forwarded-Port "443"
+
+ProxyErrorOverride Off
+ProxyTimeout 300
+```
+
+### Production Environment Variables
+
+#### Backend (.env)
+```bash
+# Application
+PORT=4004
+NODE_ENV=production
+LOG_LEVEL=info
+
+# Database
+DATABASE_URL="postgresql://admin_kuryembrdx1:PASSWORD@localhost:5432/admin_kuryembrd?schema=public"
+
+# JWT
+JWT_SECRET=production-super-secret-key-change-this
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_EXPIRES_IN=30d
+
+# Redis Cache (opsiyonel - henüz kurulmamış)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_TTL=3600
+REDIS_MAX_ITEMS=100
+
+# File Upload
+MAX_FILE_SIZE=10485760
+UPLOAD_PATH=./uploads
+
+# Google Maps
+GOOGLE_MAPS_API_KEY=AIzaSyCYWqotehex8fjyhxKbVFJm-WKhQaDQicE
+
+# Swagger
+SWAGGER_TITLE="Kurye Operasyon API"
+SWAGGER_DESCRIPTION="Kurye Operasyon Sistemi API Dokümantasyonu"
+SWAGGER_VERSION=1.0.0
+SWAGGER_PATH=api-docs
+```
+
+#### Frontend (.env.local)
+```bash
+NEXT_PUBLIC_API_URL=https://api.kuryemburada.com
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCYWqotehex8fjyhxKbVFJm-WKhQaDQicE
+```
+
+### Demo Kullanıcı Hesapları
+
+Production veritabanında seed edilmiş test hesapları:
+
+```
+Admin Hesabı:
+Email: admin@kuryem.com
+Şifre: admin123
+Rol: SUPER_ADMIN
+
+Firma Hesabı:
+Email: firma@test.com
+Şifre: firma123
+Rol: COMPANY
+
+Kurye Hesabı:
+Email: kurye@test.com
+Şifre: kurye123
+Rol: COURIER
+```
+
+### Deployment Workflow
+
+Production'a yeni kod deploy etmek için:
+
+```bash
+# 1. Sunucuya bağlan (SSH)
+ssh kullanıcı@sunucu
+
+# 2. Proje dizinine git
+cd /var/www/vhosts/kuryemburada.com/httpdocs
+
+# 3. En son kodu çek
+git pull origin main
+
+# 4. Backend güncellemeleri
+cd backend
+npm install  # Yeni bağımlılıklar varsa
+npm run build  # Production build
+npx prisma generate  # Prisma client güncelle
+npx prisma db push  # Şema değişiklikleri varsa (migration olmadan)
+pm2 restart kuryemburada-backend
+
+# 5. Frontend güncellemeleri
+cd ../frontend
+npm install  # Yeni bağımlılıklar varsa
+npm run build  # Production build
+pm2 restart kuryemburada-frontend
+
+# 6. Log kontrol
+pm2 logs --lines 50
+```
+
+### Database Migration (Production)
+
+**ÖNEMLİ**: Production veritabanında shadow database izni olmadığı için `prisma migrate` yerine `prisma db push` kullanılıyor.
+
+```bash
+cd /var/www/vhosts/kuryemburada.com/httpdocs/backend
+
+# Şema değişikliklerini uygula
+npx prisma db push
+
+# Prisma client güncelle
+npx prisma generate
+
+# Seed çalıştır (sadece ilk kurulumda)
+npx ts-node prisma/seed.ts
+
+# Veritabanını görüntüle (GUI)
+npx prisma studio --browser none --port 5555
+# Sonra tarayıcıda: http://sunucu-ip:5555
+```
+
+### Dosya Sistemi Yapısı (Production)
+
+```
+/var/www/vhosts/kuryemburada.com/httpdocs/
+├── backend/
+│   ├── dist/                # Build output (PM2 bundan çalışır)
+│   │   └── src/
+│   │       └── main.js      # Ana entry point
+│   ├── src/                 # Source code
+│   ├── prisma/              # Database schema ve migrations
+│   ├── uploads/             # Upload edilen dosyalar (belgeler)
+│   ├── logs/                # Winston log dosyaları
+│   ├── node_modules/
+│   ├── .env                 # Production environment (GİT'E EKLENMEMELİ)
+│   └── package.json
+├── frontend/
+│   ├── .next/               # Next.js build output
+│   ├── src/
+│   ├── public/
+│   ├── node_modules/
+│   ├── .env.local           # Production environment (GİT'E EKLENMEMELİ)
+│   └── package.json
+├── KuryeApp/                # React Native mobile app (production'da kullanılmıyor)
+├── .git/
+├── .gitignore
+└── CLAUDE.md                # Bu dosya
+```
+
+### Port Kullanımı
+
+- **4004**: Backend NestJS API (PM2: kuryemburada-backend)
+- **4005**: Frontend Next.js (PM2: kuryemburada-frontend)
+- **5432**: PostgreSQL Database
+- **5555**: Prisma Studio (manuel başlatıldığında)
+- **6379**: Redis (opsiyonel - henüz kurulmamış)
+
+### SSL/HTTPS Konfigürasyonu
+
+SSL sertifikaları Plesk tarafından otomatik yönetilmektedir (Let's Encrypt):
+- Tüm subdomain'ler HTTPS ile çalışır
+- HTTP → HTTPS otomatik yönlendirme aktif
+- Apache directives'de `X-Forwarded-Proto: https` header'ı gönderiliyor
+
+### Subdomain Routing Mantığı
+
+Frontend `middleware.ts` dosyası subdomain detection yaparak otomatik yönlendirme sağlar:
+
+1. **X-Subdomain Header** kontrolü yapılır (Apache tarafından set edilir)
+2. Subdomain'e göre otomatik route yönlendirmesi:
+   - `admin` → `/admin/login`
+   - `company` (firma) → `/company/login`
+   - `courier` (kurye) → `/courier/login`
+3. Ana domain herhangi bir subdomain kısıtlaması olmadan çalışır
+
+### Troubleshooting
+
+#### Backend çalışmıyor
+```bash
+pm2 logs kuryemburada-backend --lines 100
+pm2 restart kuryemburada-backend
+# Build hatası varsa:
+cd backend && npm run build
+```
+
+#### Frontend çalışmıyor
+```bash
+pm2 logs kuryemburada-frontend --lines 100
+pm2 restart kuryemburada-frontend
+# Build hatası varsa:
+cd frontend && npm run build
+```
+
+#### Database bağlantı hatası
+```bash
+# .env dosyasındaki DATABASE_URL'i kontrol et
+cat backend/.env | grep DATABASE_URL
+
+# PostgreSQL çalışıyor mu kontrol et
+sudo systemctl status postgresql
+```
+
+#### 502 Bad Gateway hatası
+- PM2 process'lerin çalıştığından emin ol: `pm2 list`
+- Port'ların doğru olduğunu kontrol et (4004, 4005)
+- Apache directives'lerin doğru yapılandırıldığından emin ol
+
+#### Upload edilmiş dosyalar görünmüyor
+- `backend/uploads/` dizininin write izinlerini kontrol et
+- Static file serving ayarlarını kontrol et (main.ts)
+
 ## Yüksek Seviye Mimari
 
 ### Teknoloji Stack'i
