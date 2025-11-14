@@ -438,10 +438,37 @@ model CompanyPayment {
   processedAt          DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
-  
+
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+
   @@index([companyId])
   @@index([reconciliationId])
   @@index([paymentType])
+}
+
+model Province {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  plateCode String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  districts District[]
+
+  @@index([name])
+  @@index([plateCode])
+}
+
+model District {
+  id         String   @id @default(uuid())
+  name       String
+  provinceId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  province Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+
+  @@unique([name, provinceId])
+  @@index([provinceId])
+  @@index([name])
 }
