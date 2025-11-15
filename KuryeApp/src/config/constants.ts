@@ -10,10 +10,10 @@ export const APP_CONFIG = {
   APP_VERSION: '1.0.0',
   APP_BUILD: 1,
 
-  // URL'ler - Sunucu API'si
-  WEB_URL_DEV: 'https://kurye.kuryemburada.com',
-  WEB_URL_PROD: 'https://kurye.kuryemburada.com',
-  WEB_URL_IOS_DEV: 'https://kurye.kuryemburada.com',
+  // URL'ler - Sunucu API'si (direkt kurye login sayfası)
+  WEB_URL_DEV: 'https://kurye.kuryemburada.com/courier/login',
+  WEB_URL_PROD: 'https://kurye.kuryemburada.com/courier/login',
+  WEB_URL_IOS_DEV: 'https://kurye.kuryemburada.com/courier/login',
 
   // Timeout değerleri (milisaniye)
   NETWORK_TIMEOUT: 10000,
