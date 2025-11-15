@@ -146,12 +146,6 @@ export default function CompanyLoginPage() {
                 Geri dön
               </Button>
             </div>
-            
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                <strong>Demo Firma:</strong> firma@test.com / firma123
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>

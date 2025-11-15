@@ -149,12 +149,6 @@ export default function CourierLoginPage() {
                 </Button>
               </div>
             )}
-            
-            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-md">
-              <p className="text-xs text-green-700 dark:text-green-300">
-                <strong>Demo Kurye:</strong> kurye@test.com / kurye123
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>

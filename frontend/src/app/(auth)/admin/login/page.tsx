@@ -132,12 +132,6 @@ export default function AdminLoginPage() {
                 Geri dön
               </Button>
             </div>
-            
-            <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-md">
-              <p className="text-xs text-red-700 dark:text-red-300">
-                <strong>Demo Admin:</strong> admin@kuryem.com / admin123
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>
