@@ -62,17 +62,6 @@ export default function AuthSelectorPage() {
             </div>
           </Button>
         </CardContent>
-
-        <div className="px-6 pb-6">
-          <div className="mt-6 pt-6 border-t text-center text-sm text-muted-foreground">
-            <p className="mb-2"><strong>Demo Hesapları:</strong></p>
-            <div className="space-y-1 text-xs">
-              <p><strong>Admin:</strong> admin@kuryem.com / admin123</p>
-              <p><strong>Firma:</strong> firma@test.com / firma123</p>
-              <p><strong>Kurye:</strong> kurye@test.com / kurye123</p>
-            </div>
-          </div>
-        </div>
       </Card>
     </div>
   );

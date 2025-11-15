@@ -304,17 +304,17 @@ export default function HomePage() {
             <div className="text-center">
               <Phone className="h-8 w-8 text-navy-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-1">Telefon</h3>
-              <p className="text-gray-600 dark:text-gray-400">0850 XXX XX XX</p>
+              <p className="text-gray-600 dark:text-gray-400">+90 552 254 72 72</p>
             </div>
             <div className="text-center">
               <Mail className="h-8 w-8 text-navy-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-1">E-posta</h3>
-              <p className="text-gray-600 dark:text-gray-400">destek@kuryemburada.com</p>
+              <p className="text-gray-600 dark:text-gray-400">info@kuryemburada.com</p>
             </div>
             <div className="text-center">
               <MapPin className="h-8 w-8 text-navy-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-1">Adres</h3>
-              <p className="text-gray-600 dark:text-gray-400">İstanbul, Türkiye</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">Ferhatpaşa Mah. Mescit Sok. Rıza Civaş Pasajı No: 7/1 Çatalca / İstanbul</p>
             </div>
           </div>
         </div>
