@@ -19,6 +19,10 @@ import { NotificationsService } from './notifications.service';
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  transports: ['websocket', 'polling'], // Her iki transport'u da destekle
+  allowEIO3: true, // Engine.IO v3 uyumluluğu
+  pingTimeout: 60000,
+  pingInterval: 25000,
 })
 export class NotificationsGateway 
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {

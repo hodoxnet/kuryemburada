@@ -10,13 +10,16 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: createWinstonLogger(),
+    cors: true, // WebSocket için CORS
   });
   const configService = app.get(ConfigService);
 
-  // Enable CORS
+  // Enable CORS for both HTTP and WebSocket
   app.enableCors({
     origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   // Serve static files from uploads directory
