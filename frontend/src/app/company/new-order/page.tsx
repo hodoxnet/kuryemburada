@@ -100,8 +100,17 @@ export default function NewOrderPage() {
     console.log('Company address:', user?.company?.address);
     
     // Address JSON obje olarak geliyor, detail alanını kullanmalıyız
-    const companyAddress = user?.company?.address?.detail || user?.company?.address;
-    
+    const addressObj = user?.company?.address;
+    let companyAddress: string | undefined;
+
+    if (typeof addressObj === 'string') {
+      companyAddress = addressObj;
+    } else if (addressObj && typeof addressObj === 'object') {
+      // JSON object ise detail alanını veya birleşik adresi kullan
+      companyAddress = addressObj.detail ||
+        [addressObj.district, addressObj.city].filter(Boolean).join(', ');
+    }
+
     if (companyAddress && typeof companyAddress === 'string') {
       let cancelled = false;
       const doGeocode = async () => {
@@ -415,31 +424,45 @@ export default function NewOrderPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Firma adresi checkbox */}
-              {(user?.company?.address?.detail || user?.company?.address) && (
-                <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Checkbox
-                    id="useCompanyAddress"
-                    checked={useCompanyAddress}
-                    onCheckedChange={(checked) => {
-                      setUseCompanyAddress(checked as boolean);
-                      if (checked && companyAddressCoords) {
-                        // Geocode edilmiş firma adresini kullan
-                        setPickupAddress(companyAddressCoords);
-                      } else {
-                        setPickupAddress(undefined);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="useCompanyAddress" className="cursor-pointer flex-1">
-                    <div>
-                      <div className="font-medium">Firma adresimi kullan</div>
-                      <div className="text-sm text-muted-foreground">
-                        {user.company.name} - {user.company.address?.detail || user.company.address}
+              {(() => {
+                // Address'i güvenli şekilde string'e çevir
+                const addr = user?.company?.address;
+                let displayAddress = '';
+                if (typeof addr === 'string') {
+                  displayAddress = addr;
+                } else if (addr && typeof addr === 'object') {
+                  displayAddress = addr.detail ||
+                    [addr.district, addr.city].filter(Boolean).join(', ');
+                }
+
+                if (!displayAddress) return null;
+
+                return (
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <Checkbox
+                      id="useCompanyAddress"
+                      checked={useCompanyAddress}
+                      onCheckedChange={(checked) => {
+                        setUseCompanyAddress(checked as boolean);
+                        if (checked && companyAddressCoords) {
+                          // Geocode edilmiş firma adresini kullan
+                          setPickupAddress(companyAddressCoords);
+                        } else {
+                          setPickupAddress(undefined);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="useCompanyAddress" className="cursor-pointer flex-1">
+                      <div>
+                        <div className="font-medium">Firma adresimi kullan</div>
+                        <div className="text-sm text-muted-foreground">
+                          {user?.company?.name} - {displayAddress}
+                        </div>
                       </div>
-                    </div>
-                  </Label>
-                </div>
-              )}
+                    </Label>
+                  </div>
+                );
+              })()}
               
               <GoogleMap
                 onPickupSelect={(address) => {
