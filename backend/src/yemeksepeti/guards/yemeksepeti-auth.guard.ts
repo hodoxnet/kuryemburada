@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class YemeksepetiAuthGuard implements CanActivate {
@@ -39,7 +40,20 @@ export class YemeksepetiAuthGuard implements CanActivate {
 
     const token = authHeader.substring('Bearer '.length).trim();
 
-    if (token !== inboundToken) {
+    // Yemeksepeti JWT token gönderiyor - secret key ile doğrula
+    try {
+      // JWT formatında mı kontrol et (eyJ ile başlar)
+      if (token.startsWith('eyJ')) {
+        const decoded = jwt.verify(token, inboundToken, { algorithms: ['HS512', 'HS256'] });
+        console.log('[YemeksepetiAuthGuard] JWT doğrulandı:', decoded);
+      } else {
+        // Statik token karşılaştırması (fallback)
+        if (token !== inboundToken) {
+          throw new Error('Token eşleşmiyor');
+        }
+      }
+    } catch (error) {
+      console.log('[YemeksepetiAuthGuard] Token doğrulama hatası:', error.message);
       throw new UnauthorizedException('Geçersiz Yemeksepeti imzası');
     }
 
