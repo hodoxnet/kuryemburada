@@ -1,112 +1,83 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { orderService, Order } from '@/lib/api/order.service';
+import { OrderDetailSheet } from './components/OrderDetailSheet';
 import { toast } from 'sonner';
 import {
   UtensilsCrossed,
-  MapPin,
-  Clock,
-  User,
-  Phone,
   Search,
-  Filter,
   Eye,
   CheckCircle,
-  XCircle,
   Truck,
   Timer,
-  AlertCircle,
-  Package,
-  ExternalLink,
-  ShoppingBag,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 const statusColors: Record<string, string> = {
-  PENDING: 'warning',
-  ACCEPTED: 'info',
-  IN_PROGRESS: 'info',
-  DELIVERED: 'success',
-  CANCELLED: 'destructive',
-  FAILED: 'destructive',
-};
-
-const statusIcons: Record<string, any> = {
-  PENDING: Timer,
-  ACCEPTED: CheckCircle,
-  IN_PROGRESS: Truck,
-  DELIVERED: CheckCircle,
-  CANCELLED: XCircle,
-  FAILED: AlertCircle,
+  PENDING: 'bg-amber-50 text-amber-700 border border-amber-200',
+  ACCEPTED: 'bg-sky-50 text-sky-700 border border-sky-200',
+  IN_PROGRESS: 'bg-violet-50 text-violet-700 border border-violet-200',
+  DELIVERED: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  CANCELLED: 'bg-slate-50 text-slate-600 border border-slate-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border border-rose-200',
 };
 
 const statusLabels: Record<string, string> = {
   PENDING: 'Bekliyor',
-  ACCEPTED: 'Onaylandı',
+  ACCEPTED: 'Kabul Edildi',
   IN_PROGRESS: 'Yolda',
   DELIVERED: 'Teslim Edildi',
   CANCELLED: 'İptal Edildi',
-  FAILED: 'Başarısız',
+  REJECTED: 'Reddedildi',
 };
 
-const integrationStatusLabels: Record<string, string> = {
-  dispatched: 'Gönderildi',
-  order_created: 'Sipariş Oluşturuldu',
-  failed: 'Başarısız',
-  order_accepted: 'Kabul Edildi',
-  order_rejected: 'Reddedildi',
-  order_picked_up: 'Alındı',
-};
-
-const integrationStatusColors: Record<string, string> = {
-  dispatched: 'warning',
-  order_created: 'success',
-  failed: 'destructive',
-  order_accepted: 'success',
-  order_rejected: 'destructive',
-  order_picked_up: 'info',
+// Yemeksepeti payload'ından sipariş tutarını al
+const getOrderTotal = (order: Order): number => {
+  const payload = order.yemeksepetiOrder?.payload as any;
+  if (payload?.price?.grandTotal) {
+    return parseFloat(payload.price.grandTotal);
+  }
+  return 0;
 };
 
 export default function YemeksepetiOrdersPage() {
-  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [total, setTotal] = useState(0);
   const [requestingCouriers, setRequestingCouriers] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  useEffect(() => {
-    filterOrders();
-  }, [orders, searchTerm, statusFilter]);
-
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const result = await orderService.getYemeksepetiOrders({ take: 100 });
+      const result = await orderService.getYemeksepetiOrders({ take: 200 });
       if (result && result.data) {
         setOrders(result.data);
         setTotal(result.total);
@@ -123,11 +94,9 @@ export default function YemeksepetiOrdersPage() {
     }
   };
 
-  const filterOrders = () => {
-    if (!Array.isArray(orders)) {
-      setFilteredOrders([]);
-      return;
-    }
+  // Filtrelenmiş siparişler
+  const filteredOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
 
     let filtered = [...orders];
 
@@ -138,10 +107,11 @@ export default function YemeksepetiOrdersPage() {
 
     // Arama filtresi
     if (searchTerm) {
+      const search = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
-        order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.yemeksepetiOrder?.remoteOrderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.recipientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.orderNumber?.toLowerCase().includes(search) ||
+        order.yemeksepetiOrder?.remoteOrderId?.toLowerCase().includes(search) ||
+        order.recipientName?.toLowerCase().includes(search) ||
         order.recipientPhone?.includes(searchTerm)
       );
     }
@@ -149,12 +119,20 @@ export default function YemeksepetiOrdersPage() {
     // Tarihe göre sırala (en yeni önce)
     filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    setFilteredOrders(filtered);
-  };
+    return filtered;
+  }, [orders, searchTerm, statusFilter]);
+
+  // Sayfalama
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filteredOrders.length / pageSize);
 
   const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
-    setDetailsOpen(true);
+    setSheetOpen(true);
   };
 
   const handleRequestCouriers = async (orderId: string) => {
@@ -162,6 +140,8 @@ export default function YemeksepetiOrdersPage() {
       setRequestingCouriers(orderId);
       await orderService.requestCouriers(orderId);
       toast.success('Kuryelere bildirim gönderildi');
+      // Siparişleri yenile
+      await fetchOrders();
     } catch (error: any) {
       console.error('Kurye çağırma hatası:', error);
       const errorMessage = error?.response?.data?.message || 'Kurye çağırılamadı';
@@ -171,28 +151,19 @@ export default function YemeksepetiOrdersPage() {
     }
   };
 
-  const getOrderProgress = (status: string) => {
-    const statuses = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'DELIVERED'];
-    const currentIndex = statuses.indexOf(status);
-    return ((currentIndex + 1) / statuses.length) * 100;
-  };
-
-  // Yemeksepeti payload'dan ürünleri çıkar
-  const getOrderItems = (order: Order) => {
-    const payload = order.yemeksepetiOrder?.payload;
-    if (!payload) return [];
-
-    // Yemeksepeti payload yapısına göre ürünleri çıkar
-    // Payload yapısı değişkenlik gösterebilir
-    const items = payload.items || payload.orderItems || payload.products || [];
-    return items;
-  };
+  // İstatistikler
+  const stats = useMemo(() => ({
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'PENDING').length,
+    inProgress: orders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'ACCEPTED').length,
+    delivered: orders.filter(o => o.status === 'DELIVERED').length,
+  }), [orders]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Yemeksepeti siparişleri yükleniyor...</p>
         </div>
       </div>
@@ -202,102 +173,85 @@ export default function YemeksepetiOrdersPage() {
   return (
     <div className="container mx-auto py-8 max-w-7xl">
       {/* Başlık */}
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-            <UtensilsCrossed className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Yemeksepeti Siparişleri</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Yemeksepeti entegrasyonundan gelen siparişler
-            </p>
-          </div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-800">Yemeksepeti Siparişleri</h1>
+          <p className="text-slate-500 text-sm mt-0.5">Entegrasyondan gelen siparişler</p>
         </div>
-        <Button variant="outline" onClick={fetchOrders}>
-          <RefreshCw className="w-4 h-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={fetchOrders} className="text-slate-600">
+          <RefreshCw className="w-4 h-4 mr-1.5" />
           Yenile
         </Button>
       </div>
 
       {/* İstatistikler */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Sipariş</CardTitle>
-            <UtensilsCrossed className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Bekleyen</CardTitle>
-            <Timer className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {orders.filter(o => o.status === 'PENDING').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Yolda</CardTitle>
-            <Truck className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {orders.filter(o => o.status === 'IN_PROGRESS').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Teslim Edildi</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {orders.filter(o => o.status === 'DELIVERED').length}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="bg-white border border-slate-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-500">Toplam</span>
+            <UtensilsCrossed className="h-4 w-4 text-slate-400" />
+          </div>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{stats.total}</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-500">Bekleyen</span>
+            <Timer className="h-4 w-4 text-amber-500" />
+          </div>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{stats.pending}</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-500">Yolda</span>
+            <Truck className="h-4 w-4 text-sky-500" />
+          </div>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{stats.inProgress}</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-500">Teslim</span>
+            <CheckCircle className="h-4 w-4 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-semibold text-slate-800 mt-1">{stats.delivered}</p>
+        </div>
       </div>
 
       {/* Filtreler */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Sipariş no, Yemeksepeti sipariş no, alıcı adı veya telefon ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Durum Filtrele" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tüm Durumlar</SelectItem>
-                <SelectItem value="PENDING">Bekliyor</SelectItem>
-                <SelectItem value="ACCEPTED">Onaylandı</SelectItem>
-                <SelectItem value="IN_PROGRESS">Yolda</SelectItem>
-                <SelectItem value="DELIVERED">Teslim Edildi</SelectItem>
-                <SelectItem value="CANCELLED">İptal Edildi</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Sipariş no, müşteri adı veya telefon ara..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="pl-9 bg-white border-slate-200 text-sm"
+          />
+        </div>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => {
+            setStatusFilter(v);
+            setCurrentPage(1);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-[160px] bg-white border-slate-200 text-sm">
+            <SelectValue placeholder="Durum" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tüm Durumlar</SelectItem>
+            <SelectItem value="PENDING">Bekliyor</SelectItem>
+            <SelectItem value="ACCEPTED">Kabul Edildi</SelectItem>
+            <SelectItem value="IN_PROGRESS">Yolda</SelectItem>
+            <SelectItem value="DELIVERED">Teslim Edildi</SelectItem>
+            <SelectItem value="CANCELLED">İptal Edildi</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Siparişler Listesi */}
+      {/* Siparişler Tablosu */}
       {filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -311,306 +265,133 @@ export default function YemeksepetiOrdersPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {filteredOrders.map((order) => {
-            const StatusIcon = statusIcons[order.status];
-            const progress = getOrderProgress(order.status);
-            const integrationStatus = order.yemeksepetiOrder?.status || 'dispatched';
-
-            return (
-              <Card key={order.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-orange-500">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    {/* Sol Kısım - Sipariş Bilgileri */}
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <StatusIcon className={`h-5 w-5 ${
-                            order.status === 'DELIVERED' ? 'text-green-500' :
-                            order.status === 'CANCELLED' || order.status === 'FAILED' ? 'text-red-500' :
-                            order.status === 'PENDING' ? 'text-yellow-500' : 'text-blue-500'
-                          }`} />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold">#{order.orderNumber}</p>
-                              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                                <UtensilsCrossed className="w-3 h-3 mr-1" />
-                                Yemeksepeti
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(order.createdAt), 'dd MMMM yyyy HH:mm', { locale: tr })}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={integrationStatusColors[integrationStatus] as any}>
-                            {integrationStatusLabels[integrationStatus] || integrationStatus}
-                          </Badge>
-                          <Badge variant={statusColors[order.status] as any}>
-                            {statusLabels[order.status]}
-                          </Badge>
-                        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b">
+                  <TableHead className="w-[100px] font-medium text-slate-600">Sipariş</TableHead>
+                  <TableHead className="font-medium text-slate-600">Müşteri</TableHead>
+                  <TableHead className="hidden lg:table-cell font-medium text-slate-600">Adres</TableHead>
+                  <TableHead className="text-right font-medium text-slate-600 w-[100px]">Tutar</TableHead>
+                  <TableHead className="font-medium text-slate-600 w-[110px]">Durum</TableHead>
+                  <TableHead className="hidden sm:table-cell font-medium text-slate-600 w-[90px]">Tarih</TableHead>
+                  <TableHead className="text-right w-[100px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedOrders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className="cursor-pointer hover:bg-slate-50/80 transition-colors"
+                    onClick={() => openOrderDetails(order)}
+                  >
+                    <TableCell className="py-3">
+                      <span className="font-mono text-sm text-slate-700">
+                        {order.yemeksepetiOrder?.remoteOrderId?.slice(-6) || order.orderNumber?.slice(-6)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div>
+                        <p className="font-medium text-slate-800 text-sm">{order.recipientName}</p>
+                        <p className="text-xs text-slate-500">{order.recipientPhone}</p>
                       </div>
-
-                      {/* Yemeksepeti Sipariş No */}
-                      {order.yemeksepetiOrder?.remoteOrderId && (
-                        <div className="flex items-center gap-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                          <ExternalLink className="h-4 w-4 text-orange-600" />
-                          <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                            Yemeksepeti Sipariş No: {order.yemeksepetiOrder.remoteOrderId}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* İlerleme Çubuğu */}
-                      {!['CANCELLED', 'FAILED'].includes(order.status) && (
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-orange-500 h-2 rounded-full transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Adres Bilgileri */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-green-500 mt-1" />
-                          <div className="text-sm">
-                            <p className="font-medium">Alım Noktası</p>
-                            <p className="text-muted-foreground">{order.pickupAddress?.address}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-red-500 mt-1" />
-                          <div className="text-sm">
-                            <p className="font-medium">Teslimat Noktası</p>
-                            <p className="text-muted-foreground">{order.deliveryAddress?.address}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Alıcı Bilgileri */}
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{order.recipientName}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{order.recipientPhone}</span>
-                        </div>
-                      </div>
-
-                      {/* Kurye Bilgisi */}
-                      {order.courier && (
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <Truck className="h-4 w-4 text-primary" />
-                          <div className="text-sm">
-                            <p className="font-medium">
-                              Kurye: {order.courier.fullName}
-                            </p>
-                            <p className="text-muted-foreground">{order.courier.phone}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Sağ Kısım - Fiyat ve İşlemler */}
-                    <div className="flex flex-col items-end justify-between gap-3">
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell py-3">
+                      <p className="text-sm text-slate-600 truncate max-w-[220px]">
+                        {(order.deliveryAddress as any)?.address || '-'}
+                      </p>
+                    </TableCell>
+                    <TableCell className="text-right py-3">
+                      <span className="font-semibold text-slate-800">
+                        ₺{getOrderTotal(order).toFixed(2)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Badge variant="secondary" className={`${statusColors[order.status] || 'bg-slate-100'} text-xs font-medium`}>
+                        {statusLabels[order.status] || order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell py-3">
                       <div className="text-right">
-                        <p className="text-2xl font-bold">₺{order.price?.toFixed(2)}</p>
-                        <p className="text-sm text-muted-foreground">{order.distance?.toFixed(1)} km</p>
+                        <p className="text-sm text-slate-700">
+                          {format(new Date(order.createdAt), 'HH:mm', { locale: tr })}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {format(new Date(order.createdAt), 'dd MMM', { locale: tr })}
+                        </p>
                       </div>
-
-                      <div className="flex gap-2">
+                    </TableCell>
+                    <TableCell className="text-right py-3">
+                      <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         {order.status === 'PENDING' && !order.courierId && (
                           <Button
-                            variant="default"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleRequestCouriers(order.id)}
                             disabled={requestingCouriers === order.id}
-                            className="bg-orange-500 hover:bg-orange-600"
+                            className="h-8 px-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100"
                           >
-                            <Truck className="w-4 h-4 mr-1" />
-                            {requestingCouriers === order.id ? 'Gönderiliyor...' : 'Kurye Çağır'}
+                            <Truck className="w-4 h-4" />
                           </Button>
                         )}
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => openOrderDetails(order)}
+                          className="h-8 px-2 text-slate-500 hover:text-slate-700"
                         >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Detay
+                          <Eye className="w-4 h-4" />
                         </Button>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Sayfalama */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <p className="text-sm text-muted-foreground">
+                  {filteredOrders.length} siparişten {(currentPage - 1) * pageSize + 1}-
+                  {Math.min(currentPage * pageSize, filteredOrders.length)} arası gösteriliyor
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {/* Sipariş Detay Modal */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UtensilsCrossed className="h-5 w-5 text-orange-500" />
-              Yemeksepeti Sipariş Detayı
-            </DialogTitle>
-            <DialogDescription>
-              {selectedOrder?.orderNumber} numaralı siparişin detayları
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedOrder && (
-            <div className="space-y-6">
-              {/* Sipariş Numaraları */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Sipariş No</p>
-                  <p className="font-semibold">{selectedOrder.orderNumber}</p>
-                </div>
-                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Yemeksepeti Sipariş No</p>
-                  <p className="font-semibold text-orange-700 dark:text-orange-400">
-                    {selectedOrder.yemeksepetiOrder?.remoteOrderId || '-'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Durum Bilgileri */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Sipariş Durumu</p>
-                  <Badge variant={statusColors[selectedOrder.status] as any}>
-                    {statusLabels[selectedOrder.status]}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Entegrasyon Durumu</p>
-                  <Badge variant={integrationStatusColors[selectedOrder.yemeksepetiOrder?.status || 'dispatched'] as any}>
-                    {integrationStatusLabels[selectedOrder.yemeksepetiOrder?.status || 'dispatched']}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Müşteri Bilgileri */}
-              <div>
-                <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Müşteri Bilgileri
-                </h4>
-                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-1">
-                  <p><span className="text-muted-foreground">Ad:</span> {selectedOrder.recipientName}</p>
-                  <p><span className="text-muted-foreground">Telefon:</span> {selectedOrder.recipientPhone}</p>
-                </div>
-              </div>
-
-              {/* Adres Bilgileri */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-green-500" />
-                    Alım Adresi
-                  </h4>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm">{selectedOrder.pickupAddress?.address}</p>
-                    {selectedOrder.pickupAddress?.detail && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedOrder.pickupAddress.detail}</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-red-500" />
-                    Teslimat Adresi
-                  </h4>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm">{selectedOrder.deliveryAddress?.address}</p>
-                    {selectedOrder.deliveryAddress?.detail && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedOrder.deliveryAddress.detail}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Sipariş Ürünleri */}
-              {selectedOrder.yemeksepetiOrder?.payload && (
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <ShoppingBag className="h-4 w-4" />
-                    Sipariş İçeriği
-                  </h4>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    {getOrderItems(selectedOrder).length > 0 ? (
-                      <ul className="space-y-2">
-                        {getOrderItems(selectedOrder).map((item: any, index: number) => (
-                          <li key={index} className="flex justify-between items-center">
-                            <span>{item.name || item.productName || item.title || `Ürün ${index + 1}`}</span>
-                            <span className="text-muted-foreground">
-                              x{item.quantity || item.count || 1}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Ürün detayları Yemeksepeti payload'ında mevcut değil
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Notlar */}
-              {selectedOrder.notes && (
-                <div>
-                  <h4 className="font-medium mb-2">Notlar</h4>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="text-sm">{selectedOrder.notes}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Kurye Bilgileri */}
-              {selectedOrder.courier && (
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Kurye Bilgileri
-                  </h4>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-1">
-                    <p><span className="text-muted-foreground">Ad:</span> {selectedOrder.courier.fullName}</p>
-                    <p><span className="text-muted-foreground">Telefon:</span> {selectedOrder.courier.phone}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Fiyat Bilgileri */}
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Mesafe:</span>
-                  <span>{selectedOrder.distance?.toFixed(1)} km</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Tahmini Süre:</span>
-                  <span>{selectedOrder.estimatedTime} dakika</span>
-                </div>
-                <div className="flex justify-between items-center text-lg font-bold mt-2 pt-2 border-t">
-                  <span>Toplam:</span>
-                  <span>₺{selectedOrder.price?.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Sipariş Detay Sheet */}
+      <OrderDetailSheet
+        order={selectedOrder}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onRequestCouriers={handleRequestCouriers}
+        isRequestingCouriers={requestingCouriers === selectedOrder?.id}
+      />
     </div>
   );
 }
