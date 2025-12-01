@@ -93,6 +93,7 @@ export default function YemeksepetiOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [total, setTotal] = useState(0);
+  const [requestingCouriers, setRequestingCouriers] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -154,6 +155,20 @@ export default function YemeksepetiOrdersPage() {
   const openOrderDetails = (order: Order) => {
     setSelectedOrder(order);
     setDetailsOpen(true);
+  };
+
+  const handleRequestCouriers = async (orderId: string) => {
+    try {
+      setRequestingCouriers(orderId);
+      await orderService.requestCouriers(orderId);
+      toast.success('Kuryelere bildirim gönderildi');
+    } catch (error: any) {
+      console.error('Kurye çağırma hatası:', error);
+      const errorMessage = error?.response?.data?.message || 'Kurye çağırılamadı';
+      toast.error(errorMessage);
+    } finally {
+      setRequestingCouriers(null);
+    }
   };
 
   const getOrderProgress = (status: string) => {
@@ -410,6 +425,18 @@ export default function YemeksepetiOrdersPage() {
                       </div>
 
                       <div className="flex gap-2">
+                        {order.status === 'PENDING' && !order.courierId && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleRequestCouriers(order.id)}
+                            disabled={requestingCouriers === order.id}
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            <Truck className="w-4 h-4 mr-1" />
+                            {requestingCouriers === order.id ? 'Gönderiliyor...' : 'Kurye Çağır'}
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

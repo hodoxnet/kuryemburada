@@ -199,6 +199,20 @@ export class OrdersController {
     return this.ordersService.cancelOrder(id, company.id, reason);
   }
 
+  @Post(':id/request-couriers')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Sipariş için kurye çağır (Firma - Manuel Mod)' })
+  @ApiResponse({ status: 200, description: 'Kuryelere bildirim gönderildi' })
+  @ApiResponse({ status: 400, description: 'Siparişe zaten kurye atanmış veya bekleyen durumda değil' })
+  @ApiResponse({ status: 403, description: 'Bu sipariş size ait değil' })
+  async requestCouriersForOrder(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    const company = await this.getCompanyFromUser(req.user.id);
+    return this.ordersService.requestCouriersForOrder(id, company.id);
+  }
+
   @Post(':id/rate')
   @Roles(UserRole.COMPANY)
   @ApiOperation({ summary: 'Siparişi değerlendir (Firma)' })

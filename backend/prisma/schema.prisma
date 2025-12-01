@@ -238,6 +238,7 @@ model Order {
   courierEarning   Float? // courier earning after commission
   status           OrderStatus   @default(PENDING)
   source           OrderSource   @default(MANUAL) // Sipariş kaynağı
+  isDispatchedToCouriers Boolean @default(true) // Kuryelere gösterilsin mi?
   acceptedAt       DateTime?
   pickedUpAt       DateTime?
   deliveredAt      DateTime?
@@ -306,6 +307,7 @@ model YemeksepetiVendor {
   platformRestaurantId String?
   pickupAddress        Json?
   isActive             Boolean  @default(true)
+  autoCourierDispatch  Boolean  @default(true)  // true=Otomatik kurye bildirimi, false=Manuel
   clientId             String?
   clientSecret         String?
   inboundToken         String?

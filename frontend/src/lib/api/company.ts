@@ -38,6 +38,7 @@ export interface YemeksepetiVendorSettings {
   platformRestaurantId?: string | null;
   pickupAddress: YemeksepetiPickupAddress | null;
   isActive: boolean;
+  autoCourierDispatch: boolean;
   clientId?: string | null;
   clientSecret?: string | null;
   inboundToken?: string | null;
@@ -100,6 +101,7 @@ export interface UpsertYemeksepetiVendorInput {
   platformRestaurantId?: string;
   pickupAddress: YemeksepetiPickupAddress;
   isActive?: boolean;
+  autoCourierDispatch?: boolean;
   clientId?: string;
   clientSecret?: string;
   inboundToken?: string;

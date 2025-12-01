@@ -186,6 +186,12 @@ export const orderService = {
     return normalizeOrder(response.data);
   },
 
+  // Sipariş için kurye çağır (manuel mod)
+  requestCouriers: async (id: string) => {
+    const response = await api.post<{ message: string }>(`/orders/${id}/request-couriers`);
+    return response.data;
+  },
+
   // Siparişi değerlendir
   rateOrder: async (id: string, rating: number, feedback?: string) => {
     const response = await api.post<any>(`/orders/${id}/rate`, { rating, feedback });

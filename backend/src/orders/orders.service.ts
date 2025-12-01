@@ -252,6 +252,17 @@ export class OrdersService {
     // Yemeksepeti siparişleri için service area kontrolü atla
     const isYemeksepetiOrder = createOrderDto.source === OrderSource.YEMEKSEPETI;
 
+    // Yemeksepeti siparişi için autoCourierDispatch ayarını önceden kontrol et
+    let shouldDispatchToCouriers = true; // Varsayılan: kuryelere gösterilsin
+    if (isYemeksepetiOrder) {
+      const vendor = await this.prisma.yemeksepetiVendor.findFirst({
+        where: { companyId },
+        select: { autoCourierDispatch: true },
+      });
+      // Manuel mod aktifse (autoCourierDispatch: false), siparişi kuryelere gösterme
+      shouldDispatchToCouriers = vendor?.autoCourierDispatch !== false;
+    }
+
     // Alım ve teslimat noktalarının koordinatlarını al
     const pickupPoint = createOrderDto.pickupAddress as any;
     const deliveryPoint = createOrderDto.deliveryAddress as any;
@@ -344,6 +355,7 @@ export class OrdersService {
         courierEarning: priceDetails.courierEarning,
         status: OrderStatus.PENDING,
         source: createOrderDto.source || OrderSource.MANUAL,
+        isDispatchedToCouriers: shouldDispatchToCouriers, // Manuel modda false, otomatik modda true
       },
       include: {
         company: {
@@ -362,7 +374,11 @@ export class OrdersService {
     await this.updateDailyReconciliation(companyId, order);
 
     // Müsait kuryelere bildirim gönder
-    await this.notifyAvailableCouriers(order);
+    // shouldDispatchToCouriers değişkeni önceden hesaplandı (Yemeksepeti + autoCourierDispatch kontrolü)
+    if (shouldDispatchToCouriers) {
+      await this.notifyAvailableCouriers(order);
+    }
+    // else: Manuel mod - kurye bildirimi gönderilmez, firma "Kurye Çağır" butonunu kullanacak
 
     this.logger.info('Sipariş oluşturuldu', {
       orderId: order.id,
@@ -589,6 +605,7 @@ export class OrdersService {
     const where = {
       status: OrderStatus.PENDING,
       courierId: null, // Henüz atanmamış siparişler
+      isDispatchedToCouriers: true, // Sadece kuryelere gösterilmek üzere işaretlenmiş siparişler
     };
 
     const [data, total] = await Promise.all([
@@ -1380,6 +1397,54 @@ export class OrdersService {
     });
 
     return cancelled;
+  }
+
+  // Firma tarafından sipariş için kurye çağır (manuel mod)
+  async requestCouriersForOrder(orderId: string, companyId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        company: {
+          select: {
+            name: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Sipariş bulunamadı');
+    }
+
+    if (order.companyId !== companyId) {
+      throw new ForbiddenException('Bu sipariş size ait değil');
+    }
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Sadece bekleyen siparişler için kurye çağırılabilir');
+    }
+
+    if (order.courierId) {
+      throw new BadRequestException('Bu siparişe zaten kurye atanmış');
+    }
+
+    // Siparişi kuryelere gösterilecek olarak işaretle
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { isDispatchedToCouriers: true },
+    });
+
+    // Müsait kuryelere bildirim gönder
+    await this.notifyAvailableCouriers(order);
+
+    this.logger.info('Sipariş için kurye çağrıldı (manuel)', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      companyId,
+    });
+
+    return { message: 'Kuryelere bildirim gönderildi' };
   }
 
   // Sipariş değerlendirme (firma tarafından)

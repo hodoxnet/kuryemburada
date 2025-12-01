@@ -26,6 +26,7 @@ import {
   KeyRound,
   ShieldCheck,
   Power,
+  Truck,
 } from 'lucide-react';
 import companyAPI, {
   CompanyProfile,
@@ -99,6 +100,7 @@ const yemeksepetiSchema = z.object({
     detail: z.string().optional(),
   }),
   isActive: z.boolean().optional(),
+  autoCourierDispatch: z.boolean().optional(),
   clientId: z.string().optional(),
   clientSecret: z.string().optional(),
   inboundToken: z.string().optional(),
@@ -151,6 +153,7 @@ export default function CompanyProfilePage() {
     resolver: zodResolver(yemeksepetiSchema),
     defaultValues: {
       isActive: true,
+      autoCourierDispatch: true,
     },
   });
 
@@ -202,6 +205,7 @@ export default function CompanyProfilePage() {
             detail: data.pickupAddress?.detail || '',
           },
           isActive: data.isActive,
+          autoCourierDispatch: data.autoCourierDispatch ?? true,
           clientId: data.clientId || '',
           clientSecret: data.clientSecret || '',
           inboundToken: data.inboundToken || '',
@@ -222,6 +226,7 @@ export default function CompanyProfilePage() {
             detail: '',
           },
           isActive: true,
+          autoCourierDispatch: true,
           clientId: '',
           clientSecret: '',
           inboundToken: '',
@@ -277,6 +282,7 @@ export default function CompanyProfilePage() {
       const saved = await companyAPI.upsertYemeksepetiSettings({
         ...data,
         isActive: data.isActive ?? true,
+        autoCourierDispatch: data.autoCourierDispatch ?? true,
       } as UpsertYemeksepetiVendorInput);
       setYemeksepetiSettings(saved);
       toast.success('Yemeksepeti entegrasyon bilgileri kaydedildi');
@@ -717,6 +723,27 @@ export default function CompanyProfilePage() {
                       onCheckedChange={(checked) => setYemeksepetiValue('isActive', checked)}
                     />
                     <span className="text-sm text-muted-foreground">Aktif</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/40">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-orange-500" />
+                    <div>
+                      <p className="font-medium text-sm">Otomatik Kurye Bildirimi</p>
+                      <p className="text-xs text-muted-foreground">
+                        Aktif: Sipariş gelince kuryelere otomatik bildirim gider.<br />
+                        Pasif: &quot;Kurye Çağır&quot; butonuyla manuel bildirim gönderin.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Manuel</span>
+                    <Switch
+                      checked={watchYemeksepeti('autoCourierDispatch') ?? true}
+                      onCheckedChange={(checked) => setYemeksepetiValue('autoCourierDispatch', checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">Otomatik</span>
                   </div>
                 </div>
 

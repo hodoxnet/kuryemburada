@@ -207,6 +207,7 @@ export class CompanyService {
         ? JSON.parse(JSON.stringify(payload.pickupAddress))
         : undefined,
       isActive: payload.isActive ?? true,
+      autoCourierDispatch: payload.autoCourierDispatch ?? true,
       clientId: payload.clientId || undefined,
       clientSecret: payload.clientSecret || undefined,
       inboundToken: payload.inboundToken || undefined,

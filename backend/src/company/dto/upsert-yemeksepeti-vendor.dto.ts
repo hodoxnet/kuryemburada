@@ -47,6 +47,10 @@ export class UpsertYemeksepetiVendorDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  autoCourierDispatch?: boolean;
+
+  @IsOptional()
   @IsString()
   clientId?: string;
 
