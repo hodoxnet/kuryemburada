@@ -1,27 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/shared/LoadingState";
-import { 
-  Package, 
-  MapPin,
-  Clock,
-  DollarSign,
-  Phone,
-  Navigation,
-  Building,
-  Timer,
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Package,
   CheckCircle,
   XCircle,
   Star,
-  Calendar,
   Search,
-  Filter,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -36,14 +39,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const statusColors: Record<string, string> = {
+  DELIVERED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  CANCELLED: "bg-rose-50 text-rose-700 border border-rose-200",
+};
+
+const statusLabels: Record<string, string> = {
+  DELIVERED: "Teslim Edildi",
+  CANCELLED: "İptal",
+};
+
 export default function DeliveryHistory() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [historyOrders, setHistoryOrders] = useState<any[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     completedDeliveries: 0,
@@ -56,36 +71,29 @@ export default function DeliveryHistory() {
     loadDeliveryHistory();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [historyOrders, searchTerm, statusFilter, dateFilter]);
-
   const loadDeliveryHistory = async () => {
     try {
       setLoading(true);
       const response = await orderService.getCourierOrders({
-        status: undefined // Tüm durumları getir
+        status: undefined
       });
-      
-      // Tamamlanmış ve iptal edilmiş siparişleri filtrele
+
       const completedStatuses = ['DELIVERED', 'CANCELLED'];
-      const filtered = Array.isArray(response) ? 
+      const filtered = Array.isArray(response) ?
         response.filter(order => completedStatuses.includes(order.status)) :
         [];
-      
-      // Tarihe göre sırala (en yeni önce)
+
       filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
+
       setHistoryOrders(filtered);
-      
-      // İstatistikleri hesapla
+
       const completed = filtered.filter(o => o.status === 'DELIVERED');
       const cancelled = filtered.filter(o => o.status === 'CANCELLED');
       const totalEarnings = completed.reduce((sum, order) => sum + (order.courierEarning || order.price), 0);
       const ratingsCount = completed.filter(o => o.rating).length;
-      const avgRating = ratingsCount > 0 ? 
+      const avgRating = ratingsCount > 0 ?
         completed.reduce((sum, order) => sum + (order.rating || 0), 0) / ratingsCount : 0;
-      
+
       setStats({
         totalDeliveries: filtered.length,
         completedDeliveries: completed.length,
@@ -93,7 +101,7 @@ export default function DeliveryHistory() {
         totalEarnings,
         averageRating: avgRating
       });
-      
+
     } catch (error) {
       console.error("Teslimat geçmişi yüklenemedi:", error);
       toast.error("Teslimat geçmişi yüklenirken hata oluştu");
@@ -102,88 +110,64 @@ export default function DeliveryHistory() {
     }
   };
 
-  const applyFilters = () => {
+  // Filtreleme
+  const filteredOrders = useMemo(() => {
     let filtered = [...historyOrders];
 
-    // Durum filtresi
     if (statusFilter !== "ALL") {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
-    // Tarih filtresi
     if (dateFilter !== "ALL") {
-      const now = new Date();
       const filterDate = new Date();
-      
+
       switch (dateFilter) {
         case "TODAY":
           filterDate.setHours(0, 0, 0, 0);
-          filtered = filtered.filter(order => new Date(order.deliveredAt || order.cancelledAt) >= filterDate);
+          filtered = filtered.filter(order => new Date(order.deliveredAt || order.cancelledAt || order.createdAt) >= filterDate);
           break;
         case "WEEK":
           filterDate.setDate(filterDate.getDate() - 7);
-          filtered = filtered.filter(order => new Date(order.deliveredAt || order.cancelledAt) >= filterDate);
+          filtered = filtered.filter(order => new Date(order.deliveredAt || order.cancelledAt || order.createdAt) >= filterDate);
           break;
         case "MONTH":
           filterDate.setMonth(filterDate.getMonth() - 1);
-          filtered = filtered.filter(order => new Date(order.deliveredAt || order.cancelledAt) >= filterDate);
+          filtered = filtered.filter(order => new Date(order.deliveredAt || order.cancelledAt || order.createdAt) >= filterDate);
           break;
       }
     }
 
-    // Arama filtresi
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(order =>
-        order.orderNumber.toLowerCase().includes(term) ||
-        order.recipientName.toLowerCase().includes(term) ||
-        order.company?.name?.toLowerCase().includes(term) ||
-        order.pickupAddress?.address?.toLowerCase().includes(term) ||
-        order.deliveryAddress?.address?.toLowerCase().includes(term)
+        order.orderNumber?.toLowerCase().includes(term) ||
+        order.recipientName?.toLowerCase().includes(term) ||
+        order.company?.name?.toLowerCase().includes(term)
       );
     }
 
-    setFilteredOrders(filtered);
-  };
+    return filtered;
+  }, [historyOrders, searchTerm, statusFilter, dateFilter]);
 
-  const getStatusLabel = (status: string) => {
-    const labels: any = {
-      DELIVERED: "Teslim Edildi",
-      CANCELLED: "İptal Edildi",
-    };
-    return labels[status] || status;
-  };
+  // Sayfalama
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage]);
 
-  const getStatusColor = (status: string) => {
-    const colors: any = {
-      DELIVERED: "default",
-      CANCELLED: "destructive",
-    };
-    return colors[status] || "secondary";
-  };
+  const totalPages = Math.ceil(filteredOrders.length / pageSize);
 
-  const getPackageTypeLabel = (type: string) => {
-    const labels: any = {
-      DOCUMENT: "Evrak",
-      PACKAGE: "Paket",
-      FOOD: "Yemek",
-      OTHER: "Diğer",
-    };
-    return labels[type] || type;
-  };
+  // Filtrelerde değişiklik olunca sayfa sıfırla
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, dateFilter]);
 
-  const renderRating = (rating: number) => {
+  const renderRating = (rating: number | null) => {
+    if (!rating) return <span className="text-xs text-slate-400">-</span>;
     return (
-      <div className="flex items-center gap-0.5 md:gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-2.5 w-2.5 md:h-3 md:w-3 ${
-              star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-            }`}
-          />
-        ))}
-        <span className="text-xs text-muted-foreground ml-1">({rating})</span>
+      <div className="flex items-center gap-1">
+        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+        <span className="text-sm text-slate-700">{rating.toFixed(1)}</span>
       </div>
     );
   };
@@ -193,296 +177,257 @@ export default function DeliveryHistory() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
       {/* Başlık */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Teslimat Geçmişi</h1>
-        <p className="text-sm md:text-base text-muted-foreground mt-1">
-          Tamamlanan ve iptal edilen teslimatlarınızı görüntüleyin.
-        </p>
+        <h1 className="text-xl md:text-2xl font-semibold text-slate-800">Teslimat Geçmişi</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Tamamlanan ve iptal edilen teslimatlarınız</p>
       </div>
 
-      {/* İstatistikler - Mobilde 2x2 grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Toplam Teslimat</CardTitle>
-            <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-xl md:text-2xl font-bold">{stats.totalDeliveries}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.completedDeliveries} başarılı
-            </p>
-          </CardContent>
-        </Card>
+      {/* İstatistikler */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200 rounded-lg p-3 md:p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs md:text-sm text-slate-500">Toplam</span>
+            <Package className="h-4 w-4 text-slate-400" />
+          </div>
+          <p className="text-xl md:text-2xl font-semibold text-slate-800 mt-1">{stats.totalDeliveries}</p>
+          <p className="text-xs text-slate-400">{stats.completedDeliveries} başarılı</p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Başarı Oranı</CardTitle>
-            <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-xl md:text-2xl font-bold">
-              {stats.totalDeliveries > 0 ? 
-                Math.round((stats.completedDeliveries / stats.totalDeliveries) * 100) : 0}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats.cancelledDeliveries} iptal
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 md:p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs md:text-sm text-slate-500">Başarı</span>
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
+          </div>
+          <p className="text-xl md:text-2xl font-semibold text-slate-800 mt-1">
+            {stats.totalDeliveries > 0 ? Math.round((stats.completedDeliveries / stats.totalDeliveries) * 100) : 0}%
+          </p>
+          <p className="text-xs text-slate-400">{stats.cancelledDeliveries} iptal</p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Toplam Kazanç</CardTitle>
-            <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-xl md:text-2xl font-bold">₺{stats.totalEarnings.toLocaleString('tr-TR')}</div>
-            <p className="text-xs text-muted-foreground">
-              Ort. ₺{stats.completedDeliveries > 0 ? Math.round(stats.totalEarnings / stats.completedDeliveries) : 0}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 md:p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs md:text-sm text-slate-500">Kazanç</span>
+            <Wallet className="h-4 w-4 text-sky-500" />
+          </div>
+          <p className="text-xl md:text-2xl font-semibold text-slate-800 mt-1">₺{stats.totalEarnings.toLocaleString('tr-TR')}</p>
+          <p className="text-xs text-slate-400">
+            Ort. ₺{stats.completedDeliveries > 0 ? Math.round(stats.totalEarnings / stats.completedDeliveries) : 0}
+          </p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Ortalama Puan</CardTitle>
-            <Star className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-xl md:text-2xl font-bold">{stats.averageRating.toFixed(1)}</div>
-            <div className="mt-1">
-              {renderRating(Math.round(stats.averageRating))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 md:p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs md:text-sm text-slate-500">Puan</span>
+            <Star className="h-4 w-4 text-amber-500" />
+          </div>
+          <p className="text-xl md:text-2xl font-semibold text-slate-800 mt-1">{stats.averageRating.toFixed(1)}</p>
+          <div className="flex gap-0.5 mt-0.5">
+            {[1,2,3,4,5].map(i => (
+              <Star key={i} className={`h-3 w-3 ${i <= Math.round(stats.averageRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Filtreler */}
-      <Card>
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle className="text-base md:text-lg">Filtreler</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 md:p-6 md:pt-0">
-          <div className="grid gap-3 md:gap-4 md:grid-cols-4">
-            <div className="space-y-2">
-              <label className="text-xs md:text-sm font-medium">Arama</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Sipariş no, alıcı adı..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-9 md:h-10 text-sm"
-                />
-              </div>
-            </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Sipariş no veya alıcı ara..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 bg-white border-slate-200 text-sm h-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[140px] bg-white border-slate-200 text-sm h-9">
+            <SelectValue placeholder="Durum" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tüm Durumlar</SelectItem>
+            <SelectItem value="DELIVERED">Teslim Edildi</SelectItem>
+            <SelectItem value="CANCELLED">İptal Edildi</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-full sm:w-[130px] bg-white border-slate-200 text-sm h-9">
+            <SelectValue placeholder="Tarih" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tüm Zamanlar</SelectItem>
+            <SelectItem value="TODAY">Bugün</SelectItem>
+            <SelectItem value="WEEK">Son 7 gün</SelectItem>
+            <SelectItem value="MONTH">Son 30 gün</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-            <div className="space-y-2">
-              <label className="text-xs md:text-sm font-medium">Durum</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9 md:h-10 text-sm">
-                  <SelectValue placeholder="Durum seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tümü</SelectItem>
-                  <SelectItem value="DELIVERED">Teslim Edildi</SelectItem>
-                  <SelectItem value="CANCELLED">İptal Edildi</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs md:text-sm font-medium">Tarih</label>
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="h-9 md:h-10 text-sm">
-                  <SelectValue placeholder="Tarih seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tümü</SelectItem>
-                  <SelectItem value="TODAY">Bugün</SelectItem>
-                  <SelectItem value="WEEK">Son 7 gün</SelectItem>
-                  <SelectItem value="MONTH">Son 30 gün</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs md:text-sm font-medium hidden md:block">İşlemler</label>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("ALL");
-                  setDateFilter("ALL");
-                }}
-                className="w-full h-9 md:h-10 text-sm md:mt-7"
-                size="sm"
-              >
-                <Filter className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                Filtreleri Temizle
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Teslimat Listesi */}
-      {filteredOrders.length > 0 ? (
-        <div className="grid gap-3 md:gap-4">
-          {filteredOrders.map((order) => (
-            <Card key={order.id} className="overflow-hidden">
-              <CardHeader className="p-4 md:p-6 pb-3 md:pb-3">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                  <div className="space-y-2 md:space-y-1 flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <CardTitle className="text-base md:text-lg">
-                        Sipariş #{order.orderNumber}
-                      </CardTitle>
-                      <Badge variant={getStatusColor(order.status)} className="w-fit text-xs">
-                        {order.status === 'DELIVERED' ? (
-                          <CheckCircle className="mr-1 h-2.5 w-2.5 md:h-3 md:w-3" />
-                        ) : (
-                          <XCircle className="mr-1 h-2.5 w-2.5 md:h-3 md:w-3" />
-                        )}
-                        {getStatusLabel(order.status)}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Building className="h-3 w-3" />
-                        <span className="truncate max-w-[150px] sm:max-w-none">{order.company?.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          {format(
-                            new Date(order.deliveredAt || order.cancelledAt || order.createdAt),
-                            "dd MMM yyyy HH:mm",
-                            { locale: tr }
-                          )}
+      {/* Tablo */}
+      {filteredOrders.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Package className="h-10 w-10 text-slate-300 mb-3" />
+            <p className="text-sm font-medium text-slate-600">
+              {historyOrders.length === 0 ? "Henüz teslimat geçmişiniz yok" : "Filtrelere uygun teslimat bulunamadı"}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {historyOrders.length === 0 ? "İlk teslimatınızı tamamladığınızda burada görünecek" : "Farklı filtreler deneyin"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            {/* Desktop Tablo */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b">
+                    <TableHead className="font-medium text-slate-600 w-[90px]">Sipariş</TableHead>
+                    <TableHead className="font-medium text-slate-600">Firma</TableHead>
+                    <TableHead className="font-medium text-slate-600">Alıcı</TableHead>
+                    <TableHead className="font-medium text-slate-600 text-right w-[90px]">Kazanç</TableHead>
+                    <TableHead className="font-medium text-slate-600 w-[100px]">Durum</TableHead>
+                    <TableHead className="font-medium text-slate-600 w-[70px]">Puan</TableHead>
+                    <TableHead className="font-medium text-slate-600 w-[100px]">Tarih</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedOrders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer hover:bg-slate-50/80 transition-colors"
+                      onClick={() => router.push(`/courier/orders/${order.id}`)}
+                    >
+                      <TableCell className="py-3">
+                        <span className="font-mono text-sm text-slate-700">
+                          {order.orderNumber?.slice(-6)}
                         </span>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <p className="text-sm text-slate-700 truncate max-w-[150px]">
+                          {order.company?.name || "-"}
+                        </p>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <p className="text-sm text-slate-800">{order.recipientName}</p>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        <span className={`font-semibold ${order.status === 'DELIVERED' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          ₺{(order.courierEarning || order.price || 0).toFixed(0)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge variant="secondary" className={`${statusColors[order.status]} text-xs font-medium`}>
+                          {order.status === 'DELIVERED' ? (
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                          ) : (
+                            <XCircle className="w-3 h-3 mr-1" />
+                          )}
+                          {statusLabels[order.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {renderRating(order.rating)}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="text-right">
+                          <p className="text-sm text-slate-700">
+                            {format(new Date(order.deliveredAt || order.cancelledAt || order.createdAt), 'HH:mm', { locale: tr })}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {format(new Date(order.deliveredAt || order.cancelledAt || order.createdAt), 'dd MMM', { locale: tr })}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/courier/orders/${order.id}`)}
+                          className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Liste */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {paginatedOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="p-4 hover:bg-slate-50/80 active:bg-slate-100 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/courier/orders/${order.id}`)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-sm text-slate-700">#{order.orderNumber?.slice(-6)}</span>
+                        <Badge variant="secondary" className={`${statusColors[order.status]} text-[10px] font-medium px-1.5 py-0`}>
+                          {order.status === 'DELIVERED' ? 'Teslim' : 'İptal'}
+                        </Badge>
                       </div>
+                      <p className="text-sm text-slate-800 truncate">{order.recipientName}</p>
+                      <p className="text-xs text-slate-500 truncate">{order.company?.name}</p>
                     </div>
-                  </div>
-                  <div className="text-left md:text-right">
-                    <div className="text-xl md:text-2xl font-bold text-green-600">
-                      ₺{order.courierEarning || order.price}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Kazanç</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 md:p-6 pt-0 md:pt-0 space-y-3 md:space-y-4">
-                {/* Paket Bilgileri */}
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    <Package className="mr-1 h-2.5 w-2.5 md:h-3 md:w-3" />
-                    {getPackageTypeLabel(order.packageType)}
-                  </Badge>
-                  {order.deliveryType === 'EXPRESS' && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Timer className="mr-1 h-2.5 w-2.5 md:h-3 md:w-3" />
-                      Express
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Adresler (Özet) */}
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 text-xs md:text-sm">
-                    <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="font-medium flex-shrink-0">Alım:</span>
-                    <span className="text-muted-foreground truncate flex-1">
-                      {order.pickupAddress?.address || "Adres bilgisi yok"}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2 text-xs md:text-sm">
-                    <Navigation className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="font-medium flex-shrink-0">Teslimat:</span>
-                    <span className="text-muted-foreground truncate flex-1">
-                      {order.deliveryAddress?.address || "Adres bilgisi yok"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Alıcı ve Puan */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <p className="text-xs md:text-sm">
-                      <span className="font-medium">Alıcı:</span> {order.recipientName}
-                    </p>
-                  </div>
-                  {order.status === 'DELIVERED' && (
-                    <div className="sm:text-right">
-                      {order.rating ? (
-                        renderRating(order.rating)
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Değerlendirilmedi</span>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-semibold ${order.status === 'DELIVERED' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        ₺{(order.courierEarning || order.price || 0).toFixed(0)}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {format(new Date(order.deliveredAt || order.cancelledAt || order.createdAt), 'dd MMM HH:mm', { locale: tr })}
+                      </p>
+                      {order.rating && (
+                        <div className="flex items-center justify-end gap-0.5 mt-1">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          <span className="text-xs text-slate-600">{order.rating}</span>
+                        </div>
                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
+              ))}
+            </div>
 
-                {/* Geri bildirim */}
-                {order.feedback && (
-                  <div className="rounded-lg bg-blue-50 p-2.5 md:p-3 dark:bg-blue-900/20">
-                    <p className="text-xs md:text-sm">
-                      <span className="font-medium">Geri bildirim:</span> {order.feedback}
-                    </p>
-                  </div>
-                )}
-
-                {/* İptal nedeni */}
-                {order.status === 'CANCELLED' && order.cancellationReason && (
-                  <div className="rounded-lg bg-red-50 p-2.5 md:p-3 dark:bg-red-900/20">
-                    <p className="text-xs md:text-sm">
-                      <span className="font-medium">İptal nedeni:</span> {order.cancellationReason}
-                    </p>
-                  </div>
-                )}
-
-                {/* Detay Butonu */}
-                <div className="flex justify-end sm:justify-end">
+            {/* Sayfalama */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                <p className="text-xs text-slate-500">
+                  {filteredOrders.length} teslimat
+                </p>
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push(`/courier/orders/${order.id}`)}
-                    className="w-full sm:w-auto text-xs md:text-sm h-8 md:h-9"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8 p-0"
                   >
-                    <Eye className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                    Detayları Gör
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-slate-600">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 h-4" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 px-4">
-            <Package className="h-10 w-10 md:h-12 md:w-12 text-muted-foreground/50 mb-3 md:mb-4" />
-            <h3 className="text-base md:text-lg font-medium mb-1 text-center">
-              {historyOrders.length === 0 ? "Henüz teslimat geçmişiniz yok" : "Filtrelere uygun teslimat bulunamadı"}
-            </h3>
-            <p className="text-xs md:text-sm text-muted-foreground text-center max-w-sm">
-              {historyOrders.length === 0 ? 
-                "İlk teslimatınızı tamamladığınızda burada görünecektir." :
-                "Farklı filtreler deneyerek daha fazla sonuç bulabilirsiniz."
-              }
-            </p>
-            {historyOrders.length === 0 && (
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/courier/available-orders')}
-                className="mt-4 text-xs md:text-sm h-8 md:h-10"
-                size="sm"
-              >
-                <Package className="mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
-                Yeni Siparişler
-              </Button>
+              </div>
             )}
           </CardContent>
         </Card>
