@@ -138,6 +138,11 @@ enum CompanyPaymentType {
   ADJUSTMENT
 }
 
+enum OrderSource {
+  MANUAL
+  YEMEKSEPETI
+}
+
 model User {
   id        String     @id @default(uuid())
   email     String     @unique
@@ -179,6 +184,7 @@ model Company {
   balance   CompanyBalance?
   reconciliations DailyReconciliation[]
   payments  CompanyPayment[]
+  yemeksepetiVendors YemeksepetiVendor[]
 }
 
 model Courier {
@@ -231,6 +237,7 @@ model Order {
   commission       Float? // platform commission
   courierEarning   Float? // courier earning after commission
   status           OrderStatus   @default(PENDING)
+  source           OrderSource   @default(MANUAL) // Sipariş kaynağı
   acceptedAt       DateTime?
   pickedUpAt       DateTime?
   deliveredAt      DateTime?
@@ -247,6 +254,7 @@ model Order {
   pricingRule PricingRule? @relation(fields: [pricingRuleId], references: [id])
   serviceArea ServiceArea? @relation(fields: [serviceAreaId], references: [id])
   payments    Payment[]
+  yemeksepetiOrder YemeksepetiOrder?
 }
 
 model Payment {
@@ -286,6 +294,51 @@ model Document {
 
   company Company? @relation(fields: [companyId], references: [id])
   courier Courier? @relation(fields: [courierId], references: [id])
+}
+
+model YemeksepetiVendor {
+  id                   String   @id @default(uuid())
+  companyId            String
+  remoteId             String   @unique
+  posVendorId          String
+  chainCode            String
+  brandCode            String?
+  platformRestaurantId String?
+  pickupAddress        Json?
+  isActive             Boolean  @default(true)
+  clientId             String?
+  clientSecret         String?
+  inboundToken         String?
+  tokenUrl             String?
+  baseUrl              String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  orders  YemeksepetiOrder[]
+
+  @@index([companyId])
+}
+
+model YemeksepetiOrder {
+  id            String   @id @default(uuid())
+  vendorId      String
+  orderId       String?  @unique
+  token         String
+  code          String
+  remoteOrderId String
+  status        String   @default("dispatched")
+  payload       Json
+  callbackUrls  Json?
+  rejectionReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor YemeksepetiVendor @relation(fields: [vendorId], references: [id])
+  order  Order?            @relation(fields: [orderId], references: [id])
+
+  @@index([vendorId])
+  @@index([remoteOrderId])
 }
 
 model PricingRule {

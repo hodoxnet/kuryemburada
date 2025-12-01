@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,8 +12,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Building2, MapPin, Phone, Mail, CreditCard, User, FileText, Info, Lock } from 'lucide-react';
-import companyAPI, { CompanyProfile, UpdateCompanyData } from '@/lib/api/company';
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Mail,
+  CreditCard,
+  User,
+  FileText,
+  Info,
+  Lock,
+  PlugZap,
+  KeyRound,
+  ShieldCheck,
+  Power,
+} from 'lucide-react';
+import companyAPI, {
+  CompanyProfile,
+  UpdateCompanyData,
+  UpsertYemeksepetiVendorInput,
+  YemeksepetiVendorSettings,
+} from '@/lib/api/company';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -23,6 +42,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { authService } from '@/services/auth.service';
+import { Switch } from '@/components/ui/switch';
 
 const addressSchema = z.object({
   city: z.string().min(1, 'Şehir zorunludur'),
@@ -66,14 +86,38 @@ const passwordChangeSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const yemeksepetiSchema = z.object({
+  remoteId: z.string().min(1, 'remoteId zorunludur'),
+  posVendorId: z.string().min(1, 'Pos Vendor ID zorunludur'),
+  chainCode: z.string().min(1, 'Chain code zorunludur'),
+  brandCode: z.string().optional(),
+  platformRestaurantId: z.string().optional(),
+  pickupAddress: z.object({
+    lat: z.coerce.number({ invalid_type_error: 'Enlem gerekli' }),
+    lng: z.coerce.number({ invalid_type_error: 'Boylam gerekli' }),
+    address: z.string().optional(),
+    detail: z.string().optional(),
+  }),
+  isActive: z.boolean().optional(),
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  inboundToken: z.string().optional(),
+  tokenUrl: z.string().optional(),
+  baseUrl: z.string().optional(),
+});
+
 type CompanyUpdateForm = z.infer<typeof companyUpdateSchema>;
 type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;
+type YemeksepetiForm = z.infer<typeof yemeksepetiSchema>;
 
 export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [yemeksepetiSettings, setYemeksepetiSettings] = useState<YemeksepetiVendorSettings | null>(null);
+  const [yemeksepetiLoading, setYemeksepetiLoading] = useState(false);
+  const [yemeksepetiSaving, setYemeksepetiSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
 
   const {
@@ -95,6 +139,22 @@ export default function CompanyProfilePage() {
   } = useForm<PasswordChangeForm>({
     resolver: zodResolver(passwordChangeSchema),
   });
+
+  const {
+    register: registerYemeksepeti,
+    handleSubmit: handleYemeksepetiSubmit,
+    formState: { errors: yemeksepetiErrors },
+    reset: resetYemeksepeti,
+    watch: watchYemeksepeti,
+    setValue: setYemeksepetiValue,
+  } = useForm<YemeksepetiForm>({
+    resolver: zodResolver(yemeksepetiSchema),
+    defaultValues: {
+      isActive: true,
+    },
+  });
+
+  const toFormNumber = (value: number | null | undefined) => (value ?? '') as unknown as number;
 
   const fetchProfile = async () => {
     try {
@@ -122,8 +182,64 @@ export default function CompanyProfilePage() {
     }
   };
 
+  const fetchYemeksepeti = async () => {
+    try {
+      setYemeksepetiLoading(true);
+      const data = await companyAPI.getYemeksepetiSettings();
+      setYemeksepetiSettings(data);
+
+      if (data) {
+        resetYemeksepeti({
+          remoteId: data.remoteId,
+          posVendorId: data.posVendorId,
+          chainCode: data.chainCode || '',
+          brandCode: data.brandCode || '',
+          platformRestaurantId: data.platformRestaurantId || '',
+          pickupAddress: {
+            lat: toFormNumber(data.pickupAddress?.lat),
+            lng: toFormNumber(data.pickupAddress?.lng),
+            address: data.pickupAddress?.address || '',
+            detail: data.pickupAddress?.detail || '',
+          },
+          isActive: data.isActive,
+          clientId: data.clientId || '',
+          clientSecret: data.clientSecret || '',
+          inboundToken: data.inboundToken || '',
+          tokenUrl: data.tokenUrl || '',
+          baseUrl: data.baseUrl || '',
+        });
+      } else {
+        resetYemeksepeti({
+          remoteId: '',
+          posVendorId: '',
+          chainCode: '',
+          brandCode: '',
+          platformRestaurantId: '',
+          pickupAddress: {
+            lat: '' as unknown as number,
+            lng: '' as unknown as number,
+            address: '',
+            detail: '',
+          },
+          isActive: true,
+          clientId: '',
+          clientSecret: '',
+          inboundToken: '',
+          tokenUrl: '',
+          baseUrl: '',
+        });
+      }
+    } catch (error) {
+      console.error('Yemeksepeti bilgileri alınamadı:', error);
+      toast.error('Yemeksepeti bilgileri yüklenemedi');
+    } finally {
+      setYemeksepetiLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
+    fetchYemeksepeti();
   }, []);
 
   const onSubmit = async (data: CompanyUpdateForm) => {
@@ -152,6 +268,24 @@ export default function CompanyProfilePage() {
       toast.error(errorMessage);
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const onYemeksepetiSubmit = async (data: YemeksepetiForm) => {
+    try {
+      setYemeksepetiSaving(true);
+      const saved = await companyAPI.upsertYemeksepetiSettings({
+        ...data,
+        isActive: data.isActive ?? true,
+      } as UpsertYemeksepetiVendorInput);
+      setYemeksepetiSettings(saved);
+      toast.success('Yemeksepeti entegrasyon bilgileri kaydedildi');
+    } catch (error: any) {
+      console.error('Yemeksepeti bilgileri kaydedilirken hata:', error);
+      const errorMessage = error?.response?.data?.message || 'Yemeksepeti bilgileri kaydedilemedi';
+      toast.error(errorMessage);
+    } finally {
+      setYemeksepetiSaving(false);
     }
   };
 
@@ -190,6 +324,13 @@ export default function CompanyProfilePage() {
 
     return documentLabels[type] || type;
   };
+
+  const handleProfileFormSubmit =
+    activeTab === 'yemeksepeti'
+      ? (event: FormEvent<HTMLFormElement>) => {
+          event.preventDefault();
+        }
+      : handleSubmit(onSubmit);
 
   if (loading) {
     return (
@@ -232,14 +373,15 @@ export default function CompanyProfilePage() {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleProfileFormSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
             <TabsTrigger value="address">Adres Bilgileri</TabsTrigger>
             <TabsTrigger value="bank">Banka Bilgileri</TabsTrigger>
             <TabsTrigger value="contact">İletişim Kişisi</TabsTrigger>
             <TabsTrigger value="security">Güvenlik</TabsTrigger>
+            <TabsTrigger value="yemeksepeti">Yemeksepeti</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -546,6 +688,229 @@ export default function CompanyProfilePage() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="yemeksepeti" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PlugZap className="h-5 w-5" />
+                  Yemeksepeti Entegrasyonu
+                </CardTitle>
+                <CardDescription>
+                  Her firma için ayrı Yemeksepeti kimlik ve token bilgilerinizi girin. Bu bilgiler sipariş oluşturma ve callback doğrulaması için kullanılır.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/40">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">Entegrasyon Durumu</p>
+                      <p className="text-xs text-muted-foreground">
+                        Aktif olduğunda siparişler alınır ve callback gönderimleri yapılır.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Pasif</span>
+                    <Switch
+                      checked={watchYemeksepeti('isActive') ?? true}
+                      onCheckedChange={(checked) => setYemeksepetiValue('isActive', checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">Aktif</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="remoteId">remoteId</Label>
+                    <Input
+                      id="remoteId"
+                      placeholder="Yemeksepeti remoteId"
+                      {...registerYemeksepeti('remoteId')}
+                    />
+                    {yemeksepetiErrors.remoteId && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.remoteId.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="posVendorId">POS Vendor ID</Label>
+                    <Input
+                      id="posVendorId"
+                      placeholder="POS Vendor ID"
+                      {...registerYemeksepeti('posVendorId')}
+                    />
+                    {yemeksepetiErrors.posVendorId && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.posVendorId.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="chainCode">Chain Code</Label>
+                    <Input
+                      id="chainCode"
+                      placeholder="Zincir kodu (opsiyonel)"
+                      {...registerYemeksepeti('chainCode')}
+                    />
+                    {yemeksepetiErrors.chainCode && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.chainCode.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="brandCode">Brand Code</Label>
+                    <Input
+                      id="brandCode"
+                      placeholder="Marka kodu (opsiyonel)"
+                      {...registerYemeksepeti('brandCode')}
+                    />
+                    {yemeksepetiErrors.brandCode && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.brandCode.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="platformRestaurantId">Platform Restoran ID</Label>
+                    <Input
+                      id="platformRestaurantId"
+                      placeholder="Platform restoran ID (opsiyonel)"
+                      {...registerYemeksepeti('platformRestaurantId')}
+                    />
+                    {yemeksepetiErrors.platformRestaurantId && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.platformRestaurantId.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="inboundToken" className="flex items-center gap-2">
+                      <KeyRound className="h-4 w-4 text-muted-foreground" />
+                      Inbound Token
+                    </Label>
+                    <Input
+                      id="inboundToken"
+                      placeholder="Yemeksepeti çağrıları için Bearer token"
+                      {...registerYemeksepeti('inboundToken')}
+                    />
+                    {yemeksepetiErrors.inboundToken && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.inboundToken.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientId">Client ID</Label>
+                    <Input
+                      id="clientId"
+                      placeholder="OAuth client id"
+                      {...registerYemeksepeti('clientId')}
+                    />
+                    {yemeksepetiErrors.clientId && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.clientId.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientSecret">Client Secret</Label>
+                    <Input
+                      id="clientSecret"
+                      placeholder="OAuth client secret"
+                      type="password"
+                      {...registerYemeksepeti('clientSecret')}
+                    />
+                    {yemeksepetiErrors.clientSecret && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.clientSecret.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tokenUrl">Token URL</Label>
+                    <Input
+                      id="tokenUrl"
+                      placeholder="https://..."
+                      {...registerYemeksepeti('tokenUrl')}
+                    />
+                    {yemeksepetiErrors.tokenUrl && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.tokenUrl.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="baseUrl">Middleware Base URL</Label>
+                    <Input
+                      id="baseUrl"
+                      placeholder="https://..."
+                      {...registerYemeksepeti('baseUrl')}
+                    />
+                    {yemeksepetiErrors.baseUrl && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.baseUrl.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pickupAddress.lat">Pickup Enlem (lat)</Label>
+                    <Input
+                      id="pickupAddress.lat"
+                      type="number"
+                      step="any"
+                      placeholder="Örn: 41.012"
+                      {...registerYemeksepeti('pickupAddress.lat')}
+                    />
+                    {yemeksepetiErrors.pickupAddress?.lat && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.pickupAddress.lat.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pickupAddress.lng">Pickup Boylam (lng)</Label>
+                    <Input
+                      id="pickupAddress.lng"
+                      type="number"
+                      step="any"
+                      placeholder="Örn: 29.123"
+                      {...registerYemeksepeti('pickupAddress.lng')}
+                    />
+                    {yemeksepetiErrors.pickupAddress?.lng && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.pickupAddress.lng.message}</p>
+                    )}
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="pickupAddress.address">Pickup Adresi</Label>
+                    <Input
+                      id="pickupAddress.address"
+                      placeholder="Restoran adresi"
+                      {...registerYemeksepeti('pickupAddress.address')}
+                    />
+                    {yemeksepetiErrors.pickupAddress?.address && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.pickupAddress.address.message}</p>
+                    )}
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="pickupAddress.detail">Pickup Adres Detayı</Label>
+                    <Textarea
+                      id="pickupAddress.detail"
+                      placeholder="Adres detayı (kat, kapı vs.)"
+                      rows={2}
+                      {...registerYemeksepeti('pickupAddress.detail')}
+                    />
+                    {yemeksepetiErrors.pickupAddress?.detail && (
+                      <p className="text-sm text-red-500">{yemeksepetiErrors.pickupAddress.detail.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleYemeksepetiSubmit(onYemeksepetiSubmit)}
+                    disabled={yemeksepetiSaving || yemeksepetiLoading}
+                  >
+                    {yemeksepetiSaving ? 'Kaydediliyor...' : 'Yemeksepeti Bilgilerini Kaydet'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {yemeksepetiSettings && (
+              <Alert>
+                <AlertDescription className="flex items-center gap-2">
+                  <Power className="h-4 w-4" />
+                  En son güncelleme: {new Date(yemeksepetiSettings.updatedAt).toLocaleString('tr-TR')}
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
           <TabsContent value="security" className="space-y-4">
             <Card>
               <CardHeader>
@@ -611,7 +976,7 @@ export default function CompanyProfilePage() {
           </TabsContent>
         </Tabs>
 
-        {activeTab !== 'security' && (
+        {activeTab !== 'security' && activeTab !== 'yemeksepeti' && (
           <div className="flex justify-end mt-6">
             <Button type="submit" disabled={updating}>
               {updating ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}

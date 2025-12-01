@@ -22,6 +22,14 @@ export interface CreateOrderDto {
   estimatedTime?: number;
 }
 
+export interface YemeksepetiOrderInfo {
+  id: string;
+  remoteOrderId: string;
+  status: string;
+  payload: any;
+  createdAt: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -46,6 +54,7 @@ export interface Order {
   commission?: number;
   courierEarning?: number;
   status: 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'DELIVERED' | 'CANCELLED' | 'REJECTED';
+  source?: 'MANUAL' | 'YEMEKSEPETI';
   acceptedAt?: string;
   pickedUpAt?: string;
   deliveredAt?: string;
@@ -74,6 +83,7 @@ export interface Order {
     rating?: number;
   };
   payments?: any[];
+  yemeksepetiOrder?: YemeksepetiOrderInfo;
 }
 
 export interface OrderListResponse {
@@ -125,6 +135,43 @@ export const orderService = {
       return response.data.map(normalizeOrder);
     }
     return [];
+  },
+
+  // Firma Yemeksepeti siparişlerini listele
+  getYemeksepetiOrders: async (params?: {
+    skip?: number;
+    take?: number;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.take !== undefined) queryParams.append('take', params.take.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get<any>(`/orders/company/yemeksepeti?${queryParams.toString()}`);
+    // Backend { data: [], total, skip, take } formatında döndürüyor
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return {
+        data: response.data.data.map(normalizeOrder),
+        total: response.data.total,
+        skip: response.data.skip,
+        take: response.data.take
+      };
+    }
+    // Eğer direkt array dönerse
+    if (Array.isArray(response.data)) {
+      return {
+        data: response.data.map(normalizeOrder),
+        total: response.data.length,
+        skip: 0,
+        take: response.data.length
+      };
+    }
+    return { data: [], total: 0, skip: 0, take: 10 };
   },
 
   // Sipariş detayını getir

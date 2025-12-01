@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsEnum, IsOptional, IsNumber, IsDateString, IsObject, ValidateNested, IsPhoneNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PackageType, PackageSize, DeliveryType, Urgency } from '@prisma/client';
+import { PackageType, PackageSize, DeliveryType, Urgency, OrderSource } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class AddressDto {
@@ -104,7 +104,7 @@ export class CreateOrderDto {
   @Min(0.1)
   distance?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Tahmini teslimat süresi (dakika) - Google Maps API tarafından hesaplanacak',
     minimum: 1
   })
@@ -112,4 +112,14 @@ export class CreateOrderDto {
   @IsOptional()
   @Min(1)
   estimatedTime?: number;
+
+  @ApiPropertyOptional({
+    description: 'Sipariş kaynağı',
+    enum: OrderSource,
+    example: OrderSource.MANUAL,
+    default: OrderSource.MANUAL
+  })
+  @IsEnum(OrderSource)
+  @IsOptional()
+  source?: OrderSource;
 }

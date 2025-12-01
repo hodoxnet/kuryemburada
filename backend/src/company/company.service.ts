@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyStatus, Prisma } from '@prisma/client';
 import { Logger } from 'winston';
 import { Inject } from '@nestjs/common';
+import { UpsertYemeksepetiVendorDto } from './dto/upsert-yemeksepeti-vendor.dto';
 
 @Injectable()
 export class CompanyService {
@@ -154,6 +155,84 @@ export class CompanyService {
     });
 
     return updatedCompany;
+  }
+
+  async getYemeksepetiSettings(userId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Firma bilgileri bulunamadı');
+    }
+
+    return this.prisma.yemeksepetiVendor.findFirst({
+      where: { companyId: company.id },
+    });
+  }
+
+  async upsertYemeksepetiSettings(userId: string, payload: UpsertYemeksepetiVendorDto) {
+    const company = await this.prisma.company.findUnique({
+      where: { userId },
+      select: { id: true, name: true },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Firma bilgileri bulunamadı');
+    }
+
+    const existingVendor = await this.prisma.yemeksepetiVendor.findFirst({
+      where: { companyId: company.id },
+    });
+
+    const remoteIdConflict = await this.prisma.yemeksepetiVendor.findFirst({
+      where: {
+        remoteId: payload.remoteId,
+        companyId: { not: company.id },
+      },
+    });
+
+    if (remoteIdConflict) {
+      throw new BadRequestException('remoteId başka bir firma tarafından kullanılıyor');
+    }
+
+    const vendorData = {
+      remoteId: payload.remoteId,
+      posVendorId: payload.posVendorId,
+      chainCode: payload.chainCode,
+      brandCode: payload.brandCode || undefined,
+      platformRestaurantId: payload.platformRestaurantId || undefined,
+      pickupAddress: payload.pickupAddress
+        ? JSON.parse(JSON.stringify(payload.pickupAddress))
+        : undefined,
+      isActive: payload.isActive ?? true,
+      clientId: payload.clientId || undefined,
+      clientSecret: payload.clientSecret || undefined,
+      inboundToken: payload.inboundToken || undefined,
+      tokenUrl: payload.tokenUrl || undefined,
+      baseUrl: payload.baseUrl || undefined,
+    };
+
+    const result = existingVendor
+      ? await this.prisma.yemeksepetiVendor.update({
+          where: { id: existingVendor.id },
+          data: vendorData,
+        })
+      : await this.prisma.yemeksepetiVendor.create({
+          data: {
+            companyId: company.id,
+            ...vendorData,
+          },
+        });
+
+    this.logger.info('Yemeksepeti vendor bilgileri güncellendi', {
+      companyId: company.id,
+      companyName: company.name,
+      vendorId: result.id,
+    });
+
+    return result;
   }
 
   async updateStatus(id: string, updateStatusDto: UpdateCompanyStatusDto) {

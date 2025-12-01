@@ -23,6 +23,7 @@ import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CompanyPaymentsModule } from './company-payments/company-payments.module';
 import { GeographyModule } from './geography/geography.module';
+import { YemeksepetiModule } from './yemeksepeti/yemeksepeti.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { GeographyModule } from './geography/geography.module';
     NotificationsModule,
     CompanyPaymentsModule,
     GeographyModule,
+    YemeksepetiModule,
   ],
   controllers: [AppController],
   providers: [

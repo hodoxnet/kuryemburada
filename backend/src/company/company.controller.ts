@@ -2,6 +2,7 @@ import {
   Controller, 
   Get, 
   Patch, 
+  Put,
   Delete,
   Param, 
   Body, 
@@ -14,6 +15,7 @@ import {
 import { CompanyService } from './company.service';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { UpsertYemeksepetiVendorDto } from './dto/upsert-yemeksepeti-vendor.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -52,6 +54,25 @@ export class CompanyController {
     @Body() updateCompanyDto: UpdateCompanyDto,
   ) {
     return this.companyService.updateByUserId(req.user.id, updateCompanyDto);
+  }
+
+  @Get('profile/yemeksepeti')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma Yemeksepeti entegrasyon bilgilerini getir' })
+  @ApiResponse({ status: 200, description: 'Yemeksepeti bilgileri' })
+  async getYemeksepetiSettings(@Request() req) {
+    return this.companyService.getYemeksepetiSettings(req.user.id);
+  }
+
+  @Put('profile/yemeksepeti')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma Yemeksepeti entegrasyon bilgilerini güncelle/oluştur' })
+  @ApiResponse({ status: 200, description: 'Yemeksepeti bilgileri güncellendi' })
+  async upsertYemeksepetiSettings(
+    @Request() req,
+    @Body() payload: UpsertYemeksepetiVendorDto,
+  ) {
+    return this.companyService.upsertYemeksepetiSettings(req.user.id, payload);
   }
 
   @Get()

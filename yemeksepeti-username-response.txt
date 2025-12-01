@@ -1,0 +1,31 @@
+Merhaba Yağmur Hanım,
+
+Credentials'ları başarıyla aldık ve PGP key ile çözümledik. Teşekkür ederiz.
+
+Username bilgisi: me-tr-plugin-hodox-bilisim-ltd-sti-002
+
+Test restoranı ile ilgili bilgiler:
+
+1) Test Restoranı Detayları:
+   - Hangi marka özelinde test restoranı oluşturulmasını istiyoruz: [MARKA ADI - kullanıcı dolduracak]
+   - İlgili markanın vendorID bilgisi: [VENDOR ID - kullanıcı dolduracak]
+   - Test restoranı için Remote ID: test-kuryemburada-001
+   - Siparişlerin iletileceği Base URL: https://api.kuryemburada.com/yemeksepeti
+
+2) Endpoint Detayları:
+   - Dispatch Endpoint: POST https://api.kuryemburada.com/yemeksepeti/order/:remoteId
+   - Status Update Endpoint: PUT https://api.kuryemburada.com/yemeksepeti/remoteId/:remoteId/posOrderStatus
+   - Authentication: Bearer Token (YEMEKSEPETI_INBOUND_TOKEN ile korunuyor)
+   - SSL Certificate: Aktif (Let's Encrypt)
+
+3) Test Süreci:
+   - Plugin endpoint'lerimiz hazır durumda
+   - Test restoranı oluşturulduktan sonra sipariş testlerine başlamaya hazırız
+   - Backend ve frontend entegrasyonlarımız tamamlandı
+
+Test restoranı oluşturulduktan sonra sizinle koordineli şekilde testlere başlayabiliriz.
+
+İyi çalışmalar,
+
+Kuryemburada Entegrasyon Ekibi
+hodoxcomtr@gmail.com

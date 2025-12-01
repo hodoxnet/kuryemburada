@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderStatus, PackageType, PackageSize, DeliveryType, Urgency, NotificationType, CourierStatus } from '@prisma/client';
+import { OrderStatus, PackageType, PackageSize, DeliveryType, Urgency, NotificationType, CourierStatus, OrderSource } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Logger } from 'winston';
@@ -249,52 +249,84 @@ export class OrdersService {
       throw new ForbiddenException('Firma onaylı değil');
     }
 
+    // Yemeksepeti siparişleri için service area kontrolü atla
+    const isYemeksepetiOrder = createOrderDto.source === OrderSource.YEMEKSEPETI;
+
     // Alım ve teslimat noktalarının koordinatlarını al
     const pickupPoint = createOrderDto.pickupAddress as any;
     const deliveryPoint = createOrderDto.deliveryAddress as any;
 
-    // Alım noktasının hangi bölgede olduğunu kontrol et
-    const pickupArea = await this.findServiceArea(pickupPoint);
-    if (!pickupArea) {
-      throw new BadRequestException(
-        `Alım noktası hizmet bölgesi dışındadır. Aktif bölgeler: Beylikdüzü, Avcılar, Esenyurt, Başakşehir, Bakırköy`
+    let deliveryArea: any = null;
+    let priceDetails: any;
+
+    if (isYemeksepetiOrder) {
+      // Yemeksepeti siparişleri için sabit fiyatlandırma
+      const distance = createOrderDto.distance || 5; // Varsayılan 5 km
+      const estimatedTime = createOrderDto.estimatedTime || 30; // Varsayılan 30 dakika
+
+      // Yemeksepeti siparişleri için sabit fiyat (sistem ayarından alınabilir)
+      const yemeksepetiBaseFee = 25; // Sabit teslimat ücreti
+      const commission = yemeksepetiBaseFee * 0.15; // %15 komisyon
+      const courierEarning = yemeksepetiBaseFee - commission;
+
+      priceDetails = {
+        price: yemeksepetiBaseFee,
+        estimatedTime,
+        commission,
+        courierEarning,
+      };
+
+      this.logger.info('Yemeksepeti siparişi oluşturuluyor', {
+        source: 'YEMEKSEPETI',
+        distance,
+        price: priceDetails.price,
+      });
+    } else {
+      // Normal siparişler için service area kontrolü
+      const pickupArea = await this.findServiceArea(pickupPoint);
+      if (!pickupArea) {
+        throw new BadRequestException(
+          `Alım noktası hizmet bölgesi dışındadır. Aktif bölgeler: Beylikdüzü, Avcılar, Esenyurt, Başakşehir, Bakırköy`
+        );
+      }
+
+      deliveryArea = await this.findServiceArea(deliveryPoint);
+      if (!deliveryArea) {
+        throw new BadRequestException(
+          `Teslimat noktası hizmet bölgesi dışındadır. Aktif bölgeler: Beylikdüzü, Avcılar, Esenyurt, Başakşehir, Bakırköy`
+        );
+      }
+
+      // Mesafe ve süre (Frontend'den Google Maps tarafından hesaplanan gerçek değerler)
+      const distance = createOrderDto.distance || 10; // Google Maps mesafesi yoksa varsayılan 10 km
+      const googleMapsTime = createOrderDto.estimatedTime; // Google Maps süresi (dakika)
+
+      this.logger.info('Sipariş oluşturuluyor - Mesafe bilgileri', {
+        gelenMesafe: createOrderDto.distance,
+        kullanılanMesafe: distance,
+        gelenSüre: createOrderDto.estimatedTime,
+      });
+
+      // Teslimat bölgesinin fiyatlandırmasını kullan
+      priceDetails = await this.calculatePrice(
+        distance,
+        createOrderDto.packageSize,
+        createOrderDto.deliveryType,
+        createOrderDto.urgency || 'NORMAL',
+        deliveryArea,
+        googleMapsTime
       );
     }
 
-    // Teslimat noktasının hangi bölgede olduğunu kontrol et
-    const deliveryArea = await this.findServiceArea(deliveryPoint);
-    if (!deliveryArea) {
-      throw new BadRequestException(
-        `Teslimat noktası hizmet bölgesi dışındadır. Aktif bölgeler: Beylikdüzü, Avcılar, Esenyurt, Başakşehir, Bakırköy`
-      );
-    }
-
-    // Mesafe ve süre (Frontend'den Google Maps tarafından hesaplanan gerçek değerler)
-    const distance = createOrderDto.distance || 10; // Google Maps mesafesi yoksa varsayılan 10 km
-    const googleMapsTime = createOrderDto.estimatedTime; // Google Maps süresi (dakika)
-    
-    this.logger.info('Sipariş oluşturuluyor - Mesafe bilgileri', {
-      gelenMesafe: createOrderDto.distance,
-      kullanılanMesafe: distance,
-      gelenSüre: createOrderDto.estimatedTime,
-    });
-
-    // Teslimat bölgesinin fiyatlandırmasını kullan
-    const priceDetails = await this.calculatePrice(
-      distance,
-      createOrderDto.packageSize,
-      createOrderDto.deliveryType,
-      createOrderDto.urgency || 'NORMAL',
-      deliveryArea, // Teslimat bölgesinin fiyatlandırması
-      googleMapsTime // Google Maps'ten gelen süreyi kullan
-    );
+    // Mesafe değerini al
+    const distance = createOrderDto.distance || (isYemeksepetiOrder ? 5 : 10);
 
     // Sipariş oluştur
     const order = await this.prisma.order.create({
       data: {
         orderNumber: this.generateOrderNumber(),
         companyId,
-        serviceAreaId: deliveryArea.id, // Teslimat bölgesi
+        serviceAreaId: deliveryArea?.id || null, // Yemeksepeti için null olabilir
         recipientName: createOrderDto.recipientName,
         recipientPhone: createOrderDto.recipientPhone,
         pickupAddress: createOrderDto.pickupAddress as any,
@@ -311,6 +343,7 @@ export class OrdersService {
         commission: priceDetails.commission,
         courierEarning: priceDetails.courierEarning,
         status: OrderStatus.PENDING,
+        source: createOrderDto.source || OrderSource.MANUAL,
       },
       include: {
         company: {
@@ -324,7 +357,7 @@ export class OrdersService {
 
     // Firma cari durumunu güncelle
     await this.updateCompanyBalance(companyId, order.price);
-    
+
     // Günlük mutabakat kaydını güncelle veya oluştur
     await this.updateDailyReconciliation(companyId, order);
 
@@ -335,6 +368,7 @@ export class OrdersService {
       orderId: order.id,
       orderNumber: order.orderNumber,
       companyId,
+      source: order.source,
     });
 
     return order;
@@ -438,6 +472,81 @@ export class OrdersService {
               amount: true,
               status: true,
               paymentMethod: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      skip,
+      take,
+    };
+  }
+
+  // Firma Yemeksepeti siparişlerini listele
+  async getCompanyYemeksepetiOrders(
+    companyId: string,
+    params: {
+      skip?: number;
+      take?: number;
+      status?: OrderStatus;
+      startDate?: Date;
+      endDate?: Date;
+    },
+  ) {
+    const { skip = 0, take = 10, status, startDate, endDate } = params;
+
+    const where: any = {
+      companyId,
+      source: OrderSource.YEMEKSEPETI,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          courier: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              vehicleInfo: true,
+              rating: true,
+              userId: true,
+            },
+          },
+          payments: {
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              paymentMethod: true,
+            },
+          },
+          yemeksepetiOrder: {
+            select: {
+              id: true,
+              remoteOrderId: true,
+              status: true,
+              payload: true,
+              createdAt: true,
             },
           },
         },
@@ -1145,46 +1254,7 @@ export class OrdersService {
       throw new BadRequestException(`Sipariş oluşturulduktan ${maxMinutes} dakika sonra iptal edilemez`);
     }
 
-    // Transaction ile iptal et
-    const cancelledOrder = await this.prisma.$transaction(async (tx) => {
-      // Siparişi iptal et
-      const updated = await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: OrderStatus.CANCELLED,
-          cancelledAt: new Date(),
-          cancellationReason: reason,
-        },
-      });
-
-      // Kurye atanmışsa, kuryeyi müsait yap
-      if (order.courierId) {
-        await tx.courier.update({
-          where: { id: order.courierId },
-          data: { 
-            isAvailable: true,
-            status: CourierStatus.APPROVED,
-          },
-        });
-
-        // Kuryeye bildirim gönder
-        await tx.notification.create({
-          data: {
-            userId: order.courier!.userId,
-            type: NotificationType.ORDER_CANCELLED,
-            title: 'Sipariş İptal Edildi',
-            message: `${order.orderNumber} numaralı sipariş firma tarafından iptal edildi`,
-            data: {
-              orderId: updated.id,
-              orderNumber: updated.orderNumber,
-              reason,
-            },
-          },
-        });
-      }
-
-      return updated;
-    });
+    const cancelledOrder = await this.cancelOrderInternal(order, reason, true);
 
     // Kurye atanmışsa WebSocket üzerinden kuryeye iptal bildirimi gönder
     if (order.courierId && order.courier) {
@@ -1215,6 +1285,101 @@ export class OrdersService {
     });
 
     return cancelledOrder;
+  }
+
+  // Entegrasyon kaynaklı iptal (zaman kısıtı olmadan)
+  async cancelOrderFromIntegration(orderId: string, reason: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { courier: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Sipariş bulunamadı');
+    }
+
+    if (order.status === OrderStatus.DELIVERED) {
+      throw new BadRequestException('Teslim edilmiş sipariş iptal edilemez');
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      return order;
+    }
+
+    const resolvedReason = reason?.trim() || 'Entegrasyon iptali';
+    const cancelledOrder = await this.cancelOrderInternal(order, resolvedReason);
+
+    if (order.courierId && order.courier) {
+      const notificationData = {
+        type: 'ORDER_CANCELLED',
+        title: 'Sipariş İptal Edildi',
+        message: `${order.orderNumber} numaralı sipariş iptal edildi`,
+        data: {
+          orderId: cancelledOrder.id,
+          orderNumber: cancelledOrder.orderNumber,
+          reason: resolvedReason,
+          cancelledAt: new Date(),
+        },
+        sound: true,
+      };
+
+      this.notificationsGateway.sendNotificationToRoom(
+        `courier-${order.courierId}`,
+        notificationData
+      );
+    }
+
+    this.logger.info('Entegrasyon kaynaklı sipariş iptal edildi', {
+      orderId,
+      reason: resolvedReason,
+    });
+
+    return cancelledOrder;
+  }
+
+  private async cancelOrderInternal(
+    order: any,
+    reason: string,
+    isCompanyInitiated = false,
+  ) {
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          cancelledAt: new Date(),
+          cancellationReason: reason,
+        },
+      });
+
+      if (order.courierId) {
+        await tx.courier.update({
+          where: { id: order.courierId },
+          data: { 
+            isAvailable: true,
+            status: CourierStatus.APPROVED,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: order.courier!.userId,
+            type: NotificationType.ORDER_CANCELLED,
+            title: 'Sipariş İptal Edildi',
+            message: `${order.orderNumber} numaralı sipariş ${isCompanyInitiated ? 'firma' : 'entegrasyon'} tarafından iptal edildi`,
+            data: {
+              orderId: updated.id,
+              orderNumber: updated.orderNumber,
+              reason,
+            },
+          },
+        });
+      }
+
+      return updated;
+    });
+
+    return cancelled;
   }
 
   // Sipariş değerlendirme (firma tarafından)

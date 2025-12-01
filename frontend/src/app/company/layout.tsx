@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { 
+import {
   Home,
-  Package, 
-  FileText, 
-  BarChart3, 
+  Package,
+  FileText,
+  BarChart3,
   User,
-  Bell
+  Bell,
+  UtensilsCrossed
 } from "lucide-react";
 
 const companyMenuItems = [
@@ -25,6 +26,11 @@ const companyMenuItems = [
     title: "Siparişler",
     href: "/company/orders",
     icon: Package,
+  },
+  {
+    title: "Yemeksepeti Siparişleri",
+    href: "/company/yemeksepeti-orders",
+    icon: UtensilsCrossed,
   },
   {
     title: "Raporlar",

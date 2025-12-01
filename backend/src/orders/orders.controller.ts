@@ -73,6 +73,32 @@ export class OrdersController {
     });
   }
 
+  @Get('company/yemeksepeti')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma Yemeksepeti siparişlerini listele' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: OrderStatus })
+  @ApiQuery({ name: 'startDate', required: false, type: Date })
+  @ApiQuery({ name: 'endDate', required: false, type: Date })
+  async getCompanyYemeksepetiOrders(
+    @Request() req,
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @Query('status') status?: OrderStatus,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const company = await this.getCompanyFromUser(req.user.id);
+    return this.ordersService.getCompanyYemeksepetiOrders(company.id, {
+      skip,
+      take,
+      status,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    });
+  }
+
   @Get('available')
   @Roles(UserRole.COURIER)
   @ApiOperation({ summary: 'Müsait siparişleri listele (Kurye havuzu)' })
