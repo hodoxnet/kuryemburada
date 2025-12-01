@@ -25,6 +25,7 @@ import {
   ChevronRight,
   TrendingUp,
   Wallet,
+  Banknote,
 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -47,6 +48,16 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   DELIVERED: "Teslim Edildi",
   CANCELLED: "İptal",
+};
+
+// Kapıda ödeme tutarını al (Yemeksepeti siparişlerinde collectFromCustomer)
+const getCashOnDelivery = (order: any): number | null => {
+  const payload = order.yemeksepetiOrder?.payload;
+  if (payload?.price?.collectFromCustomer) {
+    const amount = parseFloat(payload.price.collectFromCustomer);
+    if (amount > 0) return amount;
+  }
+  return null;
 };
 
 export default function DeliveryHistory() {
@@ -317,9 +328,17 @@ export default function DeliveryHistory() {
                         <p className="text-sm text-slate-800">{order.recipientName}</p>
                       </TableCell>
                       <TableCell className="py-3 text-right">
-                        <span className={`font-semibold ${order.status === 'DELIVERED' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                          ₺{(order.courierEarning || order.price || 0).toFixed(0)}
-                        </span>
+                        <div>
+                          <span className={`font-semibold ${order.status === 'DELIVERED' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            ₺{(order.courierEarning || order.price || 0).toFixed(0)}
+                          </span>
+                          {getCashOnDelivery(order) && (
+                            <div className="flex items-center justify-end gap-1 mt-0.5">
+                              <Banknote className="w-3 h-3 text-amber-500" />
+                              <span className="text-xs text-amber-600">₺{getCashOnDelivery(order)?.toFixed(0)}</span>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="py-3">
                         <Badge variant="secondary" className={`${statusColors[order.status]} text-xs font-medium`}>
@@ -383,6 +402,12 @@ export default function DeliveryHistory() {
                       <p className={`font-semibold ${order.status === 'DELIVERED' ? 'text-emerald-600' : 'text-slate-400'}`}>
                         ₺{(order.courierEarning || order.price || 0).toFixed(0)}
                       </p>
+                      {getCashOnDelivery(order) && (
+                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                          <Banknote className="w-3 h-3 text-amber-500" />
+                          <span className="text-xs text-amber-600">₺{getCashOnDelivery(order)?.toFixed(0)}</span>
+                        </div>
+                      )}
                       <p className="text-xs text-slate-400 mt-0.5">
                         {format(new Date(order.deliveredAt || order.cancelledAt || order.createdAt), 'dd MMM HH:mm', { locale: tr })}
                       </p>
