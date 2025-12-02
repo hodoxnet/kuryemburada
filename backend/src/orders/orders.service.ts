@@ -851,14 +851,8 @@ export class OrdersService {
         },
       });
 
-      // Kuryeyi meşgul yap
-      await tx.courier.update({
-        where: { id: courierId },
-        data: { 
-          isAvailable: false,
-          status: CourierStatus.BUSY,
-        },
-      });
+      // Not: Kurye durumu artık değiştirilmiyor - çoklu sipariş alabilir
+      // BUSY durumu kaldırıldı, kurye APPROVED ve isAvailable=true kalıyor
 
       // Firmaya bildirim gönder
       await tx.notification.create({
@@ -1057,25 +1051,17 @@ export class OrdersService {
         }
       }
 
-      // Teslimat tamamlandıysa veya iptal edildiyse kuryeyi müsait yap
-      if (status === OrderStatus.DELIVERED || status === OrderStatus.CANCELLED) {
+      // Not: Kurye durumu artık değiştirilmiyor - çoklu sipariş alabilir
+      // BUSY durumu kaldırıldı, kurye her zaman APPROVED ve isAvailable=true
+
+      // Teslimat tamamlandıysa kurye istatistiklerini güncelle
+      if (status === OrderStatus.DELIVERED) {
         await tx.courier.update({
           where: { id: courierId },
-          data: { 
-            isAvailable: true,
-            status: CourierStatus.APPROVED,
+          data: {
+            totalDeliveries: { increment: 1 },
           },
         });
-
-        // Teslimat tamamlandıysa kurye istatistiklerini güncelle
-        if (status === OrderStatus.DELIVERED) {
-          await tx.courier.update({
-            where: { id: courierId },
-            data: {
-              totalDeliveries: { increment: 1 },
-            },
-          });
-        }
       }
 
       // Firmaya bildirim gönder
@@ -1369,15 +1355,8 @@ export class OrdersService {
         },
       });
 
+      // Kurye varsa bildirim gönder (durum güncellemesi kaldırıldı - çoklu sipariş desteği)
       if (order.courierId) {
-        await tx.courier.update({
-          where: { id: order.courierId },
-          data: { 
-            isAvailable: true,
-            status: CourierStatus.APPROVED,
-          },
-        });
-
         await tx.notification.create({
           data: {
             userId: order.courier!.userId,
