@@ -115,46 +115,70 @@ export class WhatsAppService {
    * Embedded Signup OAuth callback işle
    */
   async handleOAuthCallback(dto: OAuthCallbackDto): Promise<WhatsAppConfigResponseDto | null> {
-    // Token exchange
-    const tokenResponse = await this.whatsAppApi.exchangeCodeForToken(dto.code);
+    this.logger.log(`OAuth callback başlatılıyor - waba_id: ${dto.waba_id}, phone_number_id: ${dto.phone_number_id}`);
 
-    // Business account bilgilerini al
-    const accounts = await this.whatsAppApi.getWhatsAppBusinessAccounts(tokenResponse.access_token);
+    // Token exchange veya frontend'den gelen token'ı kullan
+    let accessToken: string;
 
-    if (!accounts.data || accounts.data.length === 0) {
-      throw new BadRequestException('WhatsApp Business hesabı bulunamadı');
+    if (dto.access_token) {
+      // Frontend'den access token geldi
+      this.logger.log('Frontend access token kullanılıyor');
+      accessToken = dto.access_token;
+    } else {
+      // Code ile token exchange yap
+      const tokenResponse = await this.whatsAppApi.exchangeCodeForToken(dto.code);
+      accessToken = tokenResponse.access_token;
     }
 
-    const businessAccount = accounts.data[0];
+    let businessAccountId: string;
+    let phoneNumberId: string;
 
-    // Phone numbers al
-    const phoneNumbers = await this.whatsAppApi.getPhoneNumbers(
-      tokenResponse.access_token,
-      businessAccount.id,
-    );
+    // Frontend'den WABA ID ve Phone Number ID geldiyse kullan
+    if (dto.waba_id && dto.phone_number_id) {
+      this.logger.log('Frontend\'den gelen WABA ve Phone Number ID kullanılıyor');
+      businessAccountId = dto.waba_id;
+      phoneNumberId = dto.phone_number_id;
+    } else {
+      // API'den al
+      this.logger.log('API\'den WABA bilgileri alınıyor...');
 
-    if (!phoneNumbers.data || phoneNumbers.data.length === 0) {
-      throw new BadRequestException('WhatsApp telefon numarası bulunamadı');
+      // Business account bilgilerini al
+      const accounts = await this.whatsAppApi.getWhatsAppBusinessAccounts(accessToken);
+
+      if (!accounts.data || accounts.data.length === 0) {
+        throw new BadRequestException('WhatsApp Business hesabı bulunamadı. Lütfen Manuel Kurulum sekmesini kullanın.');
+      }
+
+      businessAccountId = accounts.data[0].id;
+
+      // Phone numbers al
+      const phoneNumbers = await this.whatsAppApi.getPhoneNumbers(accessToken, businessAccountId);
+
+      if (!phoneNumbers.data || phoneNumbers.data.length === 0) {
+        throw new BadRequestException('WhatsApp telefon numarası bulunamadı. Lütfen Manuel Kurulum sekmesini kullanın.');
+      }
+
+      phoneNumberId = phoneNumbers.data[0].id;
     }
 
-    const phoneNumber = phoneNumbers.data[0];
-
-    // Webhook'a subscribe ol
-    await this.whatsAppApi.subscribeToWebhook(tokenResponse.access_token, businessAccount.id);
+    // Webhook'a subscribe ol (hata olursa devam et)
+    try {
+      await this.whatsAppApi.subscribeToWebhook(accessToken, businessAccountId);
+    } catch (error) {
+      this.logger.warn(`Webhook subscription hatası (devam ediliyor): ${error.message}`);
+    }
 
     // Config kaydet
     const existingConfig = await this.prisma.whatsAppConfig.findFirst();
 
     const configData = {
       connectionMethod: 'EMBEDDED_SIGNUP' as const,
-      phoneNumberId: phoneNumber.id,
-      businessAccountId: businessAccount.id,
-      accessToken: this.encryptToken(tokenResponse.access_token),
+      phoneNumberId: phoneNumberId,
+      businessAccountId: businessAccountId,
+      accessToken: this.encryptToken(accessToken),
       webhookVerifyToken: this.generateVerifyToken(),
       refreshToken: null, // Permanent token kullanıyoruz
-      tokenExpiresAt: tokenResponse.expires_in
-        ? new Date(Date.now() + tokenResponse.expires_in * 1000)
-        : null,
+      tokenExpiresAt: null, // System User token'lar expire olmaz
       isVerified: true,
       connectedAt: new Date(),
     };
@@ -170,7 +194,7 @@ export class WhatsAppService {
       });
     }
 
-    this.logger.log('WhatsApp Embedded Signup tamamlandı');
+    this.logger.log(`WhatsApp Embedded Signup tamamlandı - WABA: ${businessAccountId}, Phone: ${phoneNumberId}`);
     return this.getConfig();
   }
 

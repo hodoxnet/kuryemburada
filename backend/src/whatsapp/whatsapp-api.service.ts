@@ -317,6 +317,8 @@ export class WhatsAppApiService {
       const appId = this.configService.get<string>('META_APP_ID');
       const appSecret = this.configService.get<string>('META_APP_SECRET');
 
+      this.logger.log(`Token exchange başlatılıyor - App ID: ${appId}`);
+
       const response = await axios.get(
         `https://graph.facebook.com/${this.apiVersion}/oauth/access_token`,
         {
@@ -328,8 +330,14 @@ export class WhatsAppApiService {
         },
       );
 
+      this.logger.log(`Token exchange başarılı`);
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        this.logger.error(`Token exchange hatası - Status: ${error.response.status}`);
+        this.logger.error(`Token exchange hatası - Data: ${JSON.stringify(error.response.data)}`);
+        throw new Error(`Token exchange başarısız: ${JSON.stringify(error.response.data)}`);
+      }
       this.logger.error(`Token exchange hatası: ${error.message}`);
       throw new Error('Token exchange başarısız');
     }
@@ -340,18 +348,71 @@ export class WhatsAppApiService {
    */
   async getWhatsAppBusinessAccounts(accessToken: string): Promise<any> {
     try {
-      // Önce kullanıcının bağlı business hesaplarını al
-      const response = await axios.get(
-        `https://graph.facebook.com/${this.apiVersion}/me/businesses`,
+      // Debug token ile token bilgilerini al
+      const appId = this.configService.get<string>('META_APP_ID');
+      const appSecret = this.configService.get<string>('META_APP_SECRET');
+
+      this.logger.log('Debug token ile bilgi alınıyor...');
+
+      const debugResponse = await axios.get(
+        `https://graph.facebook.com/${this.apiVersion}/debug_token`,
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+          params: {
+            input_token: accessToken,
+            access_token: `${appId}|${appSecret}`,
           },
         },
       );
 
-      return response.data;
+      this.logger.log(`Debug token response: ${JSON.stringify(debugResponse.data)}`);
+
+      // Shared WABA bilgilerini al
+      const wabaResponse = await axios.get(
+        `https://graph.facebook.com/${this.apiVersion}/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          params: {
+            fields: 'id,name',
+          },
+        },
+      );
+
+      this.logger.log(`Me response: ${JSON.stringify(wabaResponse.data)}`);
+
+      // Granular scopes'tan WABA ID'yi bul
+      const granularScopes = debugResponse.data?.data?.granular_scopes || [];
+      const wabaScope = granularScopes.find((s: any) => s.scope === 'whatsapp_business_management');
+
+      if (wabaScope && wabaScope.target_ids && wabaScope.target_ids.length > 0) {
+        return {
+          data: wabaScope.target_ids.map((id: string) => ({ id })),
+        };
+      }
+
+      // Alternatif: Shared WhatsApp Business Accounts
+      try {
+        const sharedWabaResponse = await axios.get(
+          `https://graph.facebook.com/${this.apiVersion}/me/whatsapp_business_accounts`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
+        this.logger.log(`Shared WABA response: ${JSON.stringify(sharedWabaResponse.data)}`);
+        return sharedWabaResponse.data;
+      } catch (sharedError) {
+        this.logger.warn(`Shared WABA endpoint hatası: ${sharedError.message}`);
+      }
+
+      return { data: [] };
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        this.logger.error(`Business accounts hatası - Status: ${error.response.status}`);
+        this.logger.error(`Business accounts hatası - Data: ${JSON.stringify(error.response.data)}`);
+      }
       this.logger.error(`Business accounts alınamadı: ${error.message}`);
       throw error;
     }

@@ -38,6 +38,7 @@
     "@prisma/client": "^6.13.0",
     "@types/cache-manager-redis-store": "^2.0.4",
     "@types/multer": "^2.0.0",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.1.1",
     "cache-manager-redis-store": "^3.0.1",

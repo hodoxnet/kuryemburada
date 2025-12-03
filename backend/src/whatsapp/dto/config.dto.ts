@@ -36,6 +36,21 @@ export class OAuthCallbackDto {
   @IsString()
   @IsOptional()
   state?: string;
+
+  @ApiPropertyOptional({ description: 'WhatsApp Business Account ID (Embedded Signup\'tan)' })
+  @IsString()
+  @IsOptional()
+  waba_id?: string;
+
+  @ApiPropertyOptional({ description: 'Phone Number ID (Embedded Signup\'tan)' })
+  @IsString()
+  @IsOptional()
+  phone_number_id?: string;
+
+  @ApiPropertyOptional({ description: 'Access Token (Embedded Signup\'tan)' })
+  @IsString()
+  @IsOptional()
+  access_token?: string;
 }
 
 // WhatsApp ayarlarını güncelleme için DTO

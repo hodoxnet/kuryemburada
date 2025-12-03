@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -19,14 +19,83 @@ interface QuickSetupTabProps {
   onSuccess: () => void;
 }
 
+// Session info için ref
+interface SessionInfo {
+  waba_id?: string;
+  phone_number_id?: string;
+}
+
 export function QuickSetupTab({ onSuccess }: QuickSetupTabProps) {
   const [loading, setLoading] = useState(false);
+  const sessionInfoRef = useRef<SessionInfo>({});
 
   const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
   const metaConfigId = process.env.NEXT_PUBLIC_META_CONFIG_ID;
 
+  // Session info listener - Embedded Signup'tan WABA ve Phone Number ID alır
+  useEffect(() => {
+    const sessionInfoListener = (event: MessageEvent) => {
+      // Meta'dan gelen mesajları dinle
+      if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') {
+        return;
+      }
+
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Embedded Signup event:', data);
+
+        if (data.type === 'WA_EMBEDDED_SIGNUP') {
+          // Session bilgilerini kaydet
+          if (data.data?.waba_id) {
+            sessionInfoRef.current.waba_id = data.data.waba_id;
+          }
+          if (data.data?.phone_number_id) {
+            sessionInfoRef.current.phone_number_id = data.data.phone_number_id;
+          }
+          console.log('Session info güncellendi:', sessionInfoRef.current);
+        }
+      } catch (e) {
+        // JSON parse hatası - farklı bir mesaj, yoksay
+      }
+    };
+
+    window.addEventListener('message', sessionInfoListener);
+    return () => window.removeEventListener('message', sessionInfoListener);
+  }, []);
+
+  // OAuth callback işlemi
+  const handleOAuthCallback = async (code: string, accessToken?: string) => {
+    try {
+      const payload: any = { code };
+
+      // Session info varsa ekle
+      if (sessionInfoRef.current.waba_id) {
+        payload.waba_id = sessionInfoRef.current.waba_id;
+      }
+      if (sessionInfoRef.current.phone_number_id) {
+        payload.phone_number_id = sessionInfoRef.current.phone_number_id;
+      }
+      if (accessToken) {
+        payload.access_token = accessToken;
+      }
+
+      console.log('OAuth callback payload:', payload);
+
+      await whatsappAPI.oauthCallback(payload);
+      toast.success('WhatsApp Business hesabı başarıyla bağlandı!');
+      onSuccess();
+    } catch (error: any) {
+      console.error('OAuth callback hatası:', error);
+      toast.error(error.response?.data?.message || 'Bağlantı kurulamadı');
+    } finally {
+      setLoading(false);
+      // Session info'yu temizle
+      sessionInfoRef.current = {};
+    }
+  };
+
   // Facebook SDK ile Embedded Signup
-  const handleEmbeddedSignup = async () => {
+  const handleEmbeddedSignup = () => {
     // Meta App ID kontrolü
     if (!metaAppId) {
       toast.error('Meta App ID yapılandırılmamış. Lütfen .env.local dosyasına NEXT_PUBLIC_META_APP_ID ekleyin.');
@@ -40,36 +109,36 @@ export function QuickSetupTab({ onSuccess }: QuickSetupTabProps) {
     }
 
     setLoading(true);
+    // Session info'yu temizle
+    sessionInfoRef.current = {};
 
     try {
       // Facebook Login with WhatsApp Business permissions
       (window as any).FB.login(
-        async (response: any) => {
+        (response: any) => {
+          console.log('FB.login response:', response);
+
           if (response.authResponse) {
             const code = response.authResponse.code;
+            const accessToken = response.authResponse.accessToken;
 
-            try {
-              // Backend'e code gönder
-              await whatsappAPI.oauthCallback({ code });
-              toast.success('WhatsApp Business hesabı başarıyla bağlandı!');
-              onSuccess();
-            } catch (error: any) {
-              console.error('OAuth callback hatası:', error);
-              toast.error(error.response?.data?.message || 'Bağlantı kurulamadı');
-            }
+            // Kısa bir gecikme ile session info'nun gelmesini bekle
+            setTimeout(() => {
+              handleOAuthCallback(code, accessToken);
+            }, 500);
           } else {
             toast.error('Facebook girişi iptal edildi');
+            setLoading(false);
           }
-          setLoading(false);
         },
         {
           config_id: metaConfigId,
           response_type: 'code',
           override_default_response_type: true,
           extras: {
-            setup: {
-              // WhatsApp Embedded Signup için gerekli parametreler
-            },
+            setup: {},
+            featureType: '',
+            sessionInfoVersion: 2,
           },
         }
       );
