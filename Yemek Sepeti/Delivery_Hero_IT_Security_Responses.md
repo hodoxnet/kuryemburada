@@ -585,5 +585,5 @@ This document represents the current state of security practices at Kuryemburada
 ---
 
 **Document Version:** 1.0
-**Last Updated:** December 2024
-**Next Review:** March 2025
+**Last Updated:** December 2025
+**Next Review:** March 2026
