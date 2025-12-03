@@ -44,6 +44,7 @@ enum CourierStatus {
 }
 
 enum OrderStatus {
+  PENDING_APPROVAL  // WhatsApp siparişi - firma onayı bekliyor
   PENDING
   ACCEPTED
   IN_PROGRESS
@@ -141,6 +142,25 @@ enum CompanyPaymentType {
 enum OrderSource {
   MANUAL
   YEMEKSEPETI
+  WHATSAPP
+}
+
+enum WhatsAppConnectionMethod {
+  MANUAL
+  EMBEDDED_SIGNUP
+}
+
+enum WhatsAppFlowState {
+  WELCOME
+  SELECT_COMPANY
+  ENTER_ORDER
+  SHARE_LOCATION
+  SHARE_CONTACT
+  CONFIRM_ORDER
+  WAITING_APPROVAL
+  CONFIRM_PRICE
+  ORDER_CONFIRMED
+  TRACKING
 }
 
 model User {
@@ -185,6 +205,7 @@ model Company {
   reconciliations DailyReconciliation[]
   payments  CompanyPayment[]
   yemeksepetiVendors YemeksepetiVendor[]
+  whatsappSessions WhatsAppSession[]
 }
 
 model Courier {
@@ -247,6 +268,14 @@ model Order {
   deliveryProof    String? // photo url or signature
   rating           Int? // 1-5
   feedback         String?
+
+  // WhatsApp spesifik alanlar
+  orderContent     String?       // Serbest metin sipariş içeriği
+  customerWhatsApp String?       // Müşteri WhatsApp numarası (E.164 format)
+  approvedPrice    Float?        // Firma tarafından belirlenen fiyat
+  approvedAt       DateTime?     // Firma onay zamanı
+  approvalNotes    String?       // Firma notları
+
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -256,6 +285,7 @@ model Order {
   serviceArea ServiceArea? @relation(fields: [serviceAreaId], references: [id])
   payments    Payment[]
   yemeksepetiOrder YemeksepetiOrder?
+  whatsappSession  WhatsAppSession?
 }
 
 model Payment {
@@ -526,4 +556,97 @@ model District {
   @@unique([name, provinceId])
   @@index([provinceId])
   @@index([name])
+}
+
+// ==================== WhatsApp Modelleri ====================
+
+model WhatsAppConfig {
+  id                    String                    @id @default(uuid())
+
+  // Bağlantı yöntemi
+  connectionMethod      WhatsAppConnectionMethod  @default(MANUAL)
+
+  // Meta Cloud API (Her iki yöntem için)
+  phoneNumberId         String                    @unique
+  businessAccountId     String
+  accessToken           String                    // Encrypted
+  webhookVerifyToken    String
+
+  // Sadece Embedded Signup için
+  refreshToken          String?
+  tokenExpiresAt        DateTime?
+
+  // Ayarlar
+  isActive              Boolean                   @default(true)
+  isVerified            Boolean                   @default(false)
+  welcomeMessage        String                    @default("Hoş geldiniz! Size nasıl yardımcı olabilirim?")
+  offHoursMessage       String?                   // Mesai dışı otomatik yanıt
+
+  // Bildirim ayarları
+  notifyOnOrderApproval Boolean                   @default(true)
+  notifyOnCourierAssign Boolean                   @default(true)
+  notifyOnDelivery      Boolean                   @default(true)
+
+  // Meta
+  connectedAt           DateTime                  @default(now())
+  lastTestedAt          DateTime?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+}
+
+model WhatsAppSession {
+  id            String             @id @default(uuid())
+
+  // Müşteri bilgileri
+  phoneNumber   String             // WhatsApp numarası (E.164 format: +905XXXXXXXXX)
+  customerName  String?
+
+  // Oturum durumu
+  state         WhatsAppFlowState  @default(WELCOME)
+  stateData     Json?              // Geçici veriler (seçilen firma, adres, sipariş içeriği)
+
+  // İlişkiler
+  companyId     String?
+  orderId       String?            @unique
+
+  // Konum bilgisi
+  customerLocation Json?           // {lat, lng, address}
+
+  // Meta
+  lastMessageAt DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  expiresAt     DateTime           // 24 saat sonra expire
+
+  company       Company?           @relation(fields: [companyId], references: [id])
+  order         Order?             @relation(fields: [orderId], references: [id])
+
+  @@index([phoneNumber])
+  @@index([expiresAt])
+  @@index([state])
+}
+
+model WhatsAppMessage {
+  id            String   @id @default(uuid())
+  sessionId     String?
+
+  // Mesaj bilgileri
+  messageId     String   @unique // WhatsApp message ID
+  from          String   // Gönderen numara
+  to            String   // Alıcı numara
+  direction     String   // INBOUND veya OUTBOUND
+  type          String   // text, image, location, button, list, etc.
+  content       Json     // Mesaj içeriği
+
+  // Status
+  status        String   @default("sent") // sent, delivered, read, failed
+  statusUpdatedAt DateTime?
+
+  // Meta
+  createdAt     DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([messageId])
+  @@index([from])
+  @@index([createdAt])
 }

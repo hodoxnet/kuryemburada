@@ -7,14 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { 
+import {
   Settings,
   DollarSign,
   Package,
   Save,
   AlertCircle,
   Info,
+  MessageSquare,
+  ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import settingsAPI from '@/lib/api/settings';
 
@@ -126,6 +129,37 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Entegrasyonlar */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Entegrasyonlar
+          </CardTitle>
+          <CardDescription>
+            Harici servis entegrasyonlarını yönetin
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/admin/settings/whatsapp">
+            <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium">WhatsApp Business</h4>
+                  <p className="text-sm text-muted-foreground">
+                    WhatsApp üzerinden sipariş alma entegrasyonu
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Komisyon Ayarları */}
       <Card>

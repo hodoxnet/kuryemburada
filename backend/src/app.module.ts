@@ -24,6 +24,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CompanyPaymentsModule } from './company-payments/company-payments.module';
 import { GeographyModule } from './geography/geography.module';
 import { YemeksepetiModule } from './yemeksepeti/yemeksepeti.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { YemeksepetiModule } from './yemeksepeti/yemeksepeti.module';
     CompanyPaymentsModule,
     GeographyModule,
     YemeksepetiModule,
+    WhatsAppModule,
   ],
   controllers: [AppController],
   providers: [

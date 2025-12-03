@@ -13,7 +13,8 @@ import {
   BarChart3,
   User,
   Bell,
-  UtensilsCrossed
+  UtensilsCrossed,
+  MessageSquare,
 } from "lucide-react";
 
 const companyMenuItems = [
@@ -31,6 +32,11 @@ const companyMenuItems = [
     title: "Yemeksepeti Siparişleri",
     href: "/company/yemeksepeti-orders",
     icon: UtensilsCrossed,
+  },
+  {
+    title: "WhatsApp Siparişleri",
+    href: "/company/whatsapp-orders",
+    icon: MessageSquare,
   },
   {
     title: "Raporlar",
