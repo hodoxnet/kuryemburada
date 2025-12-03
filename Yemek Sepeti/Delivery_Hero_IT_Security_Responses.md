@@ -49,8 +49,7 @@ Kuryemburada is a courier operation management platform that connects restaurant
 
 ### Which cloud providers do you rely on?
 
-- Primary hosting provider with data center in Turkey
-- Plesk for server management
+- **Guzen Net** - Primary VPS hosting provider (Turkey-based)
 
 
 
@@ -306,7 +305,7 @@ Documented procedures include:
 
 #### Do you perform network security testing?
 
-Planned for Q1 2025. Will include:
+Planned for Q1 2026. Will include:
 - External vulnerability scanning
 - Internal network assessment
 
@@ -574,7 +573,7 @@ https://kuryemburada.com/privacy (to be published)
 
 ### Available Documents
 
-- [ ] Application Penetration Testing Report (Planned Q1 2025)
+- [ ] Application Penetration Testing Report (Planned Q1 2026)
 - [x] API Documentation (Swagger/OpenAPI)
 - [ ] Information Security Policy Document
 - [ ] ISO Certifications
