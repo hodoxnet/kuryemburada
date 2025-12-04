@@ -869,6 +869,8 @@ export class WhatsAppService {
 
   /**
    * Test mesajı gönder
+   * WhatsApp Business API ilk mesajlar için template zorunlu kılıyor (24 saat kuralı)
+   * Bu yüzden hello_world template'i kullanıyoruz
    */
   async sendTestMessage(phoneNumber: string, message: string): Promise<any> {
     const config = await this.getActiveConfig();
@@ -879,9 +881,13 @@ export class WhatsAppService {
     const accessToken = this.decryptToken(config.accessToken);
     this.whatsAppApi.initializeClient(config.phoneNumberId, accessToken);
 
-    return this.whatsAppApi.sendTextMessage({
+    // WhatsApp Business API ilk mesaj için template gerektirir
+    // Meta'nın varsayılan hello_world template'ini kullanıyoruz
+    return this.whatsAppApi.sendTemplateMessage({
       to: phoneNumber,
-      text: message,
+      templateName: 'hello_world',
+      languageCode: 'en_US',
+      components: [],
     });
   }
 
