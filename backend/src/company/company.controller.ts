@@ -16,6 +16,7 @@ import { CompanyService } from './company.service';
 import { UpdateCompanyStatusDto } from './dto/update-company-status.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpsertYemeksepetiVendorDto } from './dto/upsert-yemeksepeti-vendor.dto';
+import { UpsertTrendyolGoVendorDto } from '../trendyolgo/dto/upsert-trendyolgo-vendor.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -73,6 +74,25 @@ export class CompanyController {
     @Body() payload: UpsertYemeksepetiVendorDto,
   ) {
     return this.companyService.upsertYemeksepetiSettings(req.user.id, payload);
+  }
+
+  @Get('profile/trendyolgo')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma Trendyol Go entegrasyon bilgilerini getir' })
+  @ApiResponse({ status: 200, description: 'Trendyol Go bilgileri' })
+  async getTrendyolGoSettings(@Request() req) {
+    return this.companyService.getTrendyolGoSettings(req.user.id);
+  }
+
+  @Put('profile/trendyolgo')
+  @Roles(UserRole.COMPANY)
+  @ApiOperation({ summary: 'Firma Trendyol Go entegrasyon bilgilerini güncelle/oluştur' })
+  @ApiResponse({ status: 200, description: 'Trendyol Go bilgileri güncellendi' })
+  async upsertTrendyolGoSettings(
+    @Request() req,
+    @Body() payload: UpsertTrendyolGoVendorDto,
+  ) {
+    return this.companyService.upsertTrendyolGoSettings(req.user.id, payload);
   }
 
   @Get()

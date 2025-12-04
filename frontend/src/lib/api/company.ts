@@ -109,6 +109,45 @@ export interface UpsertYemeksepetiVendorInput {
   baseUrl?: string;
 }
 
+// Trendyol Go Types
+export interface TrendyolGoPickupAddress {
+  lat: number;
+  lng: number;
+  address?: string;
+  detail?: string;
+}
+
+export interface TrendyolGoVendorSettings {
+  id: string;
+  companyId: string;
+  supplierId: string;
+  storeId?: string | null;
+  apiKey: string;
+  apiSecret: string;
+  agentName: string;
+  executorEmail?: string | null;
+  pickupAddress: TrendyolGoPickupAddress | null;
+  isActive: boolean;
+  autoCourierDispatch: boolean;
+  pollingIntervalSec: number;
+  lastPolledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertTrendyolGoVendorInput {
+  supplierId: string;
+  storeId?: string;
+  apiKey: string;
+  apiSecret: string;
+  agentName?: string;
+  executorEmail?: string;
+  pickupAddress?: TrendyolGoPickupAddress;
+  isActive: boolean;
+  autoCourierDispatch: boolean;
+  pollingIntervalSec?: number;
+}
+
 class CompanyAPI {
   async getProfile(): Promise<CompanyProfile> {
     const response = await apiClient.get('/companies/profile');
@@ -129,6 +168,29 @@ class CompanyAPI {
     data: UpsertYemeksepetiVendorInput,
   ): Promise<YemeksepetiVendorSettings> {
     const response = await apiClient.put('/companies/profile/yemeksepeti', data);
+    return response.data;
+  }
+
+  // Trendyol Go Methods
+  async getTrendyolGoSettings(): Promise<TrendyolGoVendorSettings | null> {
+    const response = await apiClient.get('/companies/profile/trendyolgo');
+    return response.data;
+  }
+
+  async upsertTrendyolGoSettings(
+    data: UpsertTrendyolGoVendorInput,
+  ): Promise<TrendyolGoVendorSettings> {
+    const response = await apiClient.put('/companies/profile/trendyolgo', data);
+    return response.data;
+  }
+
+  async testTrendyolGoConnection(vendorId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.get(`/trendyolgo/test-connection/${vendorId}`);
+    return response.data;
+  }
+
+  async syncTrendyolGoOrders(vendorId: string): Promise<{ processedCount: number }> {
+    const response = await apiClient.post(`/trendyolgo/sync/${vendorId}`);
     return response.data;
   }
 }

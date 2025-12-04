@@ -27,12 +27,19 @@ import {
   ShieldCheck,
   Power,
   Truck,
+  ShoppingBag,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react';
 import companyAPI, {
   CompanyProfile,
   UpdateCompanyData,
   UpsertYemeksepetiVendorInput,
   YemeksepetiVendorSettings,
+  TrendyolGoVendorSettings,
+  UpsertTrendyolGoVendorInput,
 } from '@/lib/api/company';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -108,9 +115,28 @@ const yemeksepetiSchema = z.object({
   baseUrl: z.string().optional(),
 });
 
+const trendyolGoSchema = z.object({
+  supplierId: z.string().min(1, 'Satıcı ID zorunludur'),
+  storeId: z.string().optional(),
+  apiKey: z.string().min(1, 'API Key zorunludur'),
+  apiSecret: z.string().min(1, 'API Secret zorunludur'),
+  agentName: z.string().optional(),
+  executorEmail: z.string().email('Geçerli bir e-posta adresi giriniz').optional().or(z.literal('')),
+  pickupAddress: z.object({
+    lat: z.coerce.number({ invalid_type_error: 'Enlem gerekli' }),
+    lng: z.coerce.number({ invalid_type_error: 'Boylam gerekli' }),
+    address: z.string().optional(),
+    detail: z.string().optional(),
+  }),
+  isActive: z.boolean().optional(),
+  autoCourierDispatch: z.boolean().optional(),
+  pollingIntervalSec: z.coerce.number().optional(),
+});
+
 type CompanyUpdateForm = z.infer<typeof companyUpdateSchema>;
 type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;
 type YemeksepetiForm = z.infer<typeof yemeksepetiSchema>;
+type TrendyolGoForm = z.infer<typeof trendyolGoSchema>;
 
 export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
@@ -120,6 +146,11 @@ export default function CompanyProfilePage() {
   const [yemeksepetiSettings, setYemeksepetiSettings] = useState<YemeksepetiVendorSettings | null>(null);
   const [yemeksepetiLoading, setYemeksepetiLoading] = useState(false);
   const [yemeksepetiSaving, setYemeksepetiSaving] = useState(false);
+  const [trendyolGoSettings, setTrendyolGoSettings] = useState<TrendyolGoVendorSettings | null>(null);
+  const [trendyolGoLoading, setTrendyolGoLoading] = useState(false);
+  const [trendyolGoSaving, setTrendyolGoSaving] = useState(false);
+  const [trendyolGoTesting, setTrendyolGoTesting] = useState(false);
+  const [trendyolGoSyncing, setTrendyolGoSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
 
   const {
@@ -154,6 +185,23 @@ export default function CompanyProfilePage() {
     defaultValues: {
       isActive: true,
       autoCourierDispatch: true,
+    },
+  });
+
+  const {
+    register: registerTrendyolGo,
+    handleSubmit: handleTrendyolGoSubmit,
+    formState: { errors: trendyolGoErrors },
+    reset: resetTrendyolGo,
+    watch: watchTrendyolGo,
+    setValue: setTrendyolGoValue,
+  } = useForm<TrendyolGoForm>({
+    resolver: zodResolver(trendyolGoSchema),
+    defaultValues: {
+      isActive: false,
+      autoCourierDispatch: true,
+      agentName: 'SelfIntegration',
+      pollingIntervalSec: 60,
     },
   });
 
@@ -242,9 +290,61 @@ export default function CompanyProfilePage() {
     }
   };
 
+  const fetchTrendyolGo = async () => {
+    try {
+      setTrendyolGoLoading(true);
+      const data = await companyAPI.getTrendyolGoSettings();
+      setTrendyolGoSettings(data);
+
+      if (data) {
+        resetTrendyolGo({
+          supplierId: data.supplierId,
+          storeId: data.storeId || '',
+          apiKey: data.apiKey,
+          apiSecret: data.apiSecret,
+          agentName: data.agentName || 'SelfIntegration',
+          executorEmail: data.executorEmail || '',
+          pickupAddress: {
+            lat: toFormNumber(data.pickupAddress?.lat),
+            lng: toFormNumber(data.pickupAddress?.lng),
+            address: data.pickupAddress?.address || '',
+            detail: data.pickupAddress?.detail || '',
+          },
+          isActive: data.isActive,
+          autoCourierDispatch: data.autoCourierDispatch ?? true,
+          pollingIntervalSec: data.pollingIntervalSec || 60,
+        });
+      } else {
+        resetTrendyolGo({
+          supplierId: '',
+          storeId: '',
+          apiKey: '',
+          apiSecret: '',
+          agentName: 'SelfIntegration',
+          executorEmail: '',
+          pickupAddress: {
+            lat: '' as unknown as number,
+            lng: '' as unknown as number,
+            address: '',
+            detail: '',
+          },
+          isActive: false,
+          autoCourierDispatch: true,
+          pollingIntervalSec: 60,
+        });
+      }
+    } catch (error) {
+      console.error('Trendyol Go bilgileri alınamadı:', error);
+      toast.error('Trendyol Go bilgileri yüklenemedi');
+    } finally {
+      setTrendyolGoLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchYemeksepeti();
+    fetchTrendyolGo();
   }, []);
 
   const onSubmit = async (data: CompanyUpdateForm) => {
@@ -295,6 +395,66 @@ export default function CompanyProfilePage() {
     }
   };
 
+  const onTrendyolGoSubmit = async (data: TrendyolGoForm) => {
+    try {
+      setTrendyolGoSaving(true);
+      const saved = await companyAPI.upsertTrendyolGoSettings({
+        ...data,
+        isActive: data.isActive ?? false,
+        autoCourierDispatch: data.autoCourierDispatch ?? true,
+        pollingIntervalSec: data.pollingIntervalSec || 60,
+      } as UpsertTrendyolGoVendorInput);
+      setTrendyolGoSettings(saved);
+      toast.success('Trendyol Go entegrasyon bilgileri kaydedildi');
+    } catch (error: any) {
+      console.error('Trendyol Go bilgileri kaydedilirken hata:', error);
+      const errorMessage = error?.response?.data?.message || 'Trendyol Go bilgileri kaydedilemedi';
+      toast.error(errorMessage);
+    } finally {
+      setTrendyolGoSaving(false);
+    }
+  };
+
+  const testTrendyolGoConnection = async () => {
+    if (!trendyolGoSettings?.id) {
+      toast.error('Önce Trendyol Go ayarlarını kaydedin');
+      return;
+    }
+    try {
+      setTrendyolGoTesting(true);
+      const result = await companyAPI.testTrendyolGoConnection(trendyolGoSettings.id);
+      if (result.success) {
+        toast.success(result.message || 'Bağlantı başarılı');
+      } else {
+        toast.error(result.message || 'Bağlantı başarısız');
+      }
+    } catch (error: any) {
+      console.error('Trendyol Go bağlantı testi hatası:', error);
+      const errorMessage = error?.response?.data?.message || 'Bağlantı testi başarısız';
+      toast.error(errorMessage);
+    } finally {
+      setTrendyolGoTesting(false);
+    }
+  };
+
+  const syncTrendyolGoOrders = async () => {
+    if (!trendyolGoSettings?.id) {
+      toast.error('Önce Trendyol Go ayarlarını kaydedin');
+      return;
+    }
+    try {
+      setTrendyolGoSyncing(true);
+      const result = await companyAPI.syncTrendyolGoOrders(trendyolGoSettings.id);
+      toast.success(`${result.processedCount} sipariş senkronize edildi`);
+    } catch (error: any) {
+      console.error('Trendyol Go senkronizasyon hatası:', error);
+      const errorMessage = error?.response?.data?.message || 'Senkronizasyon başarısız';
+      toast.error(errorMessage);
+    } finally {
+      setTrendyolGoSyncing(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       PENDING: { label: 'Beklemede', variant: 'secondary' as const },
@@ -332,7 +492,7 @@ export default function CompanyProfilePage() {
   };
 
   const handleProfileFormSubmit =
-    activeTab === 'yemeksepeti'
+    activeTab === 'yemeksepeti' || activeTab === 'trendyolgo'
       ? (event: FormEvent<HTMLFormElement>) => {
           event.preventDefault();
         }
@@ -381,13 +541,14 @@ export default function CompanyProfilePage() {
 
       <form onSubmit={handleProfileFormSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
             <TabsTrigger value="address">Adres Bilgileri</TabsTrigger>
             <TabsTrigger value="bank">Banka Bilgileri</TabsTrigger>
             <TabsTrigger value="contact">İletişim Kişisi</TabsTrigger>
             <TabsTrigger value="security">Güvenlik</TabsTrigger>
             <TabsTrigger value="yemeksepeti">Yemeksepeti</TabsTrigger>
+            <TabsTrigger value="trendyolgo">Trendyol Go</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -938,6 +1099,247 @@ export default function CompanyProfilePage() {
             )}
           </TabsContent>
 
+          <TabsContent value="trendyolgo" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingBag className="h-5 w-5" />
+                  Trendyol Go Entegrasyonu
+                </CardTitle>
+                <CardDescription>
+                  Trendyol Go API bilgilerinizi girerek sipariş entegrasyonunu aktif edin. Siparişler otomatik olarak çekilecektir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/40">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">Entegrasyon Durumu</p>
+                      <p className="text-xs text-muted-foreground">
+                        Aktif olduğunda siparişler otomatik olarak çekilir.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Pasif</span>
+                    <Switch
+                      checked={watchTrendyolGo('isActive') ?? false}
+                      onCheckedChange={(checked) => setTrendyolGoValue('isActive', checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">Aktif</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/40">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-orange-500" />
+                    <div>
+                      <p className="font-medium text-sm">Otomatik Kurye Bildirimi</p>
+                      <p className="text-xs text-muted-foreground">
+                        Aktif: Sipariş gelince kuryelere otomatik bildirim gider.<br />
+                        Pasif: &quot;Kurye Çağır&quot; butonuyla manuel bildirim gönderin.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Manuel</span>
+                    <Switch
+                      checked={watchTrendyolGo('autoCourierDispatch') ?? true}
+                      onCheckedChange={(checked) => setTrendyolGoValue('autoCourierDispatch', checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">Otomatik</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_supplierId">Satıcı ID (Supplier ID) <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="tgo_supplierId"
+                      placeholder="Trendyol satıcı ID"
+                      {...registerTrendyolGo('supplierId')}
+                    />
+                    {trendyolGoErrors.supplierId && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.supplierId.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_storeId">Şube ID (Store ID)</Label>
+                    <Input
+                      id="tgo_storeId"
+                      placeholder="Şube ID (opsiyonel)"
+                      {...registerTrendyolGo('storeId')}
+                    />
+                    {trendyolGoErrors.storeId && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.storeId.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_apiKey">API Key <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="tgo_apiKey"
+                      placeholder="Trendyol API Key"
+                      {...registerTrendyolGo('apiKey')}
+                    />
+                    {trendyolGoErrors.apiKey && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.apiKey.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_apiSecret">API Secret <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="tgo_apiSecret"
+                      placeholder="Trendyol API Secret"
+                      type="password"
+                      {...registerTrendyolGo('apiSecret')}
+                    />
+                    {trendyolGoErrors.apiSecret && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.apiSecret.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_agentName">Entegratör Adı</Label>
+                    <Input
+                      id="tgo_agentName"
+                      placeholder="SelfIntegration"
+                      {...registerTrendyolGo('agentName')}
+                    />
+                    <p className="text-xs text-muted-foreground">User-Agent header için kullanılır</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_executorEmail">İşlem Yapan E-posta</Label>
+                    <Input
+                      id="tgo_executorEmail"
+                      placeholder="ornek@email.com"
+                      type="email"
+                      {...registerTrendyolGo('executorEmail')}
+                    />
+                    {trendyolGoErrors.executorEmail && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.executorEmail.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_pickupLat">Pickup Enlem (lat)</Label>
+                    <Input
+                      id="tgo_pickupLat"
+                      type="number"
+                      step="any"
+                      placeholder="Örn: 41.012"
+                      {...registerTrendyolGo('pickupAddress.lat')}
+                    />
+                    {trendyolGoErrors.pickupAddress?.lat && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.pickupAddress.lat.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tgo_pickupLng">Pickup Boylam (lng)</Label>
+                    <Input
+                      id="tgo_pickupLng"
+                      type="number"
+                      step="any"
+                      placeholder="Örn: 29.123"
+                      {...registerTrendyolGo('pickupAddress.lng')}
+                    />
+                    {trendyolGoErrors.pickupAddress?.lng && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.pickupAddress.lng.message}</p>
+                    )}
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="tgo_pickupAddress">Pickup Adresi</Label>
+                    <Input
+                      id="tgo_pickupAddress"
+                      placeholder="İşletme adresi"
+                      {...registerTrendyolGo('pickupAddress.address')}
+                    />
+                    {trendyolGoErrors.pickupAddress?.address && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.pickupAddress.address.message}</p>
+                    )}
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="tgo_pickupDetail">Pickup Adres Detayı</Label>
+                    <Textarea
+                      id="tgo_pickupDetail"
+                      placeholder="Adres detayı (kat, kapı vs.)"
+                      rows={2}
+                      {...registerTrendyolGo('pickupAddress.detail')}
+                    />
+                    {trendyolGoErrors.pickupAddress?.detail && (
+                      <p className="text-sm text-red-500">{trendyolGoErrors.pickupAddress.detail.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 justify-end">
+                  {trendyolGoSettings && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={testTrendyolGoConnection}
+                        disabled={trendyolGoTesting || trendyolGoLoading}
+                      >
+                        {trendyolGoTesting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Test Ediliyor...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Bağlantıyı Test Et
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={syncTrendyolGoOrders}
+                        disabled={trendyolGoSyncing || trendyolGoLoading}
+                      >
+                        {trendyolGoSyncing ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Senkronize Ediliyor...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Siparişleri Senkronize Et
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={handleTrendyolGoSubmit(onTrendyolGoSubmit)}
+                    disabled={trendyolGoSaving || trendyolGoLoading}
+                  >
+                    {trendyolGoSaving ? 'Kaydediliyor...' : 'Trendyol Go Bilgilerini Kaydet'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {trendyolGoSettings && (
+              <Alert>
+                <AlertDescription className="flex items-center gap-2">
+                  <Power className="h-4 w-4" />
+                  En son güncelleme: {new Date(trendyolGoSettings.updatedAt).toLocaleString('tr-TR')}
+                  {trendyolGoSettings.lastPolledAt && (
+                    <span className="ml-2">
+                      | Son polling: {new Date(trendyolGoSettings.lastPolledAt).toLocaleString('tr-TR')}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
           <TabsContent value="security" className="space-y-4">
             <Card>
               <CardHeader>
@@ -1003,7 +1405,7 @@ export default function CompanyProfilePage() {
           </TabsContent>
         </Tabs>
 
-        {activeTab !== 'security' && activeTab !== 'yemeksepeti' && (
+        {activeTab !== 'security' && activeTab !== 'yemeksepeti' && activeTab !== 'trendyolgo' && (
           <div className="flex justify-end mt-6">
             <Button type="submit" disabled={updating}>
               {updating ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}

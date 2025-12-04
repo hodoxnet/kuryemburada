@@ -15,6 +15,7 @@ import {
   Bell,
   UtensilsCrossed,
   MessageSquare,
+  ShoppingBag,
 } from "lucide-react";
 
 const companyMenuItems = [
@@ -32,6 +33,11 @@ const companyMenuItems = [
     title: "Yemeksepeti Siparişleri",
     href: "/company/yemeksepeti-orders",
     icon: UtensilsCrossed,
+  },
+  {
+    title: "Trendyol Go Siparişleri",
+    href: "/company/trendyolgo-orders",
+    icon: ShoppingBag,
   },
   {
     title: "WhatsApp Siparişleri",

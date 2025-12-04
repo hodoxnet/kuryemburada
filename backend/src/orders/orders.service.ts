@@ -1,12 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PackageType, PackageSize, DeliveryType, Urgency, NotificationType, CourierStatus, OrderSource } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Logger } from 'winston';
-import { Inject } from '@nestjs/common';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TrendyolGoService } from '../trendyolgo/trendyolgo.service';
 
 @Injectable()
 export class OrdersService {
@@ -15,6 +15,8 @@ export class OrdersService {
     @Inject('winston') private readonly logger: Logger,
     private readonly notificationsGateway: NotificationsGateway,
     private readonly notificationsService: NotificationsService,
+    @Inject(forwardRef(() => TrendyolGoService))
+    private readonly trendyolGoService: TrendyolGoService,
   ) {}
 
   // Sipariş numarası oluştur
@@ -249,13 +251,24 @@ export class OrdersService {
       throw new ForbiddenException('Firma onaylı değil');
     }
 
-    // Yemeksepeti siparişleri için service area kontrolü atla
+    // Yemeksepeti ve TrendyolGo siparişleri için service area kontrolü atla
     const isYemeksepetiOrder = createOrderDto.source === OrderSource.YEMEKSEPETI;
+    const isTrendyolGoOrder = createOrderDto.source === OrderSource.TRENDYOLGO;
 
-    // Yemeksepeti siparişi için autoCourierDispatch ayarını önceden kontrol et
+    // Sipariş için autoCourierDispatch ayarını kontrol et
     let shouldDispatchToCouriers = true; // Varsayılan: kuryelere gösterilsin
+
     if (isYemeksepetiOrder) {
+      // Yemeksepeti siparişi için vendor ayarını kontrol et
       const vendor = await this.prisma.yemeksepetiVendor.findFirst({
+        where: { companyId },
+        select: { autoCourierDispatch: true },
+      });
+      // Manuel mod aktifse (autoCourierDispatch: false), siparişi kuryelere gösterme
+      shouldDispatchToCouriers = vendor?.autoCourierDispatch !== false;
+    } else if (isTrendyolGoOrder) {
+      // TrendyolGo siparişi için vendor ayarını kontrol et
+      const vendor = await this.prisma.trendyolGoVendor.findFirst({
         where: { companyId },
         select: { autoCourierDispatch: true },
       });
@@ -270,25 +283,26 @@ export class OrdersService {
     let deliveryArea: any = null;
     let priceDetails: any;
 
-    if (isYemeksepetiOrder) {
-      // Yemeksepeti siparişleri için sabit fiyatlandırma
+    if (isYemeksepetiOrder || isTrendyolGoOrder) {
+      // Yemeksepeti ve TrendyolGo siparişleri için sabit fiyatlandırma
       const distance = createOrderDto.distance || 5; // Varsayılan 5 km
       const estimatedTime = createOrderDto.estimatedTime || 30; // Varsayılan 30 dakika
 
-      // Yemeksepeti siparişleri için sabit fiyat (sistem ayarından alınabilir)
-      const yemeksepetiBaseFee = 25; // Sabit teslimat ücreti
-      const commission = yemeksepetiBaseFee * 0.15; // %15 komisyon
-      const courierEarning = yemeksepetiBaseFee - commission;
+      // Entegrasyon siparişleri için sabit fiyat (sistem ayarından alınabilir)
+      const integrationBaseFee = 25; // Sabit teslimat ücreti
+      const commission = integrationBaseFee * 0.15; // %15 komisyon
+      const courierEarning = integrationBaseFee - commission;
 
       priceDetails = {
-        price: yemeksepetiBaseFee,
+        price: integrationBaseFee,
         estimatedTime,
         commission,
         courierEarning,
       };
 
-      this.logger.info('Yemeksepeti siparişi oluşturuluyor', {
-        source: 'YEMEKSEPETI',
+      const sourceName = isYemeksepetiOrder ? 'YEMEKSEPETI' : 'TRENDYOLGO';
+      this.logger.info(`${sourceName} siparişi oluşturuluyor`, {
+        source: sourceName,
         distance,
         price: priceDetails.price,
       });
@@ -330,7 +344,7 @@ export class OrdersService {
     }
 
     // Mesafe değerini al
-    const distance = createOrderDto.distance || (isYemeksepetiOrder ? 5 : 10);
+    const distance = createOrderDto.distance || ((isYemeksepetiOrder || isTrendyolGoOrder) ? 5 : 10);
 
     // Sipariş oluştur
     const order = await this.prisma.order.create({
@@ -562,6 +576,86 @@ export class OrdersService {
               remoteOrderId: true,
               status: true,
               payload: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      skip,
+      take,
+    };
+  }
+
+  // Firma Trendyol Go siparişlerini listele
+  async getCompanyTrendyolGoOrders(
+    companyId: string,
+    params: {
+      skip?: number;
+      take?: number;
+      status?: OrderStatus;
+      startDate?: Date;
+      endDate?: Date;
+    },
+  ) {
+    const { skip = 0, take = 10, status, startDate, endDate } = params;
+
+    const where: any = {
+      companyId,
+      source: OrderSource.TRENDYOLGO,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          courier: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              vehicleInfo: true,
+              rating: true,
+              userId: true,
+            },
+          },
+          payments: {
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              paymentMethod: true,
+            },
+          },
+          trendyolGoOrder: {
+            select: {
+              id: true,
+              packageId: true,
+              trendyolOrderId: true,
+              orderNumber: true,
+              status: true,
+              payload: true,
+              invoiceAmount: true,
+              pickedAt: true,
+              invoicedAt: true,
               createdAt: true,
             },
           },
@@ -919,6 +1013,25 @@ export class OrdersService {
         `courier-${availableCourier.id}`,
         orderAcceptedNotification
       );
+    }
+
+    // TrendyolGo siparişi ise Trendyol'a Picking bildirimi gönder
+    if (order.source === OrderSource.TRENDYOLGO) {
+      try {
+        await this.trendyolGoService.sendPickedStatus(orderId);
+        this.logger.info('TrendyolGo Picking bildirimi gönderildi', {
+          orderId,
+          orderNumber: updatedOrder.orderNumber,
+        });
+      } catch (error) {
+        // Trendyol'a bildirim gönderilemese bile sipariş kabul edilmiş sayılır
+        // Hata loglanır ve sonraki sync'te düzeltilebilir
+        this.logger.error('TrendyolGo Picking bildirimi gönderilemedi', {
+          orderId,
+          orderNumber: updatedOrder.orderNumber,
+          error: error instanceof Error ? error.message : 'Bilinmeyen hata',
+        });
+      }
     }
 
     this.logger.info('Sipariş kabul edildi', {

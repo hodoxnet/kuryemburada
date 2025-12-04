@@ -6,6 +6,7 @@ import { CompanyStatus, Prisma } from '@prisma/client';
 import { Logger } from 'winston';
 import { Inject } from '@nestjs/common';
 import { UpsertYemeksepetiVendorDto } from './dto/upsert-yemeksepeti-vendor.dto';
+import { UpsertTrendyolGoVendorDto } from '../trendyolgo/dto/upsert-trendyolgo-vendor.dto';
 
 @Injectable()
 export class CompanyService {
@@ -231,6 +232,84 @@ export class CompanyService {
       companyId: company.id,
       companyName: company.name,
       vendorId: result.id,
+    });
+
+    return result;
+  }
+
+  async getTrendyolGoSettings(userId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Firma bilgileri bulunamadı');
+    }
+
+    return this.prisma.trendyolGoVendor.findUnique({
+      where: { companyId: company.id },
+    });
+  }
+
+  async upsertTrendyolGoSettings(userId: string, payload: UpsertTrendyolGoVendorDto) {
+    const company = await this.prisma.company.findUnique({
+      where: { userId },
+      select: { id: true, name: true },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Firma bilgileri bulunamadı');
+    }
+
+    const existingVendor = await this.prisma.trendyolGoVendor.findUnique({
+      where: { companyId: company.id },
+    });
+
+    // supplierId benzersizlik kontrolü
+    const supplierIdConflict = await this.prisma.trendyolGoVendor.findFirst({
+      where: {
+        supplierId: payload.supplierId,
+        companyId: { not: company.id },
+      },
+    });
+
+    if (supplierIdConflict) {
+      throw new BadRequestException('Bu supplierId başka bir firma tarafından kullanılıyor');
+    }
+
+    const vendorData = {
+      supplierId: payload.supplierId,
+      storeId: payload.storeId || undefined,
+      apiKey: payload.apiKey,
+      apiSecret: payload.apiSecret,
+      agentName: payload.agentName || 'SelfIntegration',
+      executorEmail: payload.executorEmail || undefined,
+      pickupAddress: payload.pickupAddress
+        ? JSON.parse(JSON.stringify(payload.pickupAddress))
+        : undefined,
+      isActive: payload.isActive ?? false,
+      autoCourierDispatch: payload.autoCourierDispatch ?? true,
+      pollingIntervalSec: payload.pollingIntervalSec ?? 60,
+    };
+
+    const result = existingVendor
+      ? await this.prisma.trendyolGoVendor.update({
+          where: { id: existingVendor.id },
+          data: vendorData,
+        })
+      : await this.prisma.trendyolGoVendor.create({
+          data: {
+            companyId: company.id,
+            ...vendorData,
+          },
+        });
+
+    this.logger.info('Trendyol Go vendor bilgileri güncellendi', {
+      companyId: company.id,
+      companyName: company.name,
+      vendorId: result.id,
+      supplierId: result.supplierId,
     });
 
     return result;
